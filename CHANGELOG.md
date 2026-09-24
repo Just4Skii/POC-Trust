@@ -1,5 +1,84 @@
 # Changelog
 
+## 1.4.0-integrity-overview — Dashboard Integrity Overview, Enriched Rows, Audit Pipeline, Demonstration Moment (25 September 2026)
+
+The third RIR increment (spec sections 26–39): the integrity story now reaches the whole
+surface — the dashboard, the history list and the audit trail — and the demonstration gains a
+deterministic centrepiece. All metrics are calculated from the stored records at request time;
+nothing is preset. Frozen layers untouched (`ReliabilityEngine`, AI abstraction, orchestrator
+semantics, audit sealing; 131/131 tests green, 0 warnings).
+
+### Added
+
+- **Integrity overview** (dashboard, section 26): four aggregates over the stored assessments —
+  evidence coverage (e.g. "97% complete"), assessments with evidence concerns, detected
+  conflicts, assessments with aging evidence — computed by the backend from the SAME projection
+  the detail records use, with the environment labelled "Demonstration mode — synthetic data
+  only" whenever demonstration records are present. Empty stores render an honest zero state.
+- **Enriched history rows** (section 27): every list row now shows the evidence coverage
+  ("Evidence: 6/7"), the primary driver ("Primary driver: Calibration expired"), the selected
+  policy, an explicit AI indicator ("AI: Contextual Analysis" / "AI: Not consulted") and audit
+  availability ("Audit: Available") — each row understandable before opening it. Row fields are
+  derived by the same projector as the full record (no parallel derivation) and are optional in
+  the payload, so older or unprojectable records simply render a plainer row.
+- **Audit pipeline stages** (section 28): the per-assessment audit lifecycle now follows the
+  full chain — Evidence received → Evidence quality evaluated → Rules evaluated → Decision
+  drivers identified → Disposition recorded → Contextual Analysis consulted (only when it was)
+  → Audit saved — each stage bound to the stored audit row and the derived record. The advisory
+  stage stays visually secondary; it never reads as if the AI created the decision.
+- **Demonstration moment** (section 30): the dashboard now carries the core proof of the
+  integrity engine — "Watch one result become trustworthy, then watch its integrity context
+  change" — rendering the stored three-step sequence TRUST → REVIEW → VERIFY with a
+  "Why did it change?" panel whose lines are derived from the recorded findings (the same
+  derivation the integrity timeline uses, via the projector's public `DescribeTransition`).
+  Fully deterministic; the payload states `aiInvolved` and the card says "No advisory
+  involvement — every change comes from the deterministic rules alone."
+- **Scenario cards updated** (section 29): trust / review / verify / missing / offline cards
+  now describe what the opened record's Result Integrity Record will show — coverage, concerns,
+  conflicts, primary driver, synchronisation-metadata wording for offline — while the record
+  itself remains the proof (numbers are never hardcoded into card copy).
+- **New endpoint** `GET /api/dashboard/demonstration`: the stored demonstration sequence with
+  per-step disposition, policy and derived change line; `available:false` with no invented
+  steps when the sequence is not loaded.
+- **Tests** (section 35): 14 new regression tests (`IntegrityUpgradeTests`) covering: RIR
+  disposition equals the deterministic status for every scenario kind; no fabricated evidence
+  (10 canonical domains, null identifiers for unrecorded evidence, coverage arithmetic); the
+  eight-state taxonomy incl. the honestly-reserved STALE; causality from real rules with a
+  structural no-numeric-driver guarantee and no weight/percent/contribution/confidence keys;
+  policy displayed but never softening a hard VERIFY under either policy; byte-identical
+  reopen consistency (states + provenance wording); RIR independence from AI (advisory outage),
+  REVIEW-only advisory display, VERIFY never consulted, and a rogue advisory unable to move the
+  disposition; dashboard aggregates recomputed independently; row/record consistency; and the
+  demonstration sequence.
+
+### Changed
+
+- Copy guard (section 33/34): bans the raw machine identifiers `EVIDENCE_STATE`, `RIR_ID`,
+  `POLICY_ID`, `RULE_WEIGHT`, `SOURCE_CONFIDENCE` from presentation code, and the unvalidated
+  claims "clinically safe", "diagnostically correct", "clinical risk score" and "patient safety
+  prediction"; requires the new dashboard/row/pipeline wording.
+- Contract checks: 27/27 — the new row-integrity, overview and demonstration parsers are
+  exercised defensively (garbage degrades to honest empty states, never crashes).
+
+### Verification record
+
+- `dotnet build` 0 warnings / 0 errors; `dotnet test` **131/131**.
+- `npm run build` ok; `npm run lint` 0/0 (36 files); `npm run check:contract` 27/27 + copy guard PASS.
+- API E2E (`scripts/live-verify2.sh`): overview aggregates recomputed independently from
+  per-record RIRs and matching; all 13 row-integrity blocks agree with their full records;
+  demonstration sequence TRUST → REVIEW → VERIFY with derived change lines and no advisory
+  involvement; per-scenario RIRs (trust/review/verify/missing/offline) correct; reopening a
+  record reproduces a byte-identical RIR.
+- Browser E2E (`scripts/browser-qa3.sh`, 30 checks): integrity overview + demonstration moment
+  render with the environment label; enriched rows; the section-28 audit pipeline on a record
+  page; VERIFY page contains zero "Contextual Analysis" text; policy chip expands the policy
+  panel; zero machine identifiers in the primary UI (regex scan of rendered text); zero
+  horizontal overflow at 390px; reduced-motion handling present; no console errors. Legacy
+  suites (`browser-qa2.sh`, `live-verify.sh`) still pass — seed/reset, audit chain valid,
+  historical reopen, Evidence Monitor, Signal Map, Reliability Arc, Command Palette unchanged.
+- Frozen layers absent from the diff: `ReliabilityEngine.cs`, `AssessmentOrchestrator.cs`,
+  AI providers, `AuditChain.cs`, `EfAuditStore.cs`.
+
 ## 1.3.0-decision-causality — Evidence Conflict, Decision Drivers, Integrity Timeline, Policies (25 September 2026)
 
 The second RIR increment (spec sections 10–25): the record now explains **why** the disposition
