@@ -76,6 +76,31 @@ export interface EvidenceInput {
   connectivity?: string;
   localEventId?: string;
   timestampUtc?: string;
+  /** Present only on controlled demonstration records (backend demo marker). */
+  demoKey?: string;
+}
+
+/** /api/demo lifecycle payloads (Development-only endpoints). */
+export interface DemoStatus {
+  enabled: boolean;
+  totalRecords: number;
+  demoRecords: number;
+  expectedRecords: number;
+  seeded: string[];
+}
+
+export interface DemoSeedResult {
+  loaded: number;
+  skipped: number;
+  seededKeys: { key: string; id: string; title: string; status: string; aiConsulted: boolean }[];
+  alreadyPresent: string[];
+  distributionMismatches: { key: string; expected: string; computed: string }[];
+}
+
+export interface DemoResetResult {
+  removed: number;
+  auditRemoved: number;
+  remainingRecords: number;
 }
 
 export const statusName = (s: StatusCode): Status =>

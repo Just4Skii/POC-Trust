@@ -3,6 +3,7 @@ import { AiFallback, ContextualAnalysis } from "../components/ContextualAnalysis
 import { EvidencePanel, WhyPanel } from "../components/Evidence";
 import { StatusBadge } from "../components/StatusBadge";
 import { formatEventTime, isAiUnavailableReason } from "../lib/labels";
+import { scenarioFor } from "../lib/scenarios";
 import { canRelyText, statusName, type Decision, type EvidenceInput } from "../types";
 
 export interface FormState extends EvidenceInput {
@@ -106,11 +107,10 @@ export function NewAssessment({
 }
 
 export function AssessmentDetail({
-  decision, input, demoMode, onRepeat, onCheckDevice, onBack,
+  decision, input, onRepeat, onCheckDevice, onBack,
 }: {
   decision: Decision;
   input: EvidenceInput;
-  demoMode: boolean;
   onRepeat: () => void;
   onCheckDevice: () => void;
   onBack: () => void;
@@ -119,9 +119,15 @@ export function AssessmentDetail({
   const heroBg = finalName === "Trust" ? "bg-[#EAF7F1]" : finalName === "Review" ? "bg-[#FFF7E6]" : "bg-[#FDEEEE]";
   const heroBorder = finalName === "Trust" ? "border-[#167A5A]" : finalName === "Review" ? "border-[#B7791F]" : "border-[#C43D3D]";
   const aiFailed = decision.reasons.some(isAiUnavailableReason);
+  const scenario = scenarioFor(input.demoKey);
 
   return (
-    <article className={`space-y-4 ${demoMode ? "pt-demo" : "pt-fade"}`}>
+    <article className={`space-y-4 ${scenario ? "pt-demo" : "pt-fade"}`}>
+      {scenario && (
+        <p role="note" className="rounded-lg border border-[#0F8B8D]/40 bg-[#EAF7F7] px-4 py-2 text-sm text-[#0B1F3A]">
+          <b>Demonstration scenario — {scenario.story}.</b> {scenario.summary} Synthetic record, clearly labelled.
+        </p>
+      )}
       <section aria-label="Reliability decision" className={`rounded-2xl border-2 ${heroBorder} ${heroBg} p-6 text-center md:p-10`}>
         <p className="text-xs font-semibold uppercase tracking-widest text-[#607087]">Reliability decision</p>
         <div className="mt-2 flex justify-center"><StatusBadge value={decision.finalStatus} size="lg" /></div>

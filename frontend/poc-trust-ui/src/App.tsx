@@ -3,7 +3,7 @@ import { ApiError, api } from "./api/client";
 import { Brand } from "./components/Brand";
 import { normaliseEvidenceInput, toDecision, type StoredAssessment } from "./lib/history";
 import { completeSync, enqueueEvent, readQueue, type QueuedEvent } from "./lib/queue";
-import type { AssessmentSummary, AuditRow, DashboardSummary, Decision, EvidenceInput } from "./types";
+import type { AssessmentSummary, AuditRow, DashboardSummary, Decision, DemoStatus, EvidenceInput } from "./types";
 import { AssessmentDetail, NewAssessment, emptyForm, type FormState } from "./pages/Assessment";
 import { AssessmentsList, AuditTrail } from "./pages/Lists";
 import { DevicesPage, OperatorsPage, QualityPage, SettingsPage } from "./pages/Meta";
@@ -22,28 +22,10 @@ const NAV: { id: Nav; label: string; ready: boolean }[] = [
   { id: "settings", label: "Settings", ready: true },
 ];
 
-function demoInput(kind: string): EvidenceInput {
-  const now = new Date();
-  const iso = (d: Date) => d.toISOString();
-  const addDays = (n: number) => new Date(now.getTime() + n * 864e5);
-  switch (kind) {
-    case "trust":
-      return { result: "Hb 14.2 g/dL", testType: "Hb", deviceId: "DEV-01", qcPassed: true, calibrationDueUtc: iso(addDays(60)), operatorId: "OP-07", operatorCompetent: true, reagentLot: "LOT-GOOD", reagentExpiryUtc: iso(addDays(90)), temperatureC: 22.5, humidityPct: 45, powerInterruption: false, provenance: "site-A/DEV-01/OP-07", connectivity: "online", timestampUtc: iso(now) };
-    case "review":
-      return { result: "Hb 9.1 g/dL", testType: "Hb", deviceId: "DEV-02", qcPassed: true, calibrationDueUtc: iso(addDays(3)), operatorId: "OP-12", operatorCompetent: false, reagentLot: "LOT-44", reagentExpiryUtc: iso(addDays(10)), temperatureC: 24, humidityPct: 55, powerInterruption: true, provenance: "site-B/DEV-02/OP-12", connectivity: "online", timestampUtc: iso(now) };
-    case "missing":
-      return { result: "Hb 11.0 g/dL", testType: "Hb", deviceId: "DEV-04", qcPassed: true, calibrationDueUtc: iso(addDays(30)), operatorId: "", operatorCompetent: true, reagentLot: "", reagentExpiryUtc: iso(addDays(30)), temperatureC: 23, humidityPct: 45, powerInterruption: false, provenance: "", connectivity: "online", timestampUtc: iso(now) };
-    case "offline":
-      return { result: "Malaria RDT positive", testType: "Malaria-RDT", deviceId: "DEV-OFF-1", qcPassed: true, calibrationDueUtc: iso(addDays(30)), operatorId: "OP-09", operatorCompetent: true, reagentLot: "LOT-OFF-7", reagentExpiryUtc: iso(addDays(60)), temperatureC: 25, humidityPct: 50, powerInterruption: false, provenance: "site-mobile/DEV-OFF-1/OP-09", connectivity: "offline", localEventId: "local-demo12", timestampUtc: iso(now) };
-    default:
-      return { result: "CRP 68 mg/L", testType: "CRP", deviceId: "DEV-03", qcPassed: false, calibrationDueUtc: iso(addDays(-9)), operatorId: "OP-03", operatorCompetent: true, reagentLot: "LOT-91", reagentExpiryUtc: iso(addDays(-1)), temperatureC: 31.5, humidityPct: 90, powerInterruption: false, provenance: "site-C/DEV-03/OP-03", connectivity: "online", timestampUtc: iso(now) };
-  }
-}
-
 export default function App() {
   const [nav, setNav] = useState<Nav>("overview");
   const [collapsed, setCollapsed] = useState(false);
-  const [demoMode, setDemoMode] = useState(true);
+  const [demo, setDemo] = useState<DemoStatus | null>(null);
   const [decision, setDecision] = useState<Decision | null>(null);
   const [input, setInput] = useState<EvidenceInput>({});
   const [formKey, setFormKey] = useState(0);
@@ -65,6 +47,8 @@ export default function App() {
     try {
       const [s, a, h] = await Promise.all([api.summary(), api.audit(100), api.assessments(100)]);
       setSummary(s); setAudit(a); setAssessments(h);
+      // Demo lifecycle endpoints exist only in Development; elsewhere this 404s and demo stays null.
+      setDemo(await api.demoStatus().catch(() => null));
       const now = new Date().toISOString();
       localStorage.setItem("poctrust-synced", now);
       setLastSynced(now);
@@ -81,13 +65,30 @@ export default function App() {
     return () => { window.removeEventListener("online", on); window.removeEventListener("offline", off); };
   }, []);
 
-  async function runDemo(kind: string) {
+  async function seedDemo() {
     if (inFlight.current) return;
     inFlight.current = true;
-    setDemoMode(true); setSubmitting(true); setError("");
+    setSubmitting(true); setError("");
     try {
-      const d = await api.demo(kind);
-      setDecision(d); setInput(demoInput(kind));
+      const r = await api.demoSeed();
+      if (r.distributionMismatches.length > 0) {
+        setError("Demonstration seed self-check reported a mismatch — the seed definition, not the engine, needs attention.");
+      }
+      setDecision(null);
+      await refresh();
+      setNav("overview");
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
+    finally { inFlight.current = false; setSubmitting(false); }
+  }
+
+  async function resetDemo() {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setSubmitting(true); setError("");
+    try {
+      await api.demoReset();
+      setDecision(null);
+      await refresh();
       setNav("overview");
     } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
     finally { inFlight.current = false; setSubmitting(false); }
@@ -150,9 +151,11 @@ export default function App() {
     } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
   }
 
+  const demoActive = (demo?.demoRecords ?? 0) > 0;
+
   return (
     <div className="min-h-screen bg-[#F7F9FC] text-[#132238]">
-      {demoMode && (
+      {demoActive && (
         <div role="banner" className="bg-[#0B1F3A] px-4 py-2 text-center text-sm font-semibold text-white">
           DEMONSTRATION MODE — SYNTHETIC DATA ONLY
         </div>
@@ -202,13 +205,13 @@ export default function App() {
             {nav === "overview" && (
               decision ? (
                 <AssessmentDetail
-                  decision={decision} input={input} demoMode={demoMode}
+                  decision={decision} input={input}
                   onRepeat={() => { setPrefill({ ...emptyForm(), ...input } as FormState); setFormKey((k) => k + 1); setNav("new"); }}
                   onCheckDevice={() => setNav("devices")}
                   onBack={() => setNav("assessments")}
                 />
               ) : (
-                <Overview summary={summary} loading={loadingSummary} demoMode={demoMode} submitting={submitting} onDemo={runDemo} onOpen={openAssessment} />
+                <Overview summary={summary} loading={loadingSummary} demo={demo} submitting={submitting} onSeed={seedDemo} onReset={resetDemo} onOpen={openAssessment} />
               )
             )}
             {nav === "new" && <NewAssessment key={formKey} initial={prefill} submitting={submitting} error={error} onSubmit={submit} />}
@@ -217,7 +220,7 @@ export default function App() {
             {nav === "devices" && <DevicesPage />}
             {nav === "operators" && <OperatorsPage />}
             {nav === "qc" && <QualityPage />}
-            {nav === "settings" && <SettingsPage demoMode={demoMode} onDemoMode={setDemoMode} />}
+            {nav === "settings" && <SettingsPage demo={demo} busy={submitting} onSeed={seedDemo} onReset={resetDemo} />}
             {submitting && nav === "overview" && !decision && <div className="skeleton h-48 rounded-xl" aria-label="Loading assessment" />}
           </main>
         </div>

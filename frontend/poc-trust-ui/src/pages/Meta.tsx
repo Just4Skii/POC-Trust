@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
+import { DEMO_SCENARIOS } from "../lib/scenarios";
+import type { DemoStatus } from "../types";
 import { MetaPage } from "./Overview";
 
 function useJson<T>(loader: () => Promise<T>) {
@@ -65,14 +67,54 @@ export function QualityPage() {
   );
 }
 
-export function SettingsPage({ demoMode, onDemoMode }: { demoMode: boolean; onDemoMode: (v: boolean) => void }) {
+export function SettingsPage({
+  demo, busy, onSeed, onReset,
+}: {
+  demo: DemoStatus | null;
+  busy: boolean;
+  onSeed: () => void;
+  onReset: () => void;
+}) {
+  const demoActive = (demo?.demoRecords ?? 0) > 0;
   return (
-    <MetaPage title="Settings" note="Prototype preferences. AI keys are never entered here — backend user-secrets/env only.">
-      <label className="flex min-h-[44px] items-center gap-2 text-sm">
-        <input type="checkbox" checked={demoMode} onChange={(e) => onDemoMode(e.target.checked)} />
-        Demonstration Mode (labels synthetic data)
-      </label>
-      <p className="mt-2 text-xs text-[#607087]">IMPLEMENTED: demo toggle, offline queue (localStorage). FUTURE: roles, retention, production sync.</p>
-    </MetaPage>
+    <div className="space-y-4">
+      <MetaPage title="Demonstration data" note="Controlled synthetic data for evaluation. Every record is computed by the real assessment pipeline, clearly labelled, and removable without touching anything else.">
+        {!demo ? (
+          <p className="text-sm text-[#607087]">Demonstration controls are available in the development environment only.</p>
+        ) : (
+          <>
+            <p className="text-sm text-[#132238]">
+              {demo.demoRecords} of {demo.expectedRecords} scenarios loaded · {demo.totalRecords} records in total.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {demoActive ? (
+                <button onClick={onReset} disabled={busy} className="pt-action rounded-md border border-[#C43D3D]/40 bg-white px-3 py-2 text-sm font-semibold text-[#C43D3D] disabled:opacity-50">
+                  Clear demonstration data
+                </button>
+              ) : (
+                <button onClick={onSeed} disabled={busy} className="pt-action rounded-md bg-[#0B1F3A] px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">
+                  Load demonstration data
+                </button>
+              )}
+            </div>
+            <ul className="mt-4 divide-y divide-[#DCE3EC] text-sm">
+              {DEMO_SCENARIOS.map((s) => {
+                const loaded = demo.seeded.includes(s.key);
+                return (
+                  <li key={s.key} className="py-2">
+                    <span className="font-medium text-[#132238]">{s.story}</span>
+                    <span className="ml-2 text-xs text-[#607087]">expects {s.expected}{s.offline ? " · offline event" : ""} · {loaded ? "loaded" : "not loaded"}</span>
+                    <span className="block text-xs text-[#607087]">{s.summary}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
+      </MetaPage>
+      <MetaPage title="Settings" note="Prototype preferences. AI keys are never entered here — backend user-secrets/env only.">
+        <p className="text-xs text-[#607087]">IMPLEMENTED: demo lifecycle, offline queue (localStorage). FUTURE: roles, retention, production sync.</p>
+      </MetaPage>
+    </div>
   );
 }

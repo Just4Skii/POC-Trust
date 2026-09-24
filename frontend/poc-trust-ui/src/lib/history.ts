@@ -46,6 +46,7 @@ export function normaliseEvidenceInput(raw: unknown): EvidenceInput {
     connectivity: asString(get("connectivity")),
     localEventId: asString(get("localEventId")),
     timestampUtc: asString(get("timestampUtc")),
+    demoKey: asString(get("demoKey")),
   };
 }
 

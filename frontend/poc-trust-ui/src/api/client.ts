@@ -1,4 +1,4 @@
-import type { AssessmentSummary, AuditRow, DashboardSummary, Decision } from "../types";
+import type { AssessmentSummary, AuditRow, DashboardSummary, Decision, DemoResetResult, DemoSeedResult, DemoStatus } from "../types";
 
 /** Surfaces the API's safe error envelope ({"error":"..."}) instead of a bare status code. */
 export class ApiError extends Error {
@@ -33,7 +33,9 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     }).then(json<Decision>),
-  demo: (kind: string) => fetch(`/api/assessments/demo/${kind}`).then(json<Decision>),
+  demoStatus: () => fetch("/api/demo/status").then(json<DemoStatus>),
+  demoSeed: () => fetch("/api/demo/seed", { method: "POST" }).then(json<DemoSeedResult>),
+  demoReset: () => fetch("/api/demo/reset", { method: "POST" }).then(json<DemoResetResult>),
   assessments: (take = 100) => fetch(`/api/assessments?take=${take}`).then(json<AssessmentSummary[]>),
   assessmentDetail: (id: string) =>
     fetch(`/api/assessments/${id}`).then(
