@@ -1,4 +1,5 @@
 import { StatusBadge } from "../components/StatusBadge";
+import { formatEventTime } from "../lib/labels";
 import type { DashboardSummary } from "../types";
 
 export function Overview({
@@ -55,7 +56,7 @@ export function Overview({
                   <button onClick={() => onOpen(r.id)} className="flex w-full items-center gap-3 py-2 text-left hover:bg-[#F7F9FC]">
                     <StatusBadge value={r.finalStatus} size="sm" />
                     <span className="flex-1 truncate text-sm">{r.result} · {r.deviceId}</span>
-                    <span className="text-xs text-[#607087]">{new Date(r.decidedAtUtc).toLocaleString()}</span>
+                    <span className="text-xs text-[#607087]">{formatEventTime(r.decidedAtUtc)}</span>
                   </button>
                 </li>
               ))}

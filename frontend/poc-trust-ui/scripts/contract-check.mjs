@@ -142,8 +142,8 @@ check("history: PascalCase record renders identical evidence to camelCase record
   const byKey = Object.fromEntries(
     evidenceItems(fromLegacy, ["OPERATOR_NOT_COMPETENT", "POWER_INTERRUPTION"]).map((i) => [i.key, i]),
   );
-  assert.equal(byKey.op.value, "OP-12 · not competent");
-  assert.notEqual(byKey.cal.value, "—");
+  assert.equal(byKey.op.value, "OP-12 · competency not current");
+  assert.ok(byKey.cal.value.startsWith("Due "), `calibration date renders, got: ${byKey.cal.value}`);
   assert.equal(byKey.env.value, "24°C · 55%");
 });
 

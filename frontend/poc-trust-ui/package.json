@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "check:contract": "node scripts/contract-check.mjs",
+    "check:contract": "node scripts/contract-check.mjs && node scripts/copy-guard.mjs",
+    "check:copy": "node scripts/copy-guard.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

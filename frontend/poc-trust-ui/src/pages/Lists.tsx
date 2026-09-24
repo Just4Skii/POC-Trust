@@ -1,5 +1,6 @@
 import { AuditTimeline } from "../components/AuditTimeline";
 import { StatusBadge } from "../components/StatusBadge";
+import { formatEventTime } from "../lib/labels";
 import type { AssessmentSummary, AuditRow } from "../types";
 
 export function AssessmentsList({
@@ -22,9 +23,9 @@ export function AssessmentsList({
                 <StatusBadge value={a.finalStatus} size="sm" />
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-medium">{a.result} · {a.testType ?? ""}</span>
-                  <span className="block truncate text-xs text-[#607087]">{a.deviceId} · {a.operatorId ?? ""} · {a.connectivity ?? "online"} · AI {a.aiConsulted ? "yes" : "no"}</span>
+                  <span className="block truncate text-xs text-[#607087]">{a.deviceId} · {a.operatorId ?? "operator not recorded"} · {a.connectivity === "offline" ? "offline event" : "online"} · Contextual Analysis {a.aiConsulted ? "consulted" : "not consulted"}</span>
                 </span>
-                <span className="text-xs text-[#607087]">{new Date(a.decidedAtUtc).toLocaleString()}</span>
+                <span className="text-xs text-[#607087]">{formatEventTime(a.decidedAtUtc)}</span>
               </button>
             </li>
           ))}

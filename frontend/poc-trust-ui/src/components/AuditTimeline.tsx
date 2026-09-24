@@ -1,4 +1,6 @@
 import { StatusBadge } from "./StatusBadge";
+import { TechnicalDetails } from "./TechnicalDetails";
+import { formatEventTime } from "../lib/labels";
 import { statusName, type AuditRow } from "../types";
 
 export function AuditTimeline({ rows }: { rows: AuditRow[] }) {
@@ -10,15 +12,17 @@ export function AuditTimeline({ rows }: { rows: AuditRow[] }) {
           <span aria-hidden="true" className="absolute -left-[7px] mt-1 h-3 w-3 rounded-full bg-[#1E5AA8]" />
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge value={a.finalStatus} size="sm" />
-            <span className="text-xs text-[#607087]">{new Date(a.timestampUtc).toLocaleString()}</span>
-            <span className="text-xs text-[#607087]">Identifiers as recorded · record {a.assessmentId.slice(0, 8)} · AI {a.aiConsulted ? "consulted" : "not consulted"}</span>
+            <span className="text-xs text-[#607087]">{formatEventTime(a.timestampUtc)}</span>
+            <span className="text-xs text-[#607087]">
+              Contextual Analysis {a.aiConsulted ? "consulted" : "not consulted"}
+            </span>
           </div>
           <p className="mt-1 text-sm text-[#132238]">{a.action}</p>
-          {a.aiSummary && <p className="text-xs text-[#607087]">AI: {a.aiSummary.slice(0, 180)}</p>}
-          <details className="text-xs text-[#607087]">
-            <summary className="cursor-pointer underline">Provenance detail</summary>
-            <p>Assessment {a.assessmentId} · audit {a.id} · initial {statusName(a.initialStatus)} → final {statusName(a.finalStatus)}</p>
-          </details>
+          {a.aiSummary && <p className="text-xs text-[#607087]">Advisory note: {a.aiSummary.slice(0, 180)}</p>}
+          <TechnicalDetails title="Provenance detail">
+            <p>Assessment {a.assessmentId} · audit entry {a.id}</p>
+            <p>Initial {statusName(a.initialStatus)} → final {statusName(a.finalStatus)} · recorded {a.timestampUtc}</p>
+          </TechnicalDetails>
         </li>
       ))}
     </ol>

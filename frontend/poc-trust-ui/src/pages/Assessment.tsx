@@ -2,6 +2,7 @@ import { useState } from "react";
 import { AiFallback, ContextualAnalysis } from "../components/ContextualAnalysis";
 import { EvidencePanel, WhyPanel } from "../components/Evidence";
 import { StatusBadge } from "../components/StatusBadge";
+import { formatEventTime, isAiUnavailableReason } from "../lib/labels";
 import { canRelyText, statusName, type Decision, type EvidenceInput } from "../types";
 
 export interface FormState extends EvidenceInput {
@@ -117,7 +118,7 @@ export function AssessmentDetail({
   const finalName = statusName(decision.finalStatus);
   const heroBg = finalName === "Trust" ? "bg-[#EAF7F1]" : finalName === "Review" ? "bg-[#FFF7E6]" : "bg-[#FDEEEE]";
   const heroBorder = finalName === "Trust" ? "border-[#167A5A]" : finalName === "Review" ? "border-[#B7791F]" : "border-[#C43D3D]";
-  const aiFailed = decision.reasons.some((r) => r.startsWith("AI unavailable"));
+  const aiFailed = decision.reasons.some(isAiUnavailableReason);
 
   return (
     <article className={`space-y-4 ${demoMode ? "pt-demo" : "pt-fade"}`}>
@@ -126,7 +127,7 @@ export function AssessmentDetail({
         <div className="mt-2 flex justify-center"><StatusBadge value={decision.finalStatus} size="lg" /></div>
         <p className="mt-3 text-lg font-semibold text-[#132238]">{canRelyText(decision.finalStatus)}</p>
         {finalName === "Verify" && <p className="mt-1 font-bold text-[#C43D3D]">Do not rely on this result alone.</p>}
-        <p className="mt-2 text-sm text-[#607087]">Result: <b className="text-[#132238]">{input.result ?? "—"}</b> · Initial {statusName(decision.initialStatus)} · Audit {decision.id.slice(0, 8)}</p>
+        <p className="mt-2 text-sm text-[#607087]">Result: <b className="text-[#132238]">{input.result ?? "—"}</b> · Initial {statusName(decision.initialStatus)} · {formatEventTime(decision.decidedAtUtc)}</p>
         <p className="mt-3 rounded-lg bg-white/70 px-4 py-2 text-sm font-medium text-[#132238]">Next action: {decision.action}</p>
         <div className="mt-4 flex flex-wrap justify-center gap-2">
           <button onClick={() => document.getElementById("pt-evidence")?.scrollIntoView({ behavior: "smooth" })} className="pt-action rounded-md border border-[#0B1F3A] bg-white px-4 py-2 text-sm font-semibold">Review Evidence</button>
