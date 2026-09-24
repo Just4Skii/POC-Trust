@@ -1,0 +1,8 @@
+# Reliability Policy — IMPLEMENTED
+
+Severity VERIFY > REVIEW > TRUST.
+- QC_FAILED → VERIFY; CAL_EXPIRED → VERIFY; REAGENT_EXPIRED → VERIFY
+- OPERATOR_NOT_COMPETENT → REVIEW; ENV_TEMP/HUMIDITY → REVIEW; POWER_INTERRUPTION → REVIEW
+- PROVENANCE_INCOMPLETE → REVIEW; MULTI_CONTEXT → REVIEW
+Hard invariant (tested): `EnforceFinalStatus(VERIFY, any AI) == VERIFY`.
+Actions: TRUST → routine workflow; REVIEW → hold for review; VERIFY → do not rely, verify/repeat.

@@ -1,0 +1,57 @@
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
+using Microsoft.Extensions.Configuration;
+using POCTrust.Core.Entities;
+using POCTrust.Core.Interfaces;
+
+namespace POCTrust.Infrastructure.AI;
+
+public sealed class OpenAiCompatibleProvider(HttpClient http, IConfiguration config) : IAIProvider
+{
+    public async Task<AIAssessment> AssessAsync(DiagnosticContext c, CancellationToken ct = default)
+    {
+        var apiKey = config["AI:ApiKey"];
+        var endpoint = config["AI:Endpoint"] ?? "https://api.openai.com/v1/chat/completions";
+        var model = config["AI:Model"] ?? "gpt-4o-mini";
+
+        if (string.IsNullOrWhiteSpace(apiKey))
+            return await new StubAiProvider().AssessAsync(c, ct);
+
+        var prompt = $"""
+            You are a point-of-care testing reliability assistant. Do NOT diagnose, predict disease, or recommend treatment.
+            Assess contextual reliability only. Evidence:
+            Test={c.TestType} Result={c.Result}, Device={c.DeviceId} QCpassed={c.QcPassed},
+            CalibrationDue={c.CalibrationDueUtc:O}, Operator={c.OperatorId} competent={c.OperatorCompetent},
+            Reagent={c.ReagentLot} expiry={c.ReagentExpiryUtc:O}, Temp={c.TemperatureC}°C Humidity={c.HumidityPct}% PowerInterrupt={c.PowerInterruption},
+            Connectivity={c.Connectivity} Time={c.TimestampUtc:O}.
+            Reply in 2-3 sentences, reliability only. Do NOT output TRUST/REVIEW/VERIFY as your decision.
+            """;
+
+        using var req = new HttpRequestMessage(HttpMethod.Post, endpoint);
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+        req.Content = new StringContent(JsonSerializer.Serialize(new
+        {
+            model,
+            messages = new[] { new { role = "user", content = prompt } },
+            max_tokens = 220
+        }), Encoding.UTF8, "application/json");
+
+        using var res = await http.SendAsync(req, ct);
+        res.EnsureSuccessStatusCode();
+        var json = await res.Content.ReadAsStringAsync(ct);
+        string text;
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            text = doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString() ?? "";
+        }
+        catch (Exception ex) when (ex is JsonException or KeyNotFoundException or IndexOutOfRangeException)
+        {
+            throw new InvalidOperationException("Malformed AI provider response.", ex);
+        }
+        if (string.IsNullOrWhiteSpace(text)) throw new InvalidOperationException("Empty AI provider response.");
+
+        return new AIAssessment(text.Trim(), [], "See summary; deterministic rules remain authoritative.", 0.7, model);
+    }
+}

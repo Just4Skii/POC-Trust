@@ -1,0 +1,17 @@
+{
+  "result": "Hb 11.0 g/dL",
+  "deviceId": "DEV-04",
+  "qcPassed": true,
+  "calibrationDueUtc": "2026-10-24T10:00:00Z",
+  "operatorId": "",
+  "operatorCompetent": true,
+  "reagentLot": "",
+  "reagentExpiryUtc": "2026-10-24T10:00:00Z",
+  "temperatureC": 23.0,
+  "timestampUtc": "2026-09-24T10:00:00Z",
+  "provenance": "",
+  "testType": "Hb",
+  "humidityPct": 45,
+  "powerInterruption": false,
+  "connectivity": "online"
+}

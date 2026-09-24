@@ -1,0 +1,18 @@
+{
+  "result": "Malaria RDT positive",
+  "deviceId": "DEV-OFF-1",
+  "qcPassed": true,
+  "calibrationDueUtc": "2026-10-24T10:00:00Z",
+  "operatorId": "OP-09",
+  "operatorCompetent": true,
+  "reagentLot": "LOT-OFF-7",
+  "reagentExpiryUtc": "2026-11-24T10:00:00Z",
+  "temperatureC": 25.0,
+  "timestampUtc": "2026-09-24T10:00:00Z",
+  "provenance": "site-mobile/DEV-OFF-1/OP-09",
+  "testType": "Malaria-RDT",
+  "humidityPct": 50,
+  "powerInterruption": false,
+  "connectivity": "offline",
+  "localEventId": "local-abc123"
+}

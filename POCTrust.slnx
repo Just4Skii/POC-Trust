@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/POCTrust.Api/POCTrust.Api.csproj" />
+    <Project Path="src/POCTrust.Core/POCTrust.Core.csproj" />
+    <Project Path="src/POCTrust.Infrastructure/POCTrust.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/POCTrust.Tests/POCTrust.Tests.csproj" />
+  </Folder>
+</Solution>
