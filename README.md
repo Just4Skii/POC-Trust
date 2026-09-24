@@ -1,56 +1,142 @@
-# POC Trust — Point-of-Care Diagnostic Integrity Layer (Prototype)
+# POC Trust — Point-of-Care Diagnostic Integrity Layer
 
-IMPLEMENTED: deterministic TRUST/REVIEW/VERIFY engine with VERIFY-lock; assessment orchestrator
-(validate → rules → conditional AI → enforce → action → persist → audit); pluggable AI
-(stub + OpenAI-compatible, advisory only); EF Core SQLite assessments + append-only audit;
-REST API (evaluate, demos, history, detail, dashboard, devices, operators, QC, audit) with a safe
-error contract; platform UI (Overview, New Assessment, Assessments, Audit Trail, Devices, Operators,
-Quality Controls, Settings) with locked navy/teal visual system; 51 xUnit tests + 11 frontend
-contract checks; synthetic demos.
+A deterministic integrity decision — **TRUST / REVIEW / VERIFY** — between every point-of-care
+result and the clinical workflow, with evidence, reasons, an operational action and an
+append-only, tamper-evident audit trail for every decision.
 
-IMPLEMENTED (QA pass): invalid evidence returns `400 {"error":"..."}` (never a stack trace or file
-path); unknown demo scenarios return 400 instead of silently evaluating VERIFY; persisted evidence is
-canonical camelCase and historical records are read case-insensitively; the UI never invents an AI
-confidence or model name for stored assessments; the pending queue removes only synchronised entries.
+The core safety property is unchanged: **VERIFY can never be downgraded** — not by AI, not by
+configuration. AI (when present) is advisory explanation only; deterministic rules are
+authoritative.
 
-SIMULATED: external AI content via stub when no key is set; offline queue is localStorage
-prototype metadata (no production sync engine, and connectivity is NOT a reliability rule).
-FUTURE: real LIS/NHLS integration, authN/Z, cryptographic audit sealing, regulatory validation.
+---
+
+## One-command run (demonstration appliance)
+
+```bash
+cp .env.example .env        # optional: add AI key, auth mode, port
+docker compose up --build
+# → http://localhost:8080  (UI + API + seeded demonstration data from one origin)
+```
+
+What the appliance gives you on first start:
+
+- the UI served **by the API itself** (single origin, single port, no CORS in play);
+- **auto-seeded** curated demonstration set (10 synthetic scenarios: 4 TRUST · 4 REVIEW ·
+  2 VERIFY, one created offline) — only when the database is empty, only through the real
+  assessment pipeline, always clearly labelled in the UI;
+- a `/health` endpoint with a compose healthcheck;
+- audit records sealed into a SHA-256 hash chain (`GET /api/audit/verify`).
+
+Without Docker:
+
+```bash
+./run.sh              # dev: API :5183 + Vite :5173
+./run.sh --single     # packaged: build UI once, API serves UI+API on :5183
+```
+
+## Configuration (env / appsettings / user-secrets)
+
+| Setting | Env var (compose → .env) | Default | Purpose |
+|---|---|---|---|
+| AI key (server-side only) | `AI_API_KEY` → `AI__ApiKey` | empty | Empty ⇒ honest stub advisory; deterministic result never depends on it |
+| AI endpoint / model | `AI_ENDPOINT` / `AI_MODEL` | Gemini OpenAI-compatible / `gemini-2.0-flash` | Any OpenAI-compatible chat-completions endpoint |
+| Auth stub | `AUTH_MODE` / `AUTH_API_KEY` | `none` | `apikey` ⇒ POST/PUT/PATCH/DELETE require `X-Api-Key`; reads stay open |
+| Auto-seed | `DEMO_AUTOSEED` → `Demo__AutoSeed` | false (true in Development + appliance) | First-run demonstration load into an EMPTY store only |
+| Rate limit | `RATE_LIMIT_PERMITS` / `RATE_LIMIT_WINDOW` | 100 / 10 s | Per-IP fixed window; 429 uses the safe error envelope |
+| Port | `POC_TRUST_PORT` | 8080 | Appliance port mapping |
+
+AI keys never reach the client: environment, user-secrets or `.env` on the server only. The
+Settings page refuses key entry by design.
+
+## Productized hardening (this release)
+
+1. **Idempotent offline sync** — `POST /api/assessments/evaluate` accepts an optional
+   `Idempotency-Key` header. The UI's pending queue uses its stable `_queueId` as the key, so a
+   retried sync replays the ORIGINAL decision (header `Idempotent-Replay: true`) instead of
+   creating a duplicate assessment. Closes the known "no server-side idempotency" gap.
+2. **Tamper-evident audit sealing** — every audit row is hashed (SHA-256) over its full content
+   plus the previous row's hash; `GET /api/audit/verify` recomputes the chain and identifies the
+   first broken entry. Rows written before sealing are reported as an unsealed legacy prefix.
+   Sealing proves the trail has not been altered; it does not attest that the underlying event
+   occurred (honest boundary).
+3. **Rate limiting** — per-IP fixed window over all endpoints, configurable, 429 answered with
+   the same safe error envelope as every other rejection.
+4. **Optional API-key gate** — a transport-level auth STUB for protected deployments
+   (`Auth:Mode=apikey`), constant-time comparison, safe 401 envelope. Not an identity system:
+   operator identifiers remain recorded-as-claimed.
+5. **Health + operational status** — `GET /health` (compose healthcheck) and
+   `GET /api/system/status` (AI provider state without any secret material, database, rate
+   limit, audit sealing, environment).
+6. **Single-container packaging** — multi-stage Docker build; the API serves the built UI when
+   present in `wwwroot` (SPA fallback keeps the JSON 404 contract for unknown /api routes).
+7. **Startup demonstration seeding** — optional, idempotent, empty-store-only, real-pipeline,
+   logged; a failed demonstration load never blocks startup.
+8. **Presentation-grade restyle** — self-hosted variable fonts (Sora display + Inter body +
+   JetBrains Mono, bundled at build time so the demo stays offline-safe), refined tokens,
+   sidebar/brand/CTA upgrades; all status colours and interactions preserved.
+
+## Verification record
+
+| Gate | Result |
+|---|---|
+| `dotnet build` | 0 warnings, 0 errors |
+| `dotnet test` | **79 / 79 passed** (58 prior + 21 new hardening tests) |
+| `npm run build` | OK (fonts bundled offline) |
+| `npm run lint` (oxlint) | 0 warnings, 0 errors |
+| `npm run check:contract` | **15 / 15 passed** + copy guard clean |
+| Live smoke: auto-seed, `/health`, `/api/system/status`, `/api/audit/verify`, idempotent replay, tamper detection, rate limit burst | all verified |
+
+## Architecture
+
+```
+Diagnostic Event → Evidence → ReliabilityEngine → Initial status
+  → NeedsAi? → IAIProvider (advisory) → EnforceFinalStatus (VERIFY-locked)
+  → Action → SQLite (Assessments + sealed append-only Audit) → API response
+```
+
+- Backend: ASP.NET Core (.NET 10), EF Core/SQLite, `AssessmentOrchestrator` pipeline.
+- AI: `OpenAiCompatibleProvider`, `StubAiProvider` fallback — the deterministic result never
+  depends on the AI call (12 s timeout, fragment rejection, status claims ignored).
+- Frontend: React 19 + Vite, locked navy/teal system, relative `/api` calls (Vite dev proxy → :5183).
+- Solution layout: `src/POCTrust.{Core,Infrastructure,Api}`, `tests/POCTrust.Tests`,
+  `frontend/poc-trust-ui`.
+
+API: `POST /api/assessments/evaluate` (optional `Idempotency-Key`), `GET /api/assessments/demo/{trust,review,verify,missing,offline}`,
+`GET /api/assessments`, `GET /api/assessments/{id}`, `GET /api/dashboard/summary`,
+`GET /api/devices`, `GET /api/operators`, `GET /api/quality-controls`,
+`GET /api/assessments/audit`, `GET /api/audit/{assessmentId}`, `GET /api/audit/verify`,
+`GET /api/demo/{status,seed,reset}` (Development-guarded), `GET /api/system/status`, `GET /health`.
+
+Error contract: rejected requests return `400 {"error":"<message>","fields":[...]}` (or 401/429
+from the guards) with no internal detail. An unknown `{kind}` on the demo route and a missing or
+blank `result` are client errors (400).
+
+## Competition demo (synthetic data only)
+
+1. Open Overview — demonstration data is already loaded (or press Load demonstration data)
+2. Run TRUST → decision → evidence
+3. Run REVIEW → Contextual Analysis
+4. Run VERIFY → safety interruption, no AI at all
+5. Open Audit Trail → trace evidence → rules → decision → action
+6. Finish with `GET /api/audit/verify` — the sealed chain reports valid
+
+Simulated: external AI content via stub when no key is set; the offline queue remains a
+localStorage prototype (transport metadata, not a reliability rule; connectivity is NOT a
+reliability input). FUTURE: real LIS/NHLS integration, full authN/Z, key rotation, regulatory
+validation.
 
 No clinical validation, regulatory approval, hospital deployment, live NHLS integration,
 real patient outcomes, or medical certification is claimed.
 
-## Run
-```
-dotnet run --project src/POCTrust.Api        # http://localhost:5183
-cd frontend/poc-trust-ui; npm install; npm run dev   # http://localhost:5173
-dotnet test POCTrust.slnx
-npm --prefix frontend/poc-trust-ui run build
-npm --prefix frontend/poc-trust-ui run lint
-npm --prefix frontend/poc-trust-ui run check:contract
-```
-API: `POST /api/assessments/evaluate`, `GET /api/assessments/demo/{trust,review,verify,missing,offline}`,
-`GET /api/assessments`, `GET /api/assessments/{id}`, `GET /api/dashboard/summary`,
-`GET /api/devices`, `GET /api/operators`, `GET /api/quality-controls`,
-`GET /api/assessments/audit`, `GET /api/audit/{assessmentId}`
-
-Error contract: rejected requests return `400 {"error":"<message>","fields":[...]}` with no internal
-detail. An unknown `{kind}` on the demo route and a missing/blank `result` are client errors (400).
-
-Operator identifiers are recorded as claimed — there is no authentication in this prototype.
-
-## Competition demo (synthetic data only)
-1. Open Overview 2. Demonstration Mode on 3. Run TRUST → decision → evidence
-4. Run REVIEW → Contextual Analysis 5. Run VERIFY → safety interruption
-6. Open Audit Trail → trace evidence → rules → decision → action 7. Run OFFLINE scenario
-
 ## AI key (backend only, never commit)
-```
+
+```bash
 dotnet user-secrets --project src/POCTrust.Api set "AI:ApiKey" "<key>"
 # Gemini's OpenAI-compatible endpoint (the key alone is not enough):
 dotnet user-secrets --project src/POCTrust.Api set "AI:Endpoint" "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
 dotnet user-secrets --project src/POCTrust.Api set "AI:Model" "gemini-2.0-flash"
 ```
-With no usable provider the deterministic result is still returned and Contextual Analysis simply
-stays hidden.
 
+With no usable provider the deterministic result is still returned and Contextual Analysis
+simply stays hidden. See `docs/productization.md` for the full hardening notes and honest
+limitations, and `docs/evidence-pack.md` for the competition evidence record.

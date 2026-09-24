@@ -2,7 +2,13 @@ export function Brand({ collapsed = false }: { collapsed?: boolean }) {
   return (
     <div className="flex items-center gap-2.5" aria-label="POC Trust home">
       <svg width="34" height="34" viewBox="0 0 34 34" role="img" aria-label="POC Trust shield logo">
-        <path d="M17 2 29 7v9c0 7.5-5.1 12.3-12 16C10.1 28.3 5 23.5 5 16V7L17 2z" fill="#0B1F3A" />
+        <defs>
+          <linearGradient id="pt-shield-field" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#0B1F3A" />
+            <stop offset="1" stopColor="#12315C" />
+          </linearGradient>
+        </defs>
+        <path d="M17 2 29 7v9c0 7.5-5.1 12.3-12 16C10.1 28.3 5 23.5 5 16V7L17 2z" fill="url(#pt-shield-field)" />
         <path d="M17 5.2 26 9v7c0 6-4.1 10-9 12.9C12.1 26 8 22 8 16V9l9-3.8z" fill="none" stroke="#0F8B8D" strokeWidth="1.6" />
         <circle cx="13" cy="15" r="2" fill="#FFFFFF" />
         <circle cx="21" cy="13" r="2" fill="#FFFFFF" />
@@ -11,7 +17,7 @@ export function Brand({ collapsed = false }: { collapsed?: boolean }) {
       </svg>
       {!collapsed && (
         <div className="leading-tight">
-          <div className="font-bold text-[15px] tracking-tight text-white">POC Trust</div>
+          <div className="pt-display font-bold text-[15px] tracking-tight text-white">POC Trust</div>
           <div className="text-[11px] text-slate-300">Diagnostic Integrity Layer</div>
         </div>
       )}

@@ -1,0 +1,12 @@
+.git
+.github
+frontend/poc-trust-ui/node_modules
+frontend/poc-trust-ui/dist
+**/bin
+**/obj
+*.db
+*.db-shm
+*.db-wal
+docs/evidence
+*.md
+.env
