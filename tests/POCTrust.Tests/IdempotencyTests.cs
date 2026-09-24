@@ -32,7 +32,7 @@ public sealed class IdempotencyTests
     {
         var db = InMemory();
         var orchestrator = new AssessmentOrchestrator(new ReliabilityEngine(), new StubAiProvider(), new EfAuditStore(db));
-        var controller = new AssessmentsController(orchestrator, db);
+        var controller = new AssessmentsController(orchestrator, db, new TestHostEnvironment());
         var http = new DefaultHttpContext();
         controller.ControllerContext = new ControllerContext { HttpContext = http };
         return (controller, db, http);

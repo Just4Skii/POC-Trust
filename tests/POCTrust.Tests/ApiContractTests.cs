@@ -27,7 +27,7 @@ public sealed class ApiContractTests
     {
         var db = InMemory();
         var orchestrator = new AssessmentOrchestrator(new ReliabilityEngine(), new StubAiProvider(), new EfAuditStore(db));
-        return (new AssessmentsController(orchestrator, db), db);
+        return (new AssessmentsController(orchestrator, db, new TestHostEnvironment()), db);
     }
 
     private static DiagnosticContext Valid(DateTimeOffset now) => new(
