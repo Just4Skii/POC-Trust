@@ -29,18 +29,94 @@ public sealed class PlatformController(PocTrustDbContext db, IReliabilityEngine 
             .Take(take)
             .ToList();
 
+    private static DiagnosticContext? TryParseInput(string json)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<DiagnosticContext>(
+                string.IsNullOrWhiteSpace(json) ? "{}" : json, PersistedJson);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static IntegrityAuditReference AuditReferenceFor(int total, int sealedCount) =>
+        new(total, sealedCount, "sha256-chain",
+            total > 0 && sealedCount == total ? "Sealed audit record available" : "Assessment record available",
+            "Counts reference the append-only audit trail for this assessment; sealing makes the trail tamper-evident.");
+
+    /// <summary>
+    /// Compact integrity fields for one history-list row (spec section 27), derived by the SAME
+    /// projector the full record endpoint uses — never a parallel derivation, so a row can never
+    /// disagree with the record it links to. The engine is used only for the gated causality
+    /// re-derivation; the stored decision itself is never re-decided.
+    /// </summary>
+    private static object? RowIntegrity(
+        AssessmentRecord a, DiagnosticContext input, string[] rules, string[] reasons,
+        IntegrityAuditReference auditRef, IReliabilityEngine engine)
+    {
+        try
+        {
+            var snapshot = new IntegrityDecisionSnapshot(
+                a.Id, input, a.FinalStatus, rules, reasons,
+                a.Action, a.AiConsulted, a.AiSummary, a.DecidedAtUtc, auditRef);
+            var record = ResultIntegrityProjector.Project(snapshot, engine);
+            var primary = record.Causality is { Verified: true, PrimaryDrivers.Count: > 0 } c
+                ? c.PrimaryDrivers[0]
+                : null;
+            return new
+            {
+                coverageAvailable = record.EvidenceQuality.Coverage.RequiredAvailable,
+                coverageRequired = record.EvidenceQuality.Coverage.RequiredTotal,
+                concerns = IntegrityMetrics.ConcernCount(record),
+                agingCount = record.EvidenceQuality.AgingCount,
+                expiredCount = record.EvidenceQuality.ExpiredCount,
+                failedCount = record.Domains.Count(d => d.State == ResultIntegrityProjector.States.Failed),
+                conflictCount = record.EvidenceQuality.ConflictCount,
+                primaryDriverLabel = primary?.DomainLabel,
+                primaryDriverState = primary?.EvidenceState,
+                primaryDriverStatement = primary?.Statement ?? record.DecisionDrivers.FirstOrDefault(),
+                policy = record.Policy.Name,
+                auditEntries = auditRef.Entries,
+                auditSealed = auditRef.SealedEntries,
+                auditAvailable = auditRef.Entries > 0,
+            };
+        }
+        catch
+        {
+            // A row whose stored payload cannot be projected keeps rendering WITHOUT integrity
+            // fields — it never renders invented ones.
+            return null;
+        }
+    }
+
     [HttpGet("assessments")]
     public async Task<ActionResult> History([FromQuery] int take = 100, CancellationToken ct = default)
     {
         take = Math.Clamp(take, 1, 500);
         var rows = await db.Assessments.AsNoTracking().ToListAsync(ct);
-        return Ok(Sorted(rows, take).Select(a => new
+        var audits = await db.Audit.AsNoTracking().ToListAsync(ct);
+        var auditCounts = audits.GroupBy(x => x.AssessmentId)
+            .ToDictionary(g => g.Key, g => (Total: g.Count(), Sealed: g.Count(x => !string.IsNullOrEmpty(x.Hash))));
+        return Ok(Sorted(rows, take).Select(a =>
         {
-            a.Id, a.Result, a.DeviceId, a.Provenance, a.InitialStatus, a.FinalStatus,
-            a.AiConsulted, a.Action, a.DecidedAtUtc, a.TimestampUtc,
-            TestType = TryGet(a.InputJson, "TestType"),
-            OperatorId = TryGet(a.InputJson, "OperatorId"),
-            Connectivity = TryGet(a.InputJson, "Connectivity") ?? "online",
+            var counts = auditCounts.TryGetValue(a.Id, out var c) ? c : (Total: 0, Sealed: 0);
+            var input = TryParseInput(a.InputJson);
+            var integrity = input is null
+                ? null
+                : RowIntegrity(a, input, ParseStringList(a.RuleIdsJson), ParseStringList(a.ReasonsJson),
+                    AuditReferenceFor(counts.Total, counts.Sealed), engine);
+            return new
+            {
+                a.Id, a.Result, a.DeviceId, a.Provenance, a.InitialStatus, a.FinalStatus,
+                a.AiConsulted, a.Action, a.DecidedAtUtc, a.TimestampUtc,
+                TestType = TryGet(a.InputJson, "TestType"),
+                OperatorId = TryGet(a.InputJson, "OperatorId"),
+                Connectivity = TryGet(a.InputJson, "Connectivity") ?? "online",
+                integrity,
+            };
         }));
     }
 
@@ -151,6 +227,29 @@ public sealed class PlatformController(PocTrustDbContext db, IReliabilityEngine 
         var assessments = await db.Assessments.AsNoTracking().ToListAsync(ct);
         var audits = await db.Audit.AsNoTracking().ToListAsync(ct);
         var ordered = assessments.OrderByDescending(a => a.DecidedAtUtc).ToList();
+
+        // Integrity overview (spec section 26): aggregates over the SAME projection the detail
+        // records use, computed from the stored records at request time — never preset, never
+        // sampled. No engine is needed here: coverage/concern/aging/conflict counts are pure
+        // projections of stored data, and causality roles are intentionally not asserted here.
+        var auditCounts = audits.GroupBy(x => x.AssessmentId)
+            .ToDictionary(g => g.Key, g => (Total: g.Count(), Sealed: g.Count(x => !string.IsNullOrEmpty(x.Hash))));
+        var projected = new List<ResultIntegrityRecord>(ordered.Count);
+        foreach (var a in ordered)
+        {
+            var input = TryParseInput(a.InputJson);
+            if (input is null) continue;
+            var counts = auditCounts.TryGetValue(a.Id, out var c) ? c : (Total: 0, Sealed: 0);
+            var snapshot = new IntegrityDecisionSnapshot(
+                a.Id, input, a.FinalStatus, ParseStringList(a.RuleIdsJson), ParseStringList(a.ReasonsJson),
+                a.Action, a.AiConsulted, a.AiSummary, a.DecidedAtUtc, AuditReferenceFor(counts.Total, counts.Sealed));
+            projected.Add(ResultIntegrityProjector.Project(snapshot));
+        }
+        var covered = projected.Where(r => r.EvidenceQuality.Coverage.RequiredTotal > 0).ToList();
+        var coveragePercent = covered.Count == 0
+            ? 0
+            : (int)Math.Round(covered.Average(IntegrityMetrics.CoverageRatio) * 100, MidpointRounding.AwayFromZero);
+
         return Ok(new
         {
             counts = new
@@ -164,7 +263,70 @@ public sealed class PlatformController(PocTrustDbContext db, IReliabilityEngine 
             aiConsultedCount = ordered.Count(a => a.AiConsulted),
             recent = ordered.Take(8).Select(a => new { a.Id, a.Result, a.DeviceId, a.FinalStatus, a.DecidedAtUtc }),
             recentAudit = audits.OrderByDescending(a => a.TimestampUtc).ThenByDescending(a => a.Id).Take(8).ToList(),
+            integrity = new
+            {
+                assessments = projected.Count,
+                coveragePercent,
+                coverageStatement = projected.Count == 0 ? "No assessments recorded yet" : $"{coveragePercent}% complete",
+                assessmentsWithConcerns = projected.Count(IntegrityMetrics.HasConcerns),
+                conflicts = projected.Sum(r => r.EvidenceQuality.ConflictCount),
+                assessmentsWithAging = projected.Count(r => r.EvidenceQuality.AgingCount > 0),
+                note = "Calculated from the stored assessment records at request time — never preset. Under demonstration mode these records are synthetic.",
+            },
             source = "real persisted assessments; empty on fresh install — use Demonstration Mode",
+        });
+    }
+
+    /// <summary>
+    /// The demonstration moment (spec section 30): the stored demonstration decision sequence —
+    /// one result becoming TRUST, then REVIEW, then VERIFY as the evidence quality changes — with
+    /// the reason for each change derived from the STORED findings (the same derivation the
+    /// integrity timeline uses). Entirely deterministic; the advisory AI plays no part.
+    /// </summary>
+    [HttpGet("dashboard/demonstration")]
+    public async Task<ActionResult> Demonstration(CancellationToken ct = default)
+    {
+        var rows = await db.Assessments.AsNoTracking()
+            .Where(a => a.InputJson.Contains(HistoryFamilyMarker))
+            .ToListAsync(ct);
+        var ordered = rows
+            .Select(a => new
+            {
+                a.Id, a.Result, a.FinalStatus, a.AiConsulted, a.DecidedAtUtc,
+                Input = TryParseInput(a.InputJson),
+                Rules = ParseStringList(a.RuleIdsJson),
+                Reasons = ParseStringList(a.ReasonsJson),
+            })
+            .Where(x => x.Input is not null)
+            .OrderBy(x => x.DecidedAtUtc).ThenBy(x => x.Id)
+            .ToList();
+
+        var steps = new List<object>();
+        IntegrityHistoryPoint? previous = null;
+        foreach (var x in ordered)
+        {
+            var point = new IntegrityHistoryPoint(x.Id, x.DecidedAtUtc, x.FinalStatus, x.Rules, x.Reasons);
+            steps.Add(new
+            {
+                assessmentId = x.Id,
+                result = x.Result,
+                testType = string.IsNullOrWhiteSpace(x.Input!.TestType) ? "POC test" : x.Input.TestType,
+                decidedAtUtc = x.DecidedAtUtc,
+                disposition = x.FinalStatus.ToString().ToUpperInvariant(),
+                policy = DemonstrationPolicies.SelectFor(x.Input!).Name,
+                change = previous is null ? null : ResultIntegrityProjector.DescribeTransition(previous, point),
+            });
+            previous = point;
+        }
+
+        return Ok(new
+        {
+            available = steps.Count >= 2,
+            label = "Watch one result become trustworthy, then watch its integrity context change.",
+            note = "A synthetic three-step sequence recorded through the REAL deterministic pipeline at fixed historical instants: same device and operator, only the evidence quality changes. Clearly labelled demonstration data — never presented as production history.",
+            aiInvolved = ordered.Any(x => x.AiConsulted),
+            steps,
+            source = "Stored demonstration records; every disposition comes from the deterministic engine only.",
         });
     }
 

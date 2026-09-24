@@ -713,4 +713,13 @@ public static class ResultIntegrityProjector
         var parts = fresh.Select(r => byId.TryGetValue(r, out var sentence) ? sentence : r.Replace('_', ' ').ToLowerInvariant());
         return $"New finding: {string.Join(" ", parts)}";
     }
+
+    /// <summary>
+    /// Public, reusable description of what changed between two recorded sequence decisions
+    /// ("TRUST → REVIEW": the newly appeared stored finding). Used by the dashboard's
+    /// demonstration sequence (spec section 30) so the "why did it change" copy is ALWAYS derived
+    /// from stored data — the same derivation the integrity timeline uses, never re-written.
+    /// </summary>
+    public static string DescribeTransition(IntegrityHistoryPoint previous, IntegrityHistoryPoint next) =>
+        NewlyAppeared(previous, next);
 }
