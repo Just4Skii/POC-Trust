@@ -17,7 +17,13 @@ public sealed record DiagnosticContext(
     bool PowerInterruption = false,
     string Connectivity = "online",
     string LocalEventId = "",
-    string? QualitativeResult = null
+    string? QualitativeResult = null,
+    /// <summary>
+    /// Optional demonstration marker (e.g. "demo-assess-003"). Set only by the demo seeding
+    /// facility so synthetic records can be identified and reset safely. The reliability engine
+    /// never reads it; it is persisted inside the evidence JSON for provenance/reset only.
+    /// </summary>
+    string? DemoKey = null
 )
 {
     public DiagnosticEvent ToEvent(DateTimeOffset nowUtc) => new(
