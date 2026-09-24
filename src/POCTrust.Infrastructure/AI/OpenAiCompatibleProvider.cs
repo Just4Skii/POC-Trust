@@ -33,8 +33,13 @@ public sealed class OpenAiCompatibleProvider(HttpClient http, IConfiguration con
         req.Content = new StringContent(JsonSerializer.Serialize(new
         {
             model,
-            messages = new[] { new { role = "user", content = prompt } },
-            max_tokens = 220
+            messages = new[]
+            {
+                new { role = "system", content = "You are a point-of-care testing reliability assistant. Write complete sentences only. Never output fragments." },
+                new { role = "user", content = prompt },
+            },
+            max_tokens = 500,
+            temperature = 0.2
         }), Encoding.UTF8, "application/json");
 
         using var res = await http.SendAsync(req, ct);
@@ -44,7 +49,27 @@ public sealed class OpenAiCompatibleProvider(HttpClient http, IConfiguration con
         try
         {
             using var doc = JsonDocument.Parse(json);
-            text = doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString() ?? "";
+            var root = doc.RootElement;
+            if (root.TryGetProperty("choices", out var choices) && choices.GetArrayLength() > 0)
+            {
+                var first = choices[0];
+                if (first.TryGetProperty("message", out var msg) && msg.TryGetProperty("content", out var content))
+                    text = content.GetString() ?? "";
+                else if (first.TryGetProperty("text", out var t))
+                    text = t.GetString() ?? "";
+                else
+                    text = first.ToString();
+            }
+            else if (root.TryGetProperty("candidates", out var cands) && cands.GetArrayLength() > 0)
+            {
+                // Native Gemini shape fallback
+                var parts = cands[0].GetProperty("content").GetProperty("parts");
+                text = string.Join(" ", parts.EnumerateArray().Select(p => p.GetProperty("text").GetString()));
+            }
+            else
+            {
+                text = "";
+            }
         }
         catch (Exception ex) when (ex is JsonException or KeyNotFoundException or IndexOutOfRangeException)
         {

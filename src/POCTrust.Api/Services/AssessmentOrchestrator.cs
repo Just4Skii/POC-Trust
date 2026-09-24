@@ -66,7 +66,7 @@ public sealed class AssessmentOrchestrator(IReliabilityEngine engine, IAIProvide
     {
         if (raw is null) return null;
         var summary = (raw.Summary ?? "").Trim();
-        if (summary.Length == 0) return null;
+        if (summary.Length < 40) return null;
         if (summary.Length > 2000) summary = summary[..2000];
         var anomalies = raw.Anomalies?.Where(a => !string.IsNullOrWhiteSpace(a)).Take(10).ToList() ?? [];
         var conf = double.IsNaN(raw.Confidence) ? 0.5 : Math.Clamp(raw.Confidence, 0, 1);
