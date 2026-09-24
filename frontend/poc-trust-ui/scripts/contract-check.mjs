@@ -11,6 +11,9 @@ import assert from "node:assert/strict";
 import { completeSync, enqueueEvent, readQueue, QUEUE_KEY } from "../src/lib/queue.ts";
 import { normaliseEvidenceInput, toDecision } from "../src/lib/history.ts";
 import { evidenceItems } from "../src/lib/evidence.ts";
+import { evidenceSignals, markerPct, bandLeftPct, bandRightPct } from "../src/lib/signals.ts";
+import { seededSamples, tracePathD, hashSeed } from "../src/lib/telemetry.ts";
+import { EVAL_STEPS, stepDomainStates } from "../src/lib/pipeline.ts";
 
 const checks = [];
 const check = (name, fn) => checks.push([name, fn]);
@@ -179,6 +182,74 @@ check("evidence: provenance wording does not claim verified identity", () => {
   );
   assert.match(items.prov.detail, /as claimed/);
   assert.match(items.op.detail, /identity not authenticated/);
+});
+
+// ── Precision-instrument presentation layer ────────────────────────────────────────────────
+check("signals: marker position comes from the real value against engine ranges", () => {
+  const [temp, hum] = evidenceSignals(
+    { temperatureC: 31.5, humidityPct: 53, calibrationDueUtc: "2026-10-04T00:00:00+00:00", timestampUtc: "2026-09-01T00:00:00+00:00" },
+    ["ENV_TEMP"],
+  );
+  assert.equal(temp.state, "warn");
+  assert.equal(temp.valueText, "31.5 °C");
+  // 31.5 °C sits above the 15–30 band on a 10–40 rail → past the band's right edge.
+  // bandRightPct is a CSS right-inset, so the band's right edge is at 100 − bandRightPct.
+  assert.ok(markerPct(temp.rail) > 100 - bandRightPct(temp.rail), "marker must fall outside the acceptable band");
+  assert.equal(hum.state, "ok");
+  assert.ok(
+    markerPct(hum.rail) >= bandLeftPct(hum.rail) && markerPct(hum.rail) <= 100 - bandRightPct(hum.rail),
+    "a healthy value must sit inside the acceptable band",
+  );
+});
+
+check("signals: calibration rail uses the engine's 7-day threshold and never invents a value", () => {
+  const calibration = (inputs, rules) => evidenceSignals(inputs, rules)[2];
+  const dueSoon = calibration(
+    { calibrationDueUtc: "2026-09-05T00:00:00+00:00", timestampUtc: "2026-09-01T00:00:00+00:00" },
+    ["CAL_NEAR_DUE"],
+  );
+  assert.equal(dueSoon.key, "cal");
+  assert.equal(dueSoon.state, "warn");
+  assert.match(dueSoon.valueText, /Due in 4 d/);
+  const expired = calibration(
+    { calibrationDueUtc: "2026-08-20T00:00:00+00:00", timestampUtc: "2026-09-01T00:00:00+00:00" },
+    ["CAL_EXPIRED"],
+  );
+  assert.equal(expired.state, "fail");
+  assert.match(expired.valueText, /Overdue/);
+  const missing = calibration({}, []);
+  assert.equal(missing.rail, undefined, "a missing value must not get an invented marker position");
+  assert.equal(missing.valueText, "Not recorded");
+});
+
+check("telemetry: seeded traces are deterministic per record and never NaN", () => {
+  const a = seededSamples("demo-assess-001:temp", 26, 0.5, 0.16);
+  const b = seededSamples("demo-assess-001:temp", 26, 0.5, 0.16);
+  assert.deepEqual(a, b, "same seed must produce the identical trace");
+  assert.notDeepEqual(a, seededSamples("demo-assess-002:temp", 26, 0.5, 0.16));
+  assert.ok(a.every((v) => Number.isFinite(v)));
+  const d = tracePathD(a, 128, 26, 4);
+  assert.match(d, /^M/);
+  assert.ok(!/NaN/.test(d));
+  assert.notEqual(hashSeed("x"), hashSeed("y"));
+});
+
+check("pipeline: rail outcomes mirror the real evidence — never all-green for a bad result", () => {
+  const qcFail = stepDomainStates({ deviceId: "D1", qcPassed: false, operatorId: "OP-1", operatorCompetent: true, provenance: "s/D/OP" }, ["QC_FAILED"]);
+  assert.equal(qcFail.quality, "fail");
+  assert.equal(qcFail.collect, "ok");
+
+  const envConcern = stepDomainStates({ deviceId: "D1", qcPassed: true, operatorId: "OP-1", operatorCompetent: true, temperatureC: 31.5, humidityPct: 50, provenance: "s/D/OP" }, ["ENV_TEMP"]);
+  assert.equal(envConcern.environment, "warn");
+  assert.equal(envConcern.quality, "ok");
+
+  const provenanceGap = stepDomainStates({ deviceId: "D1", qcPassed: true, operatorId: "", temperatureC: 22, humidityPct: 45, provenance: "" }, ["PROVENANCE_INCOMPLETE"]);
+  assert.equal(provenanceGap.operator, "warn");
+
+  const clean = stepDomainStates({ deviceId: "D1", qcPassed: true, operatorId: "OP-1", operatorCompetent: true, provenance: "s/D/OP", temperatureC: 22, humidityPct: 45 }, ["ALL_CHECKS_PASS"]);
+  for (const step of EVAL_STEPS) {
+    assert.equal(clean[step.key], "ok", `clean record: ${step.key} must read ok`);
+  }
 });
 
 let failed = 0;

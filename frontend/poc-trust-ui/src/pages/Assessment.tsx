@@ -1,10 +1,17 @@
 import { useState } from "react";
+import { AuditLifecycle } from "../components/AuditTimeline";
 import { AiFallback, ContextualAnalysis } from "../components/ContextualAnalysis";
 import { EvidencePanel, WhyPanel } from "../components/Evidence";
+import { EvidenceFlow, SignalMap } from "../components/Flow";
+import { EvidenceMonitor } from "../components/Instrument";
 import { StatusBadge } from "../components/StatusBadge";
+import { ReliabilityArc, SignalRailViz } from "../components/Visuals";
+import { evidenceItems } from "../lib/evidence";
+import { usePointerLight } from "../lib/hooks";
 import { STATUS_COPY, formatEventTime, isAiUnavailableReason } from "../lib/labels";
-import { scenarioFor } from "../lib/scenarios";
-import { canRelyText, statusName, type Decision, type EvidenceInput } from "../types";
+import { evidenceSignals } from "../lib/signals";
+import { DEMO_SCENARIOS, scenarioFor } from "../lib/scenarios";
+import { canRelyText, statusName, type AuditRow, type Decision, type EvidenceInput } from "../types";
 
 export interface FormState extends EvidenceInput {
   result: string;
@@ -107,10 +114,12 @@ export function NewAssessment({
 }
 
 export function AssessmentDetail({
-  decision, input, onRepeat, onCheckDevice, onBack,
+  decision, input, auditRow, onRepeat, onCheckDevice, onBack,
 }: {
   decision: Decision;
   input: EvidenceInput;
+  /** The real stored audit entry for this assessment, when the audit list contains it. */
+  auditRow?: AuditRow;
   onRepeat: () => void;
   onCheckDevice: () => void;
   onBack: () => void;
@@ -120,33 +129,114 @@ export function AssessmentDetail({
   const heroBorder = finalName === "Trust" ? "border-[#167A5A]" : finalName === "Review" ? "border-[#B7791F]" : "border-[#C43D3D]";
   const aiFailed = decision.reasons.some(isAiUnavailableReason);
   const scenario = scenarioFor(input.demoKey);
+  const scnIndex = DEMO_SCENARIOS.findIndex((s) => s.key === input.demoKey);
+  // Shared cross-highlight: evidence cards ↔ signal map ↔ reliability arc (Section 15/17).
+  const [highlight, setHighlight] = useState<string | null>(null);
+  const heroRef = usePointerLight<HTMLDivElement>();
+  const items = evidenceItems(input, decision.ruleIds ?? []);
+  const signals = evidenceSignals(input, decision.ruleIds ?? []);
+  // Motion signature per state (Section 12) — plays once on reveal, then static.
+  const sigWrap =
+    finalName === "Trust" ? "pt-sig-trust inline-block"
+    : finalName === "Review" ? "pt-sig-review inline-flex rounded-md"
+    : "pt-sig-verify inline-flex";
 
   return (
     <article className={`space-y-4 ${scenario ? "pt-demo" : "pt-fade"}`}>
       {scenario && (
-        <p role="note" className="rounded-lg border border-[#0F8B8D]/40 bg-[#EAF7F7] px-4 py-2 text-sm text-[#0B1F3A]">
+        <p role="note" className="pt-fade rounded-lg border border-[#0F8B8D]/40 bg-[#EAF7F7] px-4 py-2 text-sm text-[#0B1F3A]">
+          {scnIndex >= 0 && (
+            <span className="mono mr-2 rounded bg-[#0B1F3A] px-1.5 py-0.5 text-[10px] font-semibold text-white">
+              SCN-{String(scnIndex + 1).padStart(2, "0")}
+            </span>
+          )}
           <b>Demonstration scenario — {scenario.story}.</b> {scenario.summary} Synthetic record, clearly labelled.
         </p>
       )}
-      <section aria-label="Reliability decision" className={`rounded-2xl border-2 ${heroBorder} ${heroBg} p-6 text-center md:p-10`}>
+      <section
+        ref={heroRef}
+        aria-label="Reliability decision"
+        className={`pt-lume-ring pt-light pt-settle rounded-2xl border-2 ${heroBorder} ${heroBg} p-6 text-center shadow-[var(--shadow-2)] md:p-10`}
+      >
         <p className="text-xs font-semibold uppercase tracking-widest text-[#607087]">{STATUS_COPY[finalName].strip}</p>
-        <div className="mt-2 flex justify-center"><StatusBadge value={decision.finalStatus} size="lg" /></div>
-        <p className="mt-3 text-lg font-semibold text-[#132238]">{canRelyText(decision.finalStatus)}</p>
-        {finalName === "Verify" && <p className="mt-1 font-bold text-[#C43D3D]">Do not rely on this result alone.</p>}
-        <p className="mt-2 text-sm text-[#607087]">Result: <b className="text-[#132238]">{input.result ?? "—"}</b> · initial assessment: {statusName(decision.initialStatus)} · {formatEventTime(decision.decidedAtUtc)}</p>
-        <p className="mt-3 rounded-lg bg-white/70 px-4 py-2 text-sm font-medium text-[#132238]">Next action: {decision.action}</p>
-        <div className="mt-4 flex flex-wrap justify-center gap-2">
-          <button onClick={() => document.getElementById("pt-evidence")?.scrollIntoView({ behavior: "smooth" })} className="pt-action rounded-md border border-[#0B1F3A] bg-white px-4 py-2 text-sm font-semibold">Review Evidence</button>
-          <button onClick={onCheckDevice} className="pt-action rounded-md border border-[#0B1F3A] bg-white px-4 py-2 text-sm font-semibold">Check Device</button>
-          <button onClick={onRepeat} className="pt-action rounded-md bg-[#0B1F3A] px-4 py-2 text-sm font-semibold text-white">Repeat Test</button>
-          <button onClick={onBack} className="pt-action rounded-md px-4 py-2 text-sm text-[#607087] underline">Back to history</button>
+        <div className="mt-3 flex flex-col items-center justify-center gap-6 md:flex-row md:text-left">
+          <div className="text-center">
+            <span className={sigWrap}>
+              <StatusBadge value={decision.finalStatus} size="lg" />
+            </span>
+            <p className="mt-4 text-lg font-semibold text-[#132238]" style={{ animation: "pt-fade 300ms var(--ease-enter) 120ms both" }}>
+              {canRelyText(decision.finalStatus)}
+            </p>
+            {finalName === "Verify" && (
+              <p className="mt-1 font-bold text-[#C43D3D]" style={{ animation: "pt-fade 300ms var(--ease-enter) 200ms both" }}>
+                Do not rely on this result alone.
+              </p>
+            )}
+            <p className="mt-2 text-sm text-[#607087]">Result: <b className="text-[#132238]">{input.result ?? "—"}</b> · initial assessment: {statusName(decision.initialStatus)} · <span className="mono">{formatEventTime(decision.decidedAtUtc)}</span></p>
+            <p className="mt-3 rounded-lg bg-white/70 px-4 py-2 text-sm font-medium text-[#132238]">Next action: {decision.action}</p>
+          </div>
+          <ReliabilityArc
+            segments={items.map((i) => ({ key: i.key, label: i.label, state: i.state }))}
+            status={decision.finalStatus}
+            highlight={highlight}
+            onHighlight={setHighlight}
+          />
+        </div>
+        <div className="mt-4 flex flex-wrap justify-center gap-2 pt-stagger">
+          {([
+            ["Review Evidence", () => document.getElementById("pt-evidence")?.scrollIntoView({ behavior: "smooth" }), false],
+            ["Check Device", onCheckDevice, false],
+            ["Repeat Test", onRepeat, true],
+            ["Back to history", onBack, false],
+          ] as const).map(([label, fn, primary], i) => (
+            <button
+              key={label}
+              onClick={fn}
+              style={{ ["--d" as string]: `${i * 50}ms` }}
+              className={`pt-action rounded-md px-4 py-2 text-sm font-semibold ${
+                primary ? "bg-[#0B1F3A] text-white" : label === "Back to history" ? "px-4 py-2 text-[#607087] underline" : "border border-[#0B1F3A] bg-white"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </section>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <EvidenceFlow input={input} ruleIds={decision.ruleIds ?? []} status={finalName} />
+        <SignalMap
+          input={input}
+          ruleIds={decision.ruleIds ?? []}
+          status={finalName}
+          highlight={highlight}
+          onHighlight={setHighlight}
+        />
+      </div>
+
+      <WhyPanel decision={decision} />
+
+      <section aria-label="Evidence signals" className="pt-card p-4">
+        <h3 className="pt-label text-[#0B1F3A]">Evidence signals</h3>
+        <p className="mt-1 text-xs text-[#607087]">
+          Evidence telemetry from this assessment&apos;s recorded values — not patient vitals. Bands are the
+          supported ranges the deterministic rules evaluate.
+        </p>
+        <div className="mt-3 grid gap-5 sm:grid-cols-3">
+          {signals.map((s, i) => (
+            <SignalRailViz key={s.key} signal={s} delay={i * 80} />
+          ))}
         </div>
       </section>
 
-      <WhyPanel decision={decision} />
-      <div id="pt-evidence"><EvidencePanel input={input} decision={decision} /></div>
+      <div id="pt-evidence">
+        <EvidencePanel input={input} decision={decision} highlight={highlight} onHighlight={setHighlight} />
+      </div>
+
+      <EvidenceMonitor input={input} ruleIds={decision.ruleIds ?? []} />
+
       <ContextualAnalysis decision={decision} />
       <AiFallback show={aiFailed} />
+      <AuditLifecycle row={auditRow} status={decision.finalStatus} action={decision.action} />
     </article>
   );
 }

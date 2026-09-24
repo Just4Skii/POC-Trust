@@ -13,7 +13,7 @@ export function StatusBadge({ value, size = "md" }: { value: StatusCode; size?: 
     <span
       role="status"
       aria-label={`Reliability status ${name}`}
-      className={`inline-flex items-center gap-2 rounded-md border font-bold tracking-wide ${pad} ${styles[name]}`}
+      className={`inline-flex items-center gap-2 rounded-md border font-semibold tracking-[0.03em] pt-fade ${pad} ${styles[name]}`}
     >
       <span aria-hidden="true" className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-current text-[13px] leading-none">
         {statusIcon(value)}

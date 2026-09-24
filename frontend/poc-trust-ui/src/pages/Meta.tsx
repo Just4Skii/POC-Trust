@@ -97,14 +97,19 @@ export function SettingsPage({
                 </button>
               )}
             </div>
-            <ul className="mt-4 divide-y divide-[#DCE3EC] text-sm">
-              {DEMO_SCENARIOS.map((s) => {
+            <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+              {DEMO_SCENARIOS.map((s, i) => {
                 const loaded = demo.seeded.includes(s.key);
                 return (
-                  <li key={s.key} className="py-2">
-                    <span className="font-medium text-[#132238]">{s.story}</span>
-                    <span className="ml-2 text-xs text-[#607087]">expects {s.expected}{s.offline ? " · offline event" : ""} · {loaded ? "loaded" : "not loaded"}</span>
-                    <span className="block text-xs text-[#607087]">{s.summary}</span>
+                  <li key={s.key} className="pt-lume pt-lift rounded-lg bg-white p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="mono rounded bg-[#0B1F3A] px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                        SCN-{String(i + 1).padStart(2, "0")}
+                      </span>
+                      <span className="pt-label text-[#607087]">{loaded ? "loaded" : "not loaded"}{s.offline ? " · offline" : ""}</span>
+                    </div>
+                    <p className="mt-1.5 text-sm font-medium text-[#132238]">{s.story}</p>
+                    <p className="mt-0.5 text-xs text-[#607087]">{s.summary}</p>
                   </li>
                 );
               })}

@@ -16,16 +16,16 @@ export function AssessmentsList({
       {items.length === 0 ? (
         <p className="mt-2 text-sm text-[#607087]">No records yet — use Demonstration Mode.</p>
       ) : (
-        <ul className="mt-2 divide-y divide-[#DCE3EC]">
-          {items.map((a) => (
-            <li key={a.id}>
-              <button onClick={() => onOpen(a.id)} className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 py-2.5 text-left hover:bg-[#F7F9FC]">
+        <ul className="mt-2 divide-y divide-[#DCE3EC] pt-stagger">
+          {items.map((a, i) => (
+            <li key={a.id} style={{ ["--d" as string]: `${Math.min(i, 8) * 45}ms` }}>
+              <button onClick={() => onOpen(a.id)} className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 py-2.5 text-left transition-colors hover:bg-[#F7F9FC]">
                 <StatusBadge value={a.finalStatus} size="sm" />
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-medium">{a.result} · {a.testType ?? ""}</span>
                   <span className="block truncate text-xs text-[#607087]">{a.deviceId} · {a.operatorId ?? "operator not recorded"} · {a.connectivity === "offline" ? "offline event" : "online"} · Contextual Analysis {a.aiConsulted ? "consulted" : "not consulted"}</span>
                 </span>
-                <span className="text-xs text-[#607087]">{formatEventTime(a.decidedAtUtc)}</span>
+                <span className="mono text-xs text-[#607087]">{formatEventTime(a.decidedAtUtc)}</span>
               </button>
             </li>
           ))}

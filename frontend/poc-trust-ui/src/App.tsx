@@ -1,8 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, api } from "./api/client";
 import { Brand } from "./components/Brand";
+import { CommandPalette, ShortcutHelp, type RecentItem } from "./components/CommandPalette";
+import { EvidenceFlow } from "./components/Flow";
+import { PipelineRail, type RailOutcome } from "./components/PipelineRail";
+import { StatusChip, type SyncView } from "./components/SystemPulse";
 import { normaliseEvidenceInput, toDecision, type StoredAssessment } from "./lib/history";
+import { EVAL_STEPS, stepDomainStates } from "./lib/pipeline";
 import { completeSync, enqueueEvent, readQueue, type QueuedEvent } from "./lib/queue";
+import { statusName } from "./types";
 import type { AssessmentSummary, AuditRow, DashboardSummary, Decision, DemoStatus, EvidenceInput } from "./types";
 import { AssessmentDetail, NewAssessment, emptyForm, type FormState } from "./pages/Assessment";
 import { AssessmentsList, AuditTrail } from "./pages/Lists";
@@ -22,6 +28,14 @@ const NAV: { id: Nav; label: string; ready: boolean }[] = [
   { id: "settings", label: "Settings", ready: true },
 ];
 
+/** Staged evaluation presentation — pipeline rail + evidence flow during a real request. */
+interface RunState {
+  idx: number;
+  outcomes: Record<string, RailOutcome> | null;
+  settling: boolean;
+  form: EvidenceInput | null;
+}
+
 export default function App() {
   const [nav, setNav] = useState<Nav>("overview");
   const [collapsed, setCollapsed] = useState(false);
@@ -39,6 +53,16 @@ export default function App() {
   const [online, setOnline] = useState(navigator.onLine);
   const [pending, setPending] = useState<QueuedEvent[]>(() => readQueue(window.localStorage));
   const [lastSynced, setLastSynced] = useState<string | null>(localStorage.getItem("poctrust-synced"));
+  // Presentation-layer state (all driven by real events below).
+  const [run, setRun] = useState<RunState | null>(null);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncedFlash, setSyncedFlash] = useState(false);
+  const runTimers = useRef<number[]>([]);
+  const scenarioCache = useRef<Map<string, string>>(new Map());
+  const navRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [navInd, setNavInd] = useState({ top: 0, height: 0, visible: false });
   // Latch so rapid clicks cannot start a second submission while one is in flight.
   const inFlight = useRef(false);
 
@@ -87,6 +111,7 @@ export default function App() {
     setSubmitting(true); setError("");
     try {
       await api.demoReset();
+      scenarioCache.current.clear();
       setDecision(null);
       await refresh();
       setNav("overview");
@@ -99,45 +124,98 @@ export default function App() {
     setError(reason);
   }
 
+  const wait = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+
+  /** Begin the staged pipeline presentation over a real in-flight request (Section 10). */
+  function beginRun(form: EvidenceInput) {
+    runTimers.current.forEach((t) => window.clearTimeout(t));
+    runTimers.current = [];
+    setRun({ idx: 0, outcomes: null, settling: false, form });
+    EVAL_STEPS.forEach((_, i) => {
+      if (i === 0) return;
+      runTimers.current.push(
+        window.setTimeout(() => setRun((r) => (r && !r.outcomes ? { ...r, idx: i } : r)), i * 150),
+      );
+    });
+  }
+
+  /**
+   * The rail never gets ahead of the real request: hold the staged steps until their budget
+   * elapses (or the response arrives, whichever is later), paint the authoritative outcomes,
+   * settle briefly, then reveal. Total ≈1.05–1.5 s — a demonstration of the pipeline, not a
+   * fake long-running computation. On failure the run aborts and never fakes success.
+   */
+  async function finishRun(outcomes: Record<string, RailOutcome>, apply: () => void, t0: number) {
+    const remaining = Math.max(0, EVAL_STEPS.length * 150 - (Date.now() - t0));
+    await wait(remaining);
+    runTimers.current.forEach((t) => window.clearTimeout(t));
+    runTimers.current = [];
+    setRun((r) => (r ? { ...r, idx: EVAL_STEPS.length - 1, outcomes } : r));
+    await wait(300);
+    setRun((r) => (r ? { ...r, settling: true } : r));
+    await wait(120);
+    setRun(null);
+    apply();
+  }
+
+  const evaluatedOutcomes = (body: Record<string, unknown>, ruleIds: string[]): Record<string, RailOutcome> =>
+    stepDomainStates(body as EvidenceInput, ruleIds);
+
+  const queuedOutcomes = (): Record<string, RailOutcome> =>
+    Object.fromEntries(EVAL_STEPS.map((s) => [s.key, s.key === "collect" ? "ok" : "queued"])) as Record<string, RailOutcome>;
+
   async function submit(body: Record<string, unknown>) {
     if (inFlight.current) return;
     inFlight.current = true;
     setSubmitting(true); setError("");
+    const t0 = Date.now();
+    beginRun(body as EvidenceInput);
     try {
       if (body.connectivity === "offline") {
         // Honest prototype boundary: the offline path still asks the real engine. If the backend is
         // unreachable the event is only *queued* — no reliability evaluation happens locally.
         try {
           const d = await api.evaluate(body);
-          setDecision(d); setInput(body as EvidenceInput); setNav("overview"); return;
+          await finishRun(evaluatedOutcomes(body, d.ruleIds), () => { setDecision(d); setInput(body as EvidenceInput); setNav("overview"); }, t0);
+          return;
         } catch (e) {
           if (e instanceof ApiError) throw e;   // rejected by the backend: not a connectivity failure
-          queueLocally(body, "Backend unreachable — event queued locally as pending (prototype offline queue).");
+          await finishRun(queuedOutcomes(), () => { queueLocally(body, "Backend unreachable — event queued locally as pending (prototype offline queue)."); }, t0);
           return;
         }
       }
       const d = await api.evaluate(body);
-      setDecision(d); setInput(body as EvidenceInput); setNav("overview");
+      await finishRun(evaluatedOutcomes(body, d.ruleIds), () => { setDecision(d); setInput(body as EvidenceInput); setNav("overview"); }, t0);
     } catch (e) {
+      setRun(null);   // abort the staged rail — a failure never fakes a completed pipeline
       if (e instanceof ApiError) {
         setError(e.message);   // invalid/unservable request — queueing it would only mislead
       } else {
         const message = e instanceof Error ? e.message : String(e);
-        queueLocally(body, `${message} — queued locally.`);
+        await finishRun(queuedOutcomes(), () => { queueLocally(body, `${message} — queued locally.`); }, Date.now());
       }
     } finally { inFlight.current = false; setSubmitting(false); }
   }
 
   async function syncPending() {
-    const snapshot = readQueue(window.localStorage);
-    const syncedIds: string[] = [];
-    for (const body of snapshot) {
-      try { await api.evaluate(body); syncedIds.push(body._queueId); }
-      catch { break; }   // first failure: unsynced entries stay queued (existing partial-failure behaviour)
-    }
-    // completeSync re-reads storage, so anything queued while this sync ran is preserved.
-    setPending(completeSync(window.localStorage, syncedIds));
-    await refresh();
+    if (syncing) return;
+    setSyncing(true);   // DATA-DRIVEN: the chip reflects this real operation, never a timer
+    try {
+      const snapshot = readQueue(window.localStorage);
+      const syncedIds: string[] = [];
+      for (const body of snapshot) {
+        try { await api.evaluate(body); syncedIds.push(body._queueId); }
+        catch { break; }   // first failure: unsynced entries stay queued (existing partial-failure behaviour)
+      }
+      // completeSync re-reads storage, so anything queued while this sync ran is preserved.
+      const remaining = completeSync(window.localStorage, syncedIds);
+      setPending(remaining);
+      await refresh();
+      if (syncedIds.length > 0) {
+        setSyncedFlash(true);
+        window.setTimeout(() => setSyncedFlash(false), 2600);
+      }
+    } finally { setSyncing(false); }
   }
 
   async function openAssessment(id: string) {
@@ -151,12 +229,80 @@ export default function App() {
     } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
   }
 
+  /**
+   * Command-palette scenario action: open the curated scenario's REAL stored record (building a
+   * key→id index on first use, seeding first when the demonstration set is not loaded). The
+   * deterministic backend remains authoritative — this only navigates to its record, so each
+   * scenario is replayable without a page reload and never re-fabricates a result.
+   */
+  async function runScenario(key: string) {
+    if (inFlight.current) return;
+    try {
+      const cached = scenarioCache.current.get(key);
+      if (cached) { await openAssessment(cached); return; }
+      if (!demo) return;
+      if (!demo.seeded.includes(key)) await seedDemo();
+      const list = await api.assessments(100);
+      const details = await Promise.all(list.map((a) => api.assessmentDetail(a.id).catch(() => null)));
+      details.forEach((d, i) => {
+        if (!d) return;
+        const raw = d.input as Record<string, unknown>;
+        const dk = raw.demoKey ?? raw.DemoKey;
+        if (typeof dk === "string" && dk) scenarioCache.current.set(dk, list[i].id);
+      });
+      const id = scenarioCache.current.get(key);
+      if (id) await openAssessment(id);
+      else setError("That scenario is not loaded yet — load demonstration data first.");
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
+  }
+
+  // Command layer: ⌘/Ctrl+K toggles the palette; "?" opens shortcuts (never while typing).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      const typing = !!t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName);
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+        return;
+      }
+      if (e.key === "?" && !typing) setHelpOpen((o) => !o);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // Pause ambient animation while the tab is hidden (Section 31).
+  useEffect(() => {
+    const on = () => document.body.classList.toggle("pt-paused", document.hidden);
+    on();
+    document.addEventListener("visibilitychange", on);
+    return () => document.removeEventListener("visibilitychange", on);
+  }, []);
+
+  // Sliding nav indicator (transform-based, ~200ms).
+  useEffect(() => {
+    const el = navRefs.current[nav];
+    if (!el) { setNavInd((v) => ({ ...v, visible: false })); return; }
+    setNavInd({ top: el.offsetTop, height: el.offsetHeight, visible: true });
+  }, [nav, collapsed]);
+
+  // Clear staged-pipeline timers on unmount.
+  useEffect(() => () => runTimers.current.forEach((t) => window.clearTimeout(t)), []);
+
   const demoActive = (demo?.demoRecords ?? 0) > 0;
+  const syncView: SyncView = !online ? "offline" : syncing ? "syncing" : syncedFlash ? "synced" : "online";
+  const recent: RecentItem[] = (summary?.recent ?? []).slice(0, 6).map((r) => ({
+    id: r.id, result: r.result, deviceId: r.deviceId, status: statusName(r.finalStatus),
+  }));
 
   return (
     <div className="min-h-screen bg-[#F7F9FC] text-[#132238]">
       {demoActive && (
-        <div role="banner" className="bg-[#0B1F3A] px-4 py-2 text-center text-sm font-semibold text-white">
+        <div aria-hidden="true" className="pt-demo-topline fixed left-0 right-0 top-0 z-40 h-[2px]" />
+      )}
+      {demoActive && (
+        <div role="banner" className="pt-fade bg-[#0B1F3A] px-4 py-2 text-center text-sm font-semibold text-white">
           DEMONSTRATION DATA LOADED — SYNTHETIC RECORDS, CLEARLY LABELLED
         </div>
       )}
@@ -166,13 +312,19 @@ export default function App() {
             <Brand collapsed={collapsed} />
             <button onClick={() => setCollapsed(!collapsed)} aria-label={collapsed ? "Expand navigation" : "Collapse navigation"} className="rounded p-2 text-slate-300 hover:bg-white/10">☰</button>
           </div>
-          <nav className="flex flex-col gap-1 p-2">
+          <nav className="relative flex flex-col gap-1 p-2">
+            <span
+              aria-hidden="true"
+              className="pt-nav-indicator absolute left-0 w-[3px] rounded-r bg-gradient-to-b from-[#2E7BD6] via-[#1E5AA8] to-[#0F8B8D]"
+              style={{ transform: `translateY(${navInd.top}px)`, height: navInd.height, opacity: navInd.visible ? 1 : 0 }}
+            />
             {NAV.map((n) => (
               <button
                 key={n.id}
+                ref={(el) => { navRefs.current[n.id] = el; }}
                 onClick={() => setNav(n.id)}
                 aria-current={nav === n.id ? "page" : undefined}
-                className={`pt-navbtn rounded-md px-3 py-2 text-left text-sm ${nav === n.id ? "bg-white font-semibold text-[#0B1F3A]" : "text-slate-200 hover:bg-white/10"}`}
+                className={`pt-navbtn rounded-md px-3 py-2 text-left text-sm transition-colors ${nav === n.id ? "bg-white font-semibold text-[#0B1F3A]" : "text-slate-200 hover:bg-white/10"}`}
               >
                 {collapsed ? n.label[0] : n.label}
               </button>
@@ -184,19 +336,28 @@ export default function App() {
         </aside>
 
         <div className="min-w-0 flex-1">
-          <header className="flex flex-wrap items-center gap-2 border-b border-[#DCE3EC] bg-white px-4 py-3">
+          <header className="pt-glass sticky top-0 z-30 flex flex-wrap items-center gap-2 border-b border-[#DCE3EC] px-4 py-2.5">
             <div className="md:hidden"><Brand collapsed /></div>
             <nav className="flex flex-wrap gap-1 md:hidden" aria-label="Primary mobile">
               {NAV.slice(0, 4).map((n) => (
                 <button key={n.id} onClick={() => setNav(n.id)} className={`rounded border px-2 py-1.5 text-xs ${nav === n.id ? "bg-[#0B1F3A] text-white" : ""}`}>{n.label}</button>
               ))}
             </nav>
-            <div className="ml-auto flex items-center gap-2 text-xs">
-              <span role="status" aria-label={online ? "Online" : "Offline"} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-semibold ${online ? "border-[#167A5A]/30 bg-[#EAF7F1] text-[#167A5A]" : "border-[#B7791F]/40 bg-[#FFF7E6] text-[#B7791F]"}`}>
-                <span aria-hidden="true">{online ? "●" : "○"}</span> {online ? "Online" : "Offline"}
-              </span>
-              <span className="text-[#607087]">Pending {pending.length}{lastSynced ? ` · synced ${new Date(lastSynced).toLocaleTimeString()}` : ""}</span>
-              {pending.length > 0 && <button onClick={syncPending} className="rounded border px-2 py-1 font-semibold">Sync now</button>}
+            <div className="ml-auto flex flex-wrap items-center justify-end gap-2 text-xs">
+              {demoActive && (
+                <span className="mono hidden rounded-full border border-[#0F8B8D]/40 bg-[#EAF7F7] px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.08em] text-[#0B1F3A] sm:inline-block">
+                  Demo · synthetic data only
+                </span>
+              )}
+              <span aria-hidden="true" className="mono hidden rounded border border-[#DCE3EC] px-2 py-1 text-[10px] text-[#8A97A8] lg:inline-block">Ctrl/⌘ K</span>
+              <button onClick={() => setPaletteOpen(true)} aria-label="Open command palette" className="rounded border border-[#DCE3EC] px-2.5 py-1 font-semibold hover:bg-[#F7F9FC]">⌕</button>
+              <button onClick={() => setHelpOpen(true)} aria-label="Show keyboard shortcuts" className="rounded border border-[#DCE3EC] px-2.5 py-1 font-semibold hover:bg-[#F7F9FC]">?</button>
+              <StatusChip view={syncView} pending={pending.length} lastSynced={lastSynced} />
+              {pending.length > 0 && (
+                <button onClick={syncPending} disabled={syncing} className="rounded border px-2 py-1 font-semibold disabled:opacity-50">
+                  {syncing ? "Syncing…" : "Sync now"}
+                </button>
+              )}
             </div>
           </header>
 
@@ -206,15 +367,22 @@ export default function App() {
               decision ? (
                 <AssessmentDetail
                   decision={decision} input={input}
+                  auditRow={audit.find((a) => a.assessmentId === decision.id)}
                   onRepeat={() => { setPrefill({ ...emptyForm(), ...input } as FormState); setFormKey((k) => k + 1); setNav("new"); }}
                   onCheckDevice={() => setNav("devices")}
                   onBack={() => setNav("assessments")}
                 />
               ) : (
-                <Overview summary={summary} loading={loadingSummary} demo={demo} submitting={submitting} onSeed={seedDemo} onReset={resetDemo} onOpen={openAssessment} />
+                <Overview summary={summary} loading={loadingSummary} demo={demo} submitting={submitting} lastSynced={lastSynced} onSeed={seedDemo} onReset={resetDemo} onOpen={openAssessment} />
               )
             )}
             {nav === "new" && <NewAssessment key={formKey} initial={prefill} submitting={submitting} error={error} onSubmit={submit} />}
+            {nav === "new" && run && (
+              <div className="grid gap-4 lg:grid-cols-2" data-testid="evaluation-pipeline">
+                <PipelineRail steps={EVAL_STEPS} index={run.idx} outcomes={run.outcomes} settling={run.settling} />
+                {run.form && <EvidenceFlow input={run.form} ruleIds={[]} status={null} running={!run.outcomes} />}
+              </div>
+            )}
             {nav === "assessments" && <AssessmentsList items={assessments} onOpen={openAssessment} />}
             {nav === "audit" && <AuditTrail rows={audit} />}
             {nav === "devices" && <DevicesPage />}
@@ -223,6 +391,20 @@ export default function App() {
             {nav === "settings" && <SettingsPage demo={demo} busy={submitting} onSeed={seedDemo} onReset={resetDemo} />}
             {submitting && nav === "overview" && !decision && <div className="skeleton h-48 rounded-xl" aria-label="Loading assessment" />}
           </main>
+          <CommandPalette
+            open={paletteOpen}
+            onClose={() => setPaletteOpen(false)}
+            pages={NAV.map((n) => ({ id: n.id, label: n.label }))}
+            onNav={(id) => setNav(id as Nav)}
+            demo={demo}
+            onSeed={seedDemo}
+            onReset={resetDemo}
+            onSync={syncPending}
+            onRunScenario={runScenario}
+            recent={recent}
+            onOpen={openAssessment}
+          />
+          <ShortcutHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
         </div>
       </div>
     </div>
