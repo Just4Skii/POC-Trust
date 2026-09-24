@@ -30,29 +30,36 @@ public sealed class DemoInvariantsTests
     private static PocTrustDbContext InMemoryDb() => new(new DbContextOptionsBuilder<PocTrustDbContext>()
         .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
 
-    /// <summary>Every seed evaluated through the real orchestrator, paired with its declaration.</summary>
-    private static List<(DemoSeed Seed, ReliabilityDecision Decision)> EvaluateAll(PocTrustDbContext db)
+    /// <summary>Every seed evaluated through the real orchestrator (at its declared decision
+    /// instant, so the demonstration history sequence is evaluated at its historical timestamps),
+    /// paired with its declaration.</summary>
+    private static async Task<List<(DemoSeed Seed, ReliabilityDecision Decision)>> EvaluateAllAsync(PocTrustDbContext db)
     {
         var orchestrator = Orchestrator(db);
-        return DemoSeedData.All
-            .Select(s => (Seed: s, Decision: orchestrator.EvaluateAsync(s.Build(FixedNow), CancellationToken.None).GetAwaiter().GetResult()))
-            .ToList();
+        var list = new List<(DemoSeed Seed, ReliabilityDecision Decision)>();
+        foreach (var seed in DemoSeedData.All)
+        {
+            var decision = await orchestrator.EvaluateAsync(
+                seed.Build(FixedNow), null, CancellationToken.None, seed.DecisionAt?.Invoke(FixedNow));
+            list.Add((seed, decision));
+        }
+        return list;
     }
 
     [Fact]
-    public void EverySeed_StatusMatchesExpectedDeclaration()
+    public async Task EverySeed_StatusMatchesExpectedDeclaration()
     {
         using var db = InMemoryDb();
-        foreach (var (seed, decision) in EvaluateAll(db))
+        foreach (var (seed, decision) in await EvaluateAllAsync(db))
             Assert.True(decision.FinalStatus == seed.Expected,
                 $"{seed.Key}: engine computed {decision.FinalStatus}, seed declared {seed.Expected}.");
     }
 
     [Fact]
-    public void TrustSeeds_AllChecksPass_NoFailureOrExpiryReasons()
+    public async Task TrustSeeds_AllChecksPass_NoFailureOrExpiryReasons()
     {
         using var db = InMemoryDb();
-        foreach (var (seed, decision) in EvaluateAll(db).Where(x => x.Seed.Expected == ReliabilityStatus.Trust))
+        foreach (var (seed, decision) in (await EvaluateAllAsync(db)).Where(x => x.Seed.Expected == ReliabilityStatus.Trust))
         {
             Assert.Contains(AllChecksPass, decision.RuleIds);
             Assert.DoesNotContain(decision.RuleIds, HardStops.Contains);
@@ -62,10 +69,10 @@ public sealed class DemoInvariantsTests
     }
 
     [Fact]
-    public void VerifySeeds_HaveHardStopReason_NeverConsultAi()
+    public async Task VerifySeeds_HaveHardStopReason_NeverConsultAi()
     {
         using var db = InMemoryDb();
-        foreach (var (seed, decision) in EvaluateAll(db).Where(x => x.Seed.Expected == ReliabilityStatus.Verify))
+        foreach (var (seed, decision) in (await EvaluateAllAsync(db)).Where(x => x.Seed.Expected == ReliabilityStatus.Verify))
         {
             Assert.Contains(decision.RuleIds, HardStops.Contains);
             Assert.False(decision.AiConsulted, $"{seed.Key}: VERIFY hard-stop assessments never consult AI.");
@@ -82,17 +89,18 @@ public sealed class DemoInvariantsTests
         var orchestrator = Orchestrator(db);
         foreach (var seed in DemoSeedData.All.Where(s => s.Expected == ReliabilityStatus.Verify))
         {
-            var decision = await orchestrator.EvaluateAsync(seed.Build(FixedNow), CancellationToken.None);
+            var decision = await orchestrator.EvaluateAsync(
+                seed.Build(FixedNow), null, CancellationToken.None, seed.DecisionAt?.Invoke(FixedNow));
             var audit = await db.Audit.SingleAsync(a => a.AssessmentId == decision.Id);
             Assert.False(audit.AiConsulted, $"{seed.Key}: the audit trail must not claim an AI consultation for VERIFY.");
         }
     }
 
     [Fact]
-    public void ReviewSeeds_HaveFindings_NeverAHardStop()
+    public async Task ReviewSeeds_HaveFindings_NeverAHardStop()
     {
         using var db = InMemoryDb();
-        foreach (var (seed, decision) in EvaluateAll(db).Where(x => x.Seed.Expected == ReliabilityStatus.Review))
+        foreach (var (seed, decision) in (await EvaluateAllAsync(db)).Where(x => x.Seed.Expected == ReliabilityStatus.Review))
         {
             Assert.NotEmpty(decision.RuleIds);
             Assert.DoesNotContain(decision.RuleIds, HardStops.Contains);
@@ -100,18 +108,18 @@ public sealed class DemoInvariantsTests
     }
 
     [Fact]
-    public void AiState_ConsultedExactlyWhenAdvisoryPayloadExists()
+    public async Task AiState_ConsultedExactlyWhenAdvisoryPayloadExists()
     {
         using var db = InMemoryDb();
-        foreach (var (_, decision) in EvaluateAll(db))
+        foreach (var (_, decision) in await EvaluateAllAsync(db))
             Assert.Equal(decision.AiConsulted, decision.AiAssessment is not null);
     }
 
     [Fact]
-    public void OfflineLabels_AlwaysBackedByOfflineMetadata()
+    public async Task OfflineLabels_AlwaysBackedByOfflineMetadata()
     {
         using var db = InMemoryDb();
-        foreach (var (seed, decision) in EvaluateAll(db))
+        foreach (var (seed, decision) in await EvaluateAllAsync(db))
         {
             var context = seed.Build(FixedNow);
             var offlineMeta = string.Equals(context.Connectivity, "offline", StringComparison.OrdinalIgnoreCase)
@@ -123,14 +131,15 @@ public sealed class DemoInvariantsTests
     }
 
     [Fact]
-    public void IdenticalInputs_ProduceIdenticalDecisions()
+    public async Task IdenticalInputs_ProduceIdenticalDecisions()
     {
         using var db = InMemoryDb();
         var orchestrator = Orchestrator(db);
         foreach (var seed in DemoSeedData.All)
         {
-            var first = orchestrator.EvaluateAsync(seed.Build(FixedNow), CancellationToken.None).GetAwaiter().GetResult();
-            var second = orchestrator.EvaluateAsync(seed.Build(FixedNow), CancellationToken.None).GetAwaiter().GetResult();
+            var at = seed.DecisionAt?.Invoke(FixedNow);
+            var first = await orchestrator.EvaluateAsync(seed.Build(FixedNow), null, CancellationToken.None, at);
+            var second = await orchestrator.EvaluateAsync(seed.Build(FixedNow), null, CancellationToken.None, at);
             Assert.Equal(first.FinalStatus, second.FinalStatus);
             Assert.Equal(first.Action, second.Action);
             Assert.Equal(first.Reasons, second.Reasons);
@@ -139,10 +148,10 @@ public sealed class DemoInvariantsTests
     }
 
     [Fact]
-    public void Reasons_AreHumanized_NoMachineTokens()
+    public async Task Reasons_AreHumanized_NoMachineTokens()
     {
         using var db = InMemoryDb();
-        foreach (var (seed, decision) in EvaluateAll(db))
+        foreach (var (seed, decision) in await EvaluateAllAsync(db))
         {
             foreach (var reason in decision.Reasons)
             {
@@ -167,7 +176,8 @@ public sealed class DemoInvariantsTests
         foreach (var seed in DemoSeedData.All)
         {
             var context = seed.Build(FixedNow);
-            var decision = await orchestrator.EvaluateAsync(context, CancellationToken.None);
+            var decision = await orchestrator.EvaluateAsync(
+                context, null, CancellationToken.None, seed.DecisionAt?.Invoke(FixedNow));
             var stored = await db.Assessments.SingleAsync(a => a.Id == decision.Id);
             Assert.Contains(DemoSeeder.Marker(seed.Key), stored.InputJson);
             var audit = await db.Audit.SingleAsync(a => a.AssessmentId == decision.Id);

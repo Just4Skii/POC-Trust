@@ -111,8 +111,12 @@ public sealed class ResultIntegrityRecordTests
         Assert.Equal("expired", Domain(record, "operator").State);
         Assert.Equal("failed", Domain(record, "power").State);
         Assert.Equal("2 aging, 1 expired", record.EvidenceQuality.Freshness);
-        // Calibration near-due + reagent near-expiry + operator + power = interacting concerns.
-        Assert.True(record.EvidenceQuality.ConflictCount >= 2);
+        // One interaction conflict (MULTI_CONTEXT) — the honest conflict model replaces the
+        // old inflated estimate: conflicts are detected inconsistencies between two sources.
+        Assert.Equal(1, record.EvidenceQuality.ConflictCount);
+        Assert.Equal("1 conflict", record.EvidenceQuality.Consistency);
+        Assert.NotNull(record.Conflicts);
+        Assert.Contains("Multiple recorded evidence sources", record.Conflicts![0].Conflict);
         Assert.Equal("7 / 7 required domains available", record.EvidenceQuality.Coverage.Statement);
     }
 
@@ -261,7 +265,7 @@ public sealed class ResultIntegrityRecordTests
         var db = InMemory();
         var orchestrator = new AssessmentOrchestrator(new ReliabilityEngine(), new StubAiProvider(), new EfAuditStore(db));
         var decision = await orchestrator.EvaluateAsync(TrustScenario());
-        var controller = new PlatformController(db);
+        var controller = new PlatformController(db, new ReliabilityEngine());
 
         var result = await controller.IntegrityRecord(decision.Id);
 
@@ -275,7 +279,7 @@ public sealed class ResultIntegrityRecordTests
     [Fact]
     public async Task IntegrityRecordEndpoint_UnknownId_Returns404WithSafeError()
     {
-        var controller = new PlatformController(InMemory());
+        var controller = new PlatformController(InMemory(), new ReliabilityEngine());
 
         var result = await controller.IntegrityRecord(Guid.NewGuid());
 

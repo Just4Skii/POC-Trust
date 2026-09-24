@@ -11,7 +11,11 @@ public sealed record DemoSeed(
     string Key,
     string Title,
     ReliabilityStatus Expected,
-    Func<DateTimeOffset, DiagnosticContext> Build);
+    Func<DateTimeOffset, DiagnosticContext> Build,
+    /// <summary>Optional fixed decision instant (relative to the seed instant) for the
+    /// demonstration decision history — the sequence is recorded through the REAL pipeline at
+    /// historical timestamps so the integrity timeline shows genuinely recorded evolution.</summary>
+    Func<DateTimeOffset, DateTimeOffset>? DecisionAt = null);
 
 /// <summary>
 /// The curated synthetic demonstration dataset. Deterministic and idempotent:
@@ -22,7 +26,9 @@ public sealed record DemoSeed(
 ///   true whenever the demonstration is loaded (offsets deterministic, absolute time anchored);
 /// - seeding never happens on ordinary server startup — only via the explicit, guarded endpoint.
 ///
-/// Distribution (engine-confirmed): TRUST 4 · REVIEW 4 · VERIFY 2, one offline-marked record.
+/// Distribution (engine-confirmed): TRUST 5 · REVIEW 5 · VERIFY 3, one offline-marked record,
+/// plus a three-step demonstration decision history (TRUST → REVIEW → VERIFY) recorded through
+/// the real pipeline at historical instants as calibration evidence ages.
 /// Note: incomplete provenance is a REVIEW-level finding in this engine build (not VERIFY), so
 /// scenario 10 is seeded as REVIEW — the engine defines truth and the demo adapts to it.
 /// </summary>
@@ -30,6 +36,36 @@ public static class DemoSeedData
 {
     public static readonly IReadOnlyList<DemoSeed> All =
     [
+        // ── Demonstration decision history: one synthetic sequence recorded through the REAL
+        // pipeline at three historical instants, so the Integrity Timeline shows genuine decision
+        // evolution as calibration evidence ages (current → AGING → EXPIRED). Timestamps are fixed
+        // offsets from the seed instant; the UI labels this "Demonstration decision history" —
+        // it is never presented as production history. (Listed first so the seeded-keys listing
+        // reads chronologically; audit sealing is recording-ordered and unaffected.)
+        new DemoSeed("demo-history-1", "Decision history · calibration current", ReliabilityStatus.Trust, now => new DiagnosticContext(
+            Result: "Hb 12.8 g/dL", DeviceId: "POC-DXB-02", QcPassed: true,
+            CalibrationDueUtc: now.AddDays(-1), OperatorId: "Operator B", OperatorCompetent: true,
+            ReagentLot: "LOT-2016", ReagentExpiryUtc: now.AddDays(90),
+            TemperatureC: 23.0, TimestampUtc: now.AddDays(-30).AddMinutes(-10), Provenance: "District PHC Node 04 (Synthetic)/POC-DXB-02/Operator B",
+            TestType: "Hb", HumidityPct: 45, DemoKey: "demo-history-1", LocalEventId: "local-demo-history-1"),
+            now => now.AddDays(-30)),
+
+        new DemoSeed("demo-history-2", "Decision history · calibration aging", ReliabilityStatus.Review, now => new DiagnosticContext(
+            Result: "Glucose 6.1 mmol/L", DeviceId: "POC-DXB-02", QcPassed: true,
+            CalibrationDueUtc: now.AddDays(-1), OperatorId: "Operator B", OperatorCompetent: true,
+            ReagentLot: "LOT-2016", ReagentExpiryUtc: now.AddDays(90),
+            TemperatureC: 23.0, TimestampUtc: now.AddDays(-5).AddHours(-1).AddMinutes(-10), Provenance: "District PHC Node 04 (Synthetic)/POC-DXB-02/Operator B",
+            TestType: "Glucose", HumidityPct: 48, DemoKey: "demo-history-2", LocalEventId: "local-demo-history-2"),
+            now => now.AddDays(-5).AddHours(-1)),
+
+        new DemoSeed("demo-history-3", "Decision history · calibration expired", ReliabilityStatus.Verify, now => new DiagnosticContext(
+            Result: "Hb 10.2 g/dL", DeviceId: "POC-DXB-02", QcPassed: true,
+            CalibrationDueUtc: now.AddDays(-1), OperatorId: "Operator B", OperatorCompetent: true,
+            ReagentLot: "LOT-2016", ReagentExpiryUtc: now.AddDays(90),
+            TemperatureC: 23.0, TimestampUtc: now.AddMinutes(-15), Provenance: "District PHC Node 04 (Synthetic)/POC-DXB-02/Operator B",
+            TestType: "Hb", HumidityPct: 45, DemoKey: "demo-history-3", LocalEventId: "local-demo-history-3"),
+            now => now.AddMinutes(-5)),
+
         // ── TRUST: clean evidence ───────────────────────────────────────────────
         new DemoSeed("demo-assess-001", "Clean evidence", ReliabilityStatus.Trust, now => new DiagnosticContext(
             Result: "Hb 14.2 g/dL", DeviceId: "POC-DXA-01", QcPassed: true,
@@ -105,5 +141,6 @@ public static class DemoSeedData
             ReagentLot: "", ReagentExpiryUtc: now.AddDays(30),
             TemperatureC: 23.0, TimestampUtc: now.AddDays(-2).AddHours(-2), Provenance: "",
             TestType: "Hb", HumidityPct: 45, DemoKey: "demo-assess-010")),
+
     ];
 }

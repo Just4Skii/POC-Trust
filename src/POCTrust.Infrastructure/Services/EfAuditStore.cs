@@ -39,6 +39,12 @@ public sealed class EfAuditStore(PocTrustDbContext db) : IAuditStore
         });
         // Append-only audit: never update, only insert. Each row is sealed into the SHA-256
         // hash chain (content + predecessor hash), making the trail tamper-evident.
+        // The chain commits to RECORDING order: the audit entry is stamped when it is appended,
+        // while the assessment row keeps the decision instant. For ordinary submissions the two
+        // are milliseconds apart; for the back-dated demonstration decision history this keeps
+        // the trail honest ("recorded now, evaluated for a historical instant") and the chain
+        // valid, because a hash chain over timestamp order could never accept an older entry
+        // after a newer one.
         var auditEntry = new AuditEntry
         {
             Id = Guid.NewGuid(),
@@ -49,7 +55,7 @@ public sealed class EfAuditStore(PocTrustDbContext db) : IAuditStore
             AiSummary = decision.AiAssessment?.Summary,
             FinalStatus = decision.FinalStatus,
             Action = decision.Action,
-            TimestampUtc = decision.DecidedAtUtc
+            TimestampUtc = DateTimeOffset.UtcNow
         };
         // SQLite cannot ORDER BY DateTimeOffset server-side (repo-wide convention: order in
         // memory — a scale item, not a correctness item), so the chain head is found client-side.

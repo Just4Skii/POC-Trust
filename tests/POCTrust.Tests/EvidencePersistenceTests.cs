@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POCTrust.Api.Controllers;
 using POCTrust.Core.Entities;
+using POCTrust.Core.Reliability;
 using POCTrust.Core.Enums;
 using POCTrust.Infrastructure.Data;
 using POCTrust.Infrastructure.Services;
@@ -91,7 +92,7 @@ public sealed class EvidencePersistenceTests
         db.Assessments.Add(LegacyRecord("OP-99", "DEV-LEGACY"));
         await db.SaveChangesAsync();
 
-        var json = Serialize(await new PlatformController(db).History(100, default));
+        var json = Serialize(await new PlatformController(db, new ReliabilityEngine()).History(100, default));
 
         Assert.Contains("\"operatorId\":\"OP-99\"", json);
         Assert.Contains("\"testType\":\"Hb\"", json);
@@ -113,7 +114,7 @@ public sealed class EvidencePersistenceTests
         }
         await db.SaveChangesAsync();
 
-        var controller = new PlatformController(db);
+        var controller = new PlatformController(db, new ReliabilityEngine());
         var first = Ids(await controller.History(100, default));
         var second = Ids(await controller.History(100, default));
 
@@ -139,7 +140,7 @@ public sealed class EvidencePersistenceTests
         Assert.Equal(2, await db.Assessments.CountAsync());
         Assert.Equal(2, await db.Audit.CountAsync());
 
-        var json = Serialize(await new PlatformController(db).AuditDetail(firstDecision.Id, default));
+        var json = Serialize(await new PlatformController(db, new ReliabilityEngine()).AuditDetail(firstDecision.Id, default));
         Assert.Contains(firstDecision.Id.ToString(), json);
         Assert.DoesNotContain(secondDecision.Id.ToString(), json);
     }

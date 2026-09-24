@@ -1,8 +1,10 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using POCTrust.Api.Services;
 using POCTrust.Core.Entities;
 using POCTrust.Core.Integrity;
+using POCTrust.Core.Interfaces;
 using POCTrust.Infrastructure.Data;
 using POCTrust.Infrastructure.Services;
 
@@ -10,8 +12,13 @@ namespace POCTrust.Api.Controllers;
 
 [ApiController]
 [Route("api")]
-public sealed class PlatformController(PocTrustDbContext db) : ControllerBase
+public sealed class PlatformController(PocTrustDbContext db, IReliabilityEngine engine) : ControllerBase
 {
+    /// <summary>Demonstration decision-history family marker: records whose demo key starts with
+    /// this prefix form ONE synthetic sequence, evaluated through the real pipeline at historical
+    /// instants. Only demo-marked records can ever match.</summary>
+    private const string HistoryFamilyMarker = "\"demoKey\":\"demo-history-";
+
     // Stored evidence is camelCase (canonical since the persistence fix); PascalCase lookups are
     // still attempted so records written by earlier prototype builds keep rendering correctly.
     private static readonly JsonSerializerOptions PersistedJson = new(JsonSerializerDefaults.Web);
@@ -91,12 +98,36 @@ public sealed class PlatformController(PocTrustDbContext db) : ControllerBase
                 : "Assessment record available",
             "Counts reference the append-only audit trail for this assessment; sealing makes the trail tamper-evident.");
 
+        // Demonstration decision history: when this record belongs to the seeded sequence, load the
+        // sibling decisions (already stored — never re-computed) so the integrity timeline can show
+        // genuinely recorded evolution. Non-demo records never take this path.
+        List<IntegrityHistoryPoint>? history = null;
+        if (input.DemoKey is { } demoKey && demoKey.StartsWith("demo-history-", StringComparison.Ordinal))
+        {
+            var rows = await db.Assessments.AsNoTracking()
+                .Where(a => a.InputJson.Contains(HistoryFamilyMarker))
+                .ToListAsync(ct);
+            history = rows
+                .Select(row => new
+                {
+                    row.Id, row.FinalStatus, row.DecidedAtUtc,
+                    Rules = ParseStringList(row.RuleIdsJson),
+                    Reasons = ParseStringList(row.ReasonsJson),
+                })
+                .OrderBy(h => h.DecidedAtUtc).ThenBy(h => h.Id)
+                .Select(h => new IntegrityHistoryPoint(h.Id, h.DecidedAtUtc, h.FinalStatus, h.Rules, h.Reasons))
+                .ToList();
+        }
+
         var snapshot = new IntegrityDecisionSnapshot(
             a.Id, input, a.FinalStatus,
             ParseStringList(a.RuleIdsJson), ParseStringList(a.ReasonsJson),
-            a.Action, a.AiConsulted, a.AiSummary, a.DecidedAtUtc, auditReference);
+            a.Action, a.AiConsulted, a.AiSummary, a.DecidedAtUtc, auditReference, history);
 
-        return Ok(ResultIntegrityProjector.Project(snapshot));
+        // The engine is used ONLY for the gated causality re-derivation inside the projector:
+        // the re-run must reproduce the stored decision exactly before any of its classifications
+        // are shown. The stored decision itself is never re-decided.
+        return Ok(ResultIntegrityProjector.Project(snapshot, engine));
     }
 
     private static string[] ParseStringList(string json)

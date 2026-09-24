@@ -11,12 +11,16 @@ public sealed class AssessmentOrchestrator(IReliabilityEngine engine, IAIProvide
     /// <param name="aiOverride">Optional advisory provider override (e.g. the built-in stub so
     /// demonstration seeding is offline-safe and reproducible). The deterministic engine and every
     /// safety invariant are unchanged — only the advisory summary source differs.</param>
-    public async Task<ReliabilityDecision> EvaluateAsync(DiagnosticContext context, IAIProvider? aiOverride, CancellationToken ct = default)
+    /// <param name="decidedAtUtc">Optional fixed decision instant for the demonstration decision
+    /// history: the seeded sequence is recorded through this same real pipeline with historical
+    /// timestamps, so the integrity timeline shows genuinely recorded evaluations. Ignored when it
+    /// would be in the future (a decision can never be post-dated). Ordinary submissions are unaffected.</param>
+    public async Task<ReliabilityDecision> EvaluateAsync(DiagnosticContext context, IAIProvider? aiOverride, CancellationToken ct = default, DateTimeOffset? decidedAtUtc = null)
     {
         // 1-2. receive + validate input
         ArgumentNullException.ThrowIfNull(context);
         if (string.IsNullOrWhiteSpace(context.Result)) throw new ArgumentException("Result is required.");
-        var now = DateTimeOffset.UtcNow;
+        var now = decidedAtUtc is { } fixedAt && fixedAt <= DateTimeOffset.UtcNow ? fixedAt : DateTimeOffset.UtcNow;
 
         // 3. evidence completeness is itself a rule (PROVENANCE_INCOMPLETE) — evaluated in engine
         // 4-5. deterministic engine + initial status

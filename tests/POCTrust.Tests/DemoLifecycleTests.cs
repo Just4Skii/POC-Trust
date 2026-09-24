@@ -46,15 +46,15 @@ public sealed class DemoLifecycleTests
 
         var json = JsonSerializer.Serialize(result.Value);
         using var doc = JsonDocument.Parse(json);
-        Assert.Equal(10, doc.RootElement.GetProperty("loaded").GetInt32());
+        Assert.Equal(13, doc.RootElement.GetProperty("loaded").GetInt32());
         Assert.Equal(0, doc.RootElement.GetProperty("distributionMismatches").GetArrayLength());
 
-        Assert.Equal(10, await db.Assessments.CountAsync());
-        Assert.Equal(4, await db.Assessments.CountAsync(a => a.FinalStatus == ReliabilityStatus.Trust));
-        Assert.Equal(4, await db.Assessments.CountAsync(a => a.FinalStatus == ReliabilityStatus.Review));
-        Assert.Equal(2, await db.Assessments.CountAsync(a => a.FinalStatus == ReliabilityStatus.Verify));
+        Assert.Equal(13, await db.Assessments.CountAsync());
+        Assert.Equal(5, await db.Assessments.CountAsync(a => a.FinalStatus == ReliabilityStatus.Trust));
+        Assert.Equal(5, await db.Assessments.CountAsync(a => a.FinalStatus == ReliabilityStatus.Review));
+        Assert.Equal(3, await db.Assessments.CountAsync(a => a.FinalStatus == ReliabilityStatus.Verify));
         // Every seeded record produced an audit row through the real pipeline.
-        Assert.Equal(10, await db.Audit.CountAsync());
+        Assert.Equal(13, await db.Audit.CountAsync());
     }
 
     [Fact]
@@ -67,9 +67,9 @@ public sealed class DemoLifecycleTests
         var json = JsonSerializer.Serialize(result.Value);
         using var doc = JsonDocument.Parse(json);
         Assert.Equal(0, doc.RootElement.GetProperty("loaded").GetInt32());
-        Assert.Equal(10, doc.RootElement.GetProperty("skipped").GetInt32());
-        Assert.Equal(10, await db.Assessments.CountAsync());
-        Assert.Equal(10, await db.Audit.CountAsync());
+        Assert.Equal(13, doc.RootElement.GetProperty("skipped").GetInt32());
+        Assert.Equal(13, await db.Assessments.CountAsync());
+        Assert.Equal(13, await db.Audit.CountAsync());
     }
 
     [Fact]
@@ -79,12 +79,23 @@ public sealed class DemoLifecycleTests
         await controller.Seed(default);
 
         var marker = await db.Assessments.Select(a => a.InputJson).ToListAsync();
-        Assert.All(marker, j => Assert.Contains("\"demoKey\":\"demo-assess-", j));
+        // The family marker covers both demo-assess-* scenarios and the demo-history-* sequence.
+        Assert.All(marker, j => Assert.Contains("\"demoKey\":\"demo-", j));
         Assert.Contains(marker, j => j.Contains("\"demoKey\":\"demo-assess-010\""));
 
-        // REVIEW seeds went through the conditional AI step of the real orchestrator.
+        // REVIEW records consult the advisory provider exactly when the engine's NeedsAi predicate
+        // says so: multi-finding reviews and provenance/power/interaction reviews do; a single
+        // boundary finding (e.g. the decision-history AGING step) stays deterministic-only.
         var reviews = await db.Assessments.Where(a => a.FinalStatus == ReliabilityStatus.Review).ToListAsync();
-        Assert.All(reviews, r => Assert.True(r.AiConsulted));
+        Assert.NotEmpty(reviews);
+        Assert.All(reviews, r =>
+        {
+            var ruleIds = JsonSerializer.Deserialize<List<string>>(r.RuleIdsJson) ?? new List<string>();
+            var expected = ruleIds.Count >= 2
+                || ruleIds.Any(x => x is "PROVENANCE_INCOMPLETE" or "POWER_INTERRUPTION" or "MULTI_CONTEXT");
+            Assert.True(r.AiConsulted == expected,
+                $"REVIEW record {r.Id}: AiConsulted={r.AiConsulted} but NeedsAi predicate says {expected}.");
+        });
         // VERIFY seeds are deterministic-only: AI is never consulted.
         var verifies = await db.Assessments.Where(a => a.FinalStatus == ReliabilityStatus.Verify).ToListAsync();
         Assert.All(verifies, v => Assert.False(v.AiConsulted));
@@ -103,13 +114,13 @@ public sealed class DemoLifecycleTests
             "LOT-GOOD", now.AddMonths(3), 22.5, now, "site-A/DEV-01/OP-07", TestType: "Hb"), default);
 
         await controller.Seed(default);
-        Assert.Equal(11, await db.Assessments.CountAsync());
+        Assert.Equal(14, await db.Assessments.CountAsync());
 
         var result = Assert.IsType<OkObjectResult>(await controller.Reset(default));
         var json = JsonSerializer.Serialize(result.Value);
         using var doc = JsonDocument.Parse(json);
-        Assert.Equal(10, doc.RootElement.GetProperty("removed").GetInt32());
-        Assert.Equal(10, doc.RootElement.GetProperty("auditRemoved").GetInt32());
+        Assert.Equal(13, doc.RootElement.GetProperty("removed").GetInt32());
+        Assert.Equal(13, doc.RootElement.GetProperty("auditRemoved").GetInt32());
         Assert.Equal(1, doc.RootElement.GetProperty("remainingRecords").GetInt32());
 
         var survivors = await db.Assessments.ToListAsync();
@@ -140,8 +151,8 @@ public sealed class DemoLifecycleTests
         var json = JsonSerializer.Serialize(result.Value);
         using var doc = JsonDocument.Parse(json);
         Assert.True(doc.RootElement.GetProperty("enabled").GetBoolean());
-        Assert.Equal(10, doc.RootElement.GetProperty("demoRecords").GetInt32());
-        Assert.Equal(10, doc.RootElement.GetProperty("expectedRecords").GetInt32());
-        Assert.Equal(10, doc.RootElement.GetProperty("seeded").GetArrayLength());
+        Assert.Equal(13, doc.RootElement.GetProperty("demoRecords").GetInt32());
+        Assert.Equal(13, doc.RootElement.GetProperty("expectedRecords").GetInt32());
+        Assert.Equal(13, doc.RootElement.GetProperty("seeded").GetArrayLength());
     }
 }

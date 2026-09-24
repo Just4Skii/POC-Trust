@@ -48,6 +48,10 @@ public sealed class DemoSeeder(AssessmentOrchestrator orchestrator, PocTrustDbCo
         var skipped = new List<string>();
         var mismatches = new List<object>();
 
+        // Audit entries are stamped at RECORDING time (EfAuditStore), so the SHA-256 chain
+        // always commits to append order — even when the demonstration decision history is
+        // back-dated into a store that already holds records. No special handling needed here.
+
         foreach (var seed in DemoSeedData.All)
         {
             if (await db.Assessments.AnyAsync(a => a.InputJson.Contains(Marker(seed.Key)), ct))
@@ -55,7 +59,11 @@ public sealed class DemoSeeder(AssessmentOrchestrator orchestrator, PocTrustDbCo
                 skipped.Add(seed.Key);
                 continue;
             }
-            var decision = await orchestrator.EvaluateAsync(seed.Build(now), SeedAdvisory, ct);
+            // Decision-history seeds are back-dated relative to the seed instant; ordinary
+            // seeds anchor at "now". The engine's statuses depend only on relative offsets.
+            var anchor = now;
+            var decision = await orchestrator.EvaluateAsync(
+                seed.Build(anchor), SeedAdvisory, ct, seed.DecisionAt?.Invoke(anchor));
             if (decision.FinalStatus != seed.Expected)
                 mismatches.Add(new
                 {
