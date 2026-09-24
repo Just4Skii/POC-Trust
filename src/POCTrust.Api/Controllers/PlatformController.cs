@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POCTrust.Infrastructure.Data;
+using POCTrust.Infrastructure.Services;
 
 namespace POCTrust.Api.Controllers;
 
@@ -118,6 +119,28 @@ public sealed class PlatformController(PocTrustDbContext db) : ControllerBase
     {
         var rows = await db.Audit.AsNoTracking().ToListAsync(ct);
         return Ok(rows.Where(a => a.AssessmentId == assessmentId).OrderBy(a => a.TimestampUtc).ThenBy(a => a.Id).ToList());
+    }
+
+    /// <summary>
+    /// Tamper-evidence check for the append-only audit trail: recomputes the SHA-256 hash chain in
+    /// canonical order and reports the first broken entry, if any. Entries written before audit
+    /// sealing was introduced are reported as an unsealed legacy prefix, never as a failure.
+    /// </summary>
+    [HttpGet("audit/verify")]
+    public async Task<ActionResult> AuditVerify(CancellationToken ct = default)
+    {
+        var rows = await db.Audit.AsNoTracking().ToListAsync(ct);
+        var report = AuditChain.Verify(rows);
+        return Ok(new
+        {
+            valid = report.Valid,
+            sealedEntries = report.SealedCount,
+            legacyUnsealedEntries = report.LegacyCount,
+            totalEntries = rows.Count,
+            brokenAt = report.BrokenAt,
+            algorithm = "sha256-chain",
+            note = "Sealing proves the sealed trail has not been altered since each entry was written; it does not attest that the underlying event occurred.",
+        });
     }
 
     private static string? TryGet(string json, string prop)

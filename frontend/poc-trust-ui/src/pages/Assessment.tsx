@@ -106,7 +106,7 @@ export function NewAssessment({
         <label className="md:col-span-2">Provenance (who / where / device / reagent)<input className={inputCls} value={form.provenance ?? ""} onChange={(e) => set("provenance", e.target.value)} placeholder="site-A/DEV-01/OP-07" /></label>
       </Section>
       {(localError || error) && <p role="alert" className="text-sm font-semibold text-[#C43D3D]">{localError || error}</p>}
-      <button onClick={submit} disabled={submitting} className="pt-action w-full rounded-lg bg-[#0B1F3A] px-5 py-3 font-semibold text-white disabled:opacity-50 sm:w-auto">
+      <button onClick={submit} disabled={submitting} className="pt-action pt-primary w-full rounded-lg px-5 py-3 font-semibold disabled:opacity-50 sm:w-auto">
         {submitting ? "Evaluating…" : "Evaluate reliability"}
       </button>
     </div>

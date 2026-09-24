@@ -27,10 +27,15 @@ async function json<T>(res: Response): Promise<T> {
 }
 
 export const api = {
-  evaluate: (body: unknown) =>
+  /** Evaluate an assessment. `idempotencyKey` makes a retried submission (offline sync replay)
+   *  return the original decision instead of creating a duplicate assessment. */
+  evaluate: (body: unknown, idempotencyKey?: string) =>
     fetch("/api/assessments/evaluate", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}),
+      },
       body: JSON.stringify(body),
     }).then(json<Decision>),
   demoStatus: () => fetch("/api/demo/status").then(json<DemoStatus>),

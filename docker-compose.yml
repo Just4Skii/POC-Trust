@@ -1,0 +1,43 @@
+# POC Trust — one-command demonstration appliance.
+#
+#   cp .env.example .env   (optional: add AI key, auth, ports)
+#   docker compose up --build
+#
+# Then open http://localhost:8080 — UI, API and seeded demonstration data from one origin.
+#
+# The appliance runs in Development mode ON PURPOSE: the demonstration lifecycle endpoints
+# (seed/reset/status) and the synthetic-data banner are environment-guarded to Development.
+# For a hardened deployment set ASPNETCORE_ENVIRONMENT=Production and Auth__Mode=apikey —
+# demo lifecycle controls then disappear (404) and mutating API calls require the key.
+
+services:
+  poc-trust:
+    build: .
+    image: poc-trust:latest
+    container_name: poc-trust
+    ports:
+      - "${POC_TRUST_PORT:-8080}:8080"
+    environment:
+      # Demonstration appliance defaults (see note above before hardening).
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      Demo__AutoSeed: ${DEMO_AUTOSEED:-true}
+
+      # Advisory AI ("Real AI required" for a live demo): set AI_API_KEY in .env.
+      # Without a key the honest stub answers; the deterministic result never depends on it.
+      AI__ApiKey: ${AI_API_KEY:-}
+      AI__Endpoint: ${AI_ENDPOINT:-https://generativelanguage.googleapis.com/v1beta/openai/chat/completions}
+      AI__Model: ${AI_MODEL:-gemini-2.0-flash}
+
+      # Optional transport-level gate for mutating API calls (auth stub, not an identity system).
+      Auth__Mode: ${AUTH_MODE:-none}
+      Auth__ApiKey: ${AUTH_API_KEY:-}
+
+      # Rate limiting for the demonstration appliance (per-IP fixed window).
+      RateLimit__PermitsPerWindow: ${RATE_LIMIT_PERMITS:-100}
+      RateLimit__WindowSeconds: ${RATE_LIMIT_WINDOW:-10}
+    volumes:
+      - poctrust-data:/data
+    restart: unless-stopped
+
+volumes:
+  poctrust-data:

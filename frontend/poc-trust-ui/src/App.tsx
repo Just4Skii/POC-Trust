@@ -124,6 +124,19 @@ export default function App() {
     setError(reason);
   }
 
+  /** Stable per-event identity used as the backend Idempotency-Key: the first offline attempt and
+   *  any later queued retry share it, so a replay can never create a duplicate assessment. */
+  function withQueueId(body: Record<string, unknown>): string {
+    if (typeof body._queueId !== "string" || !body._queueId) {
+      const id = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `q-${Date.now().toString(36)}-${Math.random().toString(16).slice(2, 10)}`;
+      body._queueId = id;
+      return id;
+    }
+    return body._queueId;
+  }
+
   const wait = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
 
   /** Begin the staged pipeline presentation over a real in-flight request (Section 10). */
@@ -173,9 +186,11 @@ export default function App() {
     try {
       if (body.connectivity === "offline") {
         // Honest prototype boundary: the offline path still asks the real engine. If the backend is
-        // unreachable the event is only *queued* — no reliability evaluation happens locally.
+        // unreachable the event is only *queued* — no reliability evaluation happens locally. The
+        // attempt and any later queued retry share one idempotency key (withQueueId).
+        const idempotencyKey = withQueueId(body);
         try {
-          const d = await api.evaluate(body);
+          const d = await api.evaluate(body, idempotencyKey);
           await finishRun(evaluatedOutcomes(body, d.ruleIds), () => { setDecision(d); setInput(body as EvidenceInput); setNav("overview"); }, t0);
           return;
         } catch (e) {
@@ -204,7 +219,10 @@ export default function App() {
       const snapshot = readQueue(window.localStorage);
       const syncedIds: string[] = [];
       for (const body of snapshot) {
-        try { await api.evaluate(body); syncedIds.push(body._queueId); }
+        // The queue's stable identity doubles as the idempotency key: a retry after a lost
+        // response replays the original decision instead of duplicating the assessment.
+        const key = typeof body._queueId === "string" ? body._queueId : undefined;
+        try { await api.evaluate(body, key); syncedIds.push(body._queueId); }
         catch { break; }   // first failure: unsynced entries stay queued (existing partial-failure behaviour)
       }
       // completeSync re-reads storage, so anything queued while this sync ran is preserved.
@@ -302,12 +320,12 @@ export default function App() {
         <div aria-hidden="true" className="pt-demo-topline fixed left-0 right-0 top-0 z-40 h-[2px]" />
       )}
       {demoActive && (
-        <div role="banner" className="pt-fade bg-[#0B1F3A] px-4 py-2 text-center text-sm font-semibold text-white">
+        <div role="banner" className="pt-fade px-4 py-2 text-center text-sm font-semibold text-white" style={{ backgroundImage: "linear-gradient(90deg, #0B1F3A, #1E5AA8 55%, #0F8B8D)" }}>
           DEMONSTRATION DATA LOADED — SYNTHETIC RECORDS, CLEARLY LABELLED
         </div>
       )}
       <div className="flex">
-        <aside className={`hidden min-h-screen shrink-0 flex-col bg-[#0B1F3A] text-white transition-all md:flex ${collapsed ? "w-16" : "w-60"}`} aria-label="Primary">
+        <aside className={`pt-sidebar hidden min-h-screen shrink-0 flex-col text-white transition-all md:flex ${collapsed ? "w-16" : "w-60"}`} aria-label="Primary">
           <div className="flex items-center justify-between p-3">
             <Brand collapsed={collapsed} />
             <button onClick={() => setCollapsed(!collapsed)} aria-label={collapsed ? "Expand navigation" : "Collapse navigation"} className="rounded p-2 text-slate-300 hover:bg-white/10">☰</button>

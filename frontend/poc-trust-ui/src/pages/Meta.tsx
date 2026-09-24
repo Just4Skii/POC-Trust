@@ -92,7 +92,7 @@ export function SettingsPage({
                   Clear demonstration data
                 </button>
               ) : (
-                <button onClick={onSeed} disabled={busy} className="pt-action rounded-md bg-[#0B1F3A] px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">
+                <button onClick={onSeed} disabled={busy} className="pt-action pt-primary rounded-md px-3 py-2 text-sm font-semibold disabled:opacity-50">
                   Load demonstration data
                 </button>
               )}

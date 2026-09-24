@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POCTrust.Api.Services;
@@ -13,6 +14,12 @@ public sealed class AssessmentsController(AssessmentOrchestrator orchestrator, P
     /// <summary>Demo scenarios this prototype actually implements.</summary>
     private static readonly string[] DemoKinds = ["trust", "review", "verify", "missing", "offline"];
 
+    /// <summary>Matches the MVC web defaults, so a stored idempotent replay is byte-shape-identical
+    /// to the response the first submission received.</summary>
+    private static readonly JsonSerializerOptions ResponseJson = new(JsonSerializerDefaults.Web);
+
+    private const int MaxIdempotencyKeyLength = 128;
+
     [HttpPost("evaluate")]
     public async Task<ActionResult<ReliabilityDecision>> Evaluate([FromBody] DiagnosticContext context, CancellationToken ct)
     {
@@ -20,8 +27,51 @@ public sealed class AssessmentsController(AssessmentOrchestrator orchestrator, P
         if (string.IsNullOrWhiteSpace(context.Result))
             return BadRequest(ApiError.Message("Result is required."));
 
+        // Offline sync idempotency: a client that retries a queued submission with the same
+        // Idempotency-Key gets the ORIGINAL response replayed, so a retried sync can never create
+        // a duplicate assessment. Keys are optional — submissions without one behave as before.
+        var key = HttpContext?.Request.Headers.TryGetValue("Idempotency-Key", out var value) == true
+            ? value.ToString().Trim()
+            : "";
+        if (key.Length > MaxIdempotencyKeyLength)
+            return BadRequest(ApiError.Message($"Idempotency-Key must be at most {MaxIdempotencyKeyLength} characters."));
+
+        if (key.Length > 0)
+        {
+            var existing = await db.SyncReceipts.AsNoTracking().FirstOrDefaultAsync(r => r.Key == key, ct);
+            if (existing is not null) return Replay(existing);
+        }
+
         var decision = await orchestrator.EvaluateAsync(context, ct);
+
+        if (key.Length > 0)
+        {
+            db.SyncReceipts.Add(new SyncReceipt
+            {
+                Key = key,
+                AssessmentId = decision.Id,
+                ResponseJson = JsonSerializer.Serialize(decision, ResponseJson),
+                CreatedUtc = DateTimeOffset.UtcNow,
+            });
+            try
+            {
+                await db.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateException)
+            {
+                // Two submissions raced the same key: the winner's receipt is the replay answer.
+                var winner = await db.SyncReceipts.AsNoTracking().FirstAsync(r => r.Key == key, ct);
+                return Replay(winner);
+            }
+        }
+
         return Ok(decision);
+    }
+
+    private ContentResult Replay(SyncReceipt receipt)
+    {
+        Response.Headers["Idempotent-Replay"] = "true";
+        return Content(receipt.ResponseJson, "application/json");
     }
 
     [HttpGet("demo/{kind}")]
