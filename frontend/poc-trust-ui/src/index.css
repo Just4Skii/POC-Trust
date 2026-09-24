@@ -1,8 +1,70 @@
 @import "tailwindcss";
 
+@theme {
+  --color-navy: #0b1f3a;
+  --color-medblue: #1e5aa8;
+  --color-teal: #0f8b8d;
+  --color-page: #f7f9fc;
+  --color-line: #dce3ec;
+  --color-ink: #132238;
+  --color-ink2: #607087;
+  --color-trust: #167a5a;
+  --color-trustbg: #eaf7f1;
+  --color-review: #b7791f;
+  --color-reviewbg: #fff7e6;
+  --color-verify: #c43d3d;
+  --color-verifybg: #fdeeee;
+  --font-sans: "Inter", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+}
+
 :root {
   color-scheme: light;
 }
+
+html {
+  font-family: var(--font-sans);
+}
+
 body {
   margin: 0;
+  background: var(--color-page);
+  color: var(--color-ink);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* Restrained motion: 150–200ms normal */
+.pt-fade {
+  animation: pt-fade 180ms ease-out;
+}
+.pt-demo {
+  animation: pt-fade 1.2s ease-out;
+}
+@keyframes pt-fade {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pt-fade, .pt-demo { animation: none; }
+}
+
+/* Visible focus for keyboard users */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 3px solid var(--color-medblue);
+  outline-offset: 2px;
+}
+
+/* Touch targets */
+.pt-navbtn, .pt-action {
+  min-height: 44px;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #e8edf3 25%, #f4f7fa 50%, #e8edf3 75%);
+  background-size: 200% 100%;
+  animation: pt-shimmer 1.2s infinite linear;
+}
+@keyframes pt-shimmer {
+  to { background-position: -200% 0; }
 }

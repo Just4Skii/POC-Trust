@@ -1,168 +1,229 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { api } from "./api/client";
+import { Brand } from "./components/Brand";
+import type { AssessmentSummary, AuditRow, DashboardSummary, Decision, EvidenceInput } from "./types";
+import { AssessmentDetail, NewAssessment, emptyForm, type FormState } from "./pages/Assessment";
+import { AssessmentsList, AuditTrail } from "./pages/Lists";
+import { DevicesPage, OperatorsPage, QualityPage, SettingsPage } from "./pages/Meta";
+import { Overview } from "./pages/Overview";
 
-type Status = "Trust" | "Review" | "Verify";
-type Decision = {
-  id: string;
-  initialStatus: Status | number;
-  finalStatus: Status | number;
-  reasons: string[];
-  ruleIds: string[];
-  action: string;
-  aiAssessment?: { summary: string; anomalies: string[]; recommendedAction: string; confidence: number; model: string } | null;
-  aiConsulted: boolean;
-};
-type AuditRow = {
-  id: string; assessmentId: string; initialStatus: number; finalStatus: number;
-  aiConsulted: boolean; aiSummary?: string; action: string; timestampUtc: string;
-};
+type Nav = "overview" | "new" | "assessments" | "audit" | "devices" | "operators" | "qc" | "settings";
 
-const statusName = (s: Status | number) =>
-  typeof s === "string" ? s : (["Trust", "Review", "Verify"] as Status[])[s] ?? String(s);
-const badge = (s: Status | number) => {
-  const n = statusName(s);
-  return n === "Trust" ? "bg-emerald-100 text-emerald-800 border-emerald-300"
-    : n === "Review" ? "bg-amber-100 text-amber-900 border-amber-300"
-    : "bg-red-100 text-red-800 border-red-300";
-};
+const NAV: { id: Nav; label: string; ready: boolean }[] = [
+  { id: "overview", label: "Overview", ready: true },
+  { id: "new", label: "New Assessment", ready: true },
+  { id: "assessments", label: "Assessments", ready: true },
+  { id: "audit", label: "Audit Trail", ready: true },
+  { id: "devices", label: "Devices", ready: true },
+  { id: "operators", label: "Operators", ready: true },
+  { id: "qc", label: "Quality Controls", ready: true },
+  { id: "settings", label: "Settings", ready: true },
+];
+
+function demoInput(kind: string): EvidenceInput {
+  const now = new Date();
+  const iso = (d: Date) => d.toISOString();
+  const addDays = (n: number) => new Date(now.getTime() + n * 864e5);
+  switch (kind) {
+    case "trust":
+      return { result: "Hb 14.2 g/dL", testType: "Hb", deviceId: "DEV-01", qcPassed: true, calibrationDueUtc: iso(addDays(60)), operatorId: "OP-07", operatorCompetent: true, reagentLot: "LOT-GOOD", reagentExpiryUtc: iso(addDays(90)), temperatureC: 22.5, humidityPct: 45, powerInterruption: false, provenance: "site-A/DEV-01/OP-07", connectivity: "online", timestampUtc: iso(now) };
+    case "review":
+      return { result: "Hb 9.1 g/dL", testType: "Hb", deviceId: "DEV-02", qcPassed: true, calibrationDueUtc: iso(addDays(3)), operatorId: "OP-12", operatorCompetent: false, reagentLot: "LOT-44", reagentExpiryUtc: iso(addDays(10)), temperatureC: 24, humidityPct: 55, powerInterruption: true, provenance: "site-B/DEV-02/OP-12", connectivity: "online", timestampUtc: iso(now) };
+    case "missing":
+      return { result: "Hb 11.0 g/dL", testType: "Hb", deviceId: "DEV-04", qcPassed: true, calibrationDueUtc: iso(addDays(30)), operatorId: "", operatorCompetent: true, reagentLot: "", reagentExpiryUtc: iso(addDays(30)), temperatureC: 23, humidityPct: 45, powerInterruption: false, provenance: "", connectivity: "online", timestampUtc: iso(now) };
+    case "offline":
+      return { result: "Malaria RDT positive", testType: "Malaria-RDT", deviceId: "DEV-OFF-1", qcPassed: true, calibrationDueUtc: iso(addDays(30)), operatorId: "OP-09", operatorCompetent: true, reagentLot: "LOT-OFF-7", reagentExpiryUtc: iso(addDays(60)), temperatureC: 25, humidityPct: 50, powerInterruption: false, provenance: "site-mobile/DEV-OFF-1/OP-09", connectivity: "offline", localEventId: "local-demo12", timestampUtc: iso(now) };
+    default:
+      return { result: "CRP 68 mg/L", testType: "CRP", deviceId: "DEV-03", qcPassed: false, calibrationDueUtc: iso(addDays(-9)), operatorId: "OP-03", operatorCompetent: true, reagentLot: "LOT-91", reagentExpiryUtc: iso(addDays(-1)), temperatureC: 31.5, humidityPct: 90, powerInterruption: false, provenance: "site-C/DEV-03/OP-03", connectivity: "online", timestampUtc: iso(now) };
+  }
+}
+
+function loadPending(): Record<string, unknown>[] {
+  try { return JSON.parse(localStorage.getItem("poctrust-pending") ?? "[]"); } catch { return []; }
+}
 
 export default function App() {
-  const [tab, setTab] = useState<"dashboard" | "form" | "audit">("dashboard");
-  const [form, setForm] = useState({
-    result: "Hb 14.2 g/dL", testType: "Hb", deviceId: "DEV-01", qcPassed: true,
-    calibrationDueUtc: new Date(Date.now() + 60 * 864e5).toISOString().slice(0, 16),
-    operatorId: "OP-07", operatorCompetent: true, reagentLot: "LOT-GOOD",
-    reagentExpiryUtc: new Date(Date.now() + 90 * 864e5).toISOString().slice(0, 16),
-    temperatureC: 22.5, humidityPct: 45, powerInterruption: false,
-    connectivity: "online", provenance: "site-A/DEV-01/OP-07",
-  });
+  const [nav, setNav] = useState<Nav>("overview");
+  const [collapsed, setCollapsed] = useState(false);
+  const [demoMode, setDemoMode] = useState(true);
   const [decision, setDecision] = useState<Decision | null>(null);
-  const [audit, setAudit] = useState<AuditRow[]>([]);
-  const [counts, setCounts] = useState({ Trust: 0, Review: 0, Verify: 0 });
-  const [loading, setLoading] = useState(false);
+  const [input, setInput] = useState<EvidenceInput>({});
+  const [formKey, setFormKey] = useState(0);
+  const [prefill, setPrefill] = useState<FormState>(emptyForm());
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const set = (k: string, v: unknown) => setForm((f) => ({ ...f, [k]: v }));
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [loadingSummary, setLoadingSummary] = useState(true);
+  const [assessments, setAssessments] = useState<AssessmentSummary[]>([]);
+  const [audit, setAudit] = useState<AuditRow[]>([]);
+  const [online, setOnline] = useState(navigator.onLine);
+  const [pending, setPending] = useState<Record<string, unknown>[]>(loadPending());
+  const [lastSynced, setLastSynced] = useState<string | null>(localStorage.getItem("poctrust-synced"));
 
-  async function loadAudit() {
+  const refresh = useCallback(async () => {
+    setLoadingSummary(true);
     try {
-      const res = await fetch("/api/assessments/audit?take=100");
-      if (!res.ok) return;
-      const rows: AuditRow[] = await res.json();
-      setAudit(rows);
-      const c = { Trust: 0, Review: 0, Verify: 0 };
-      rows.forEach((r) => { c[statusName(r.finalStatus) as keyof typeof c]++; });
-      setCounts(c);
-    } catch { /* backend may be down in preview */ }
-  }
-  useEffect(() => { loadAudit(); }, [tab, decision]);
+      const [s, a, h] = await Promise.all([api.summary(), api.audit(100), api.assessments(100)]);
+      setSummary(s); setAudit(a); setAssessments(h);
+      const now = new Date().toISOString();
+      localStorage.setItem("poctrust-synced", now);
+      setLastSynced(now);
+    } catch { /* backend down — offline UX shows */ }
+    finally { setLoadingSummary(false); }
+  }, []);
 
-  async function evaluate(demo?: string) {
-    setLoading(true); setError("");
+  useEffect(() => { refresh(); }, [refresh, decision]);
+  useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => { window.removeEventListener("online", on); window.removeEventListener("offline", off); };
+  }, []);
+
+  async function runDemo(kind: string) {
+    setDemoMode(true); setSubmitting(true); setError("");
     try {
-      const res = demo ? await fetch(`/api/assessments/demo/${demo}`) : await fetch("/api/assessments/evaluate", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...form,
-          calibrationDueUtc: new Date(form.calibrationDueUtc).toISOString(),
-          reagentExpiryUtc: new Date(form.reagentExpiryUtc).toISOString(),
-          timestampUtc: new Date().toISOString(),
-        }),
-      });
-      if (!res.ok) throw new Error(`API ${res.status}`);
-      setDecision(await res.json());
-      setTab("dashboard");
+      const d = await api.demo(kind);
+      setDecision(d); setInput(demoInput(kind));
+      setNav("overview");
     } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
-    finally { setLoading(false); }
+    finally { setSubmitting(false); }
+  }
+
+  async function submit(body: Record<string, unknown>) {
+    setSubmitting(true); setError("");
+    const isOffline = body.connectivity === "offline" || !navigator.onLine;
+    try {
+      if (isOffline && body.connectivity === "offline") {
+        // Honest prototype: evaluate locally-available path via backend when reachable,
+        // else queue. Try backend first so demo/offline still goes through real engine.
+        try {
+          const d = await api.evaluate(body);
+          setDecision(d); setInput(body as EvidenceInput); setNav("overview"); return;
+        } catch {
+          const q = [...pending, { ...body, _queuedAt: new Date().toISOString() }];
+          localStorage.setItem("poctrust-pending", JSON.stringify(q));
+          setPending(q);
+          setError("Backend unreachable — event queued locally as pending (prototype offline queue).");
+          return;
+        }
+      }
+      const d = await api.evaluate(body);
+      setDecision(d); setInput(body as EvidenceInput); setNav("overview");
+    } catch (e) {
+      const q = [...pending, { ...body, _queuedAt: new Date().toISOString() }];
+      localStorage.setItem("poctrust-pending", JSON.stringify(q));
+      setPending(q);
+      setError(e instanceof Error ? `${e.message} — queued locally.` : String(e));
+    } finally { setSubmitting(false); }
+  }
+
+  async function syncPending() {
+    const q = loadPending();
+    let ok = 0;
+    for (const body of q) {
+      try { await api.evaluate(body); ok++; } catch { break; }
+    }
+    const rest = q.slice(ok);
+    localStorage.setItem("poctrust-pending", JSON.stringify(rest));
+    setPending(rest);
+    await refresh();
+  }
+
+  async function openAssessment(id: string) {
+    try {
+      const detail = await api.assessmentDetail(id);
+      const a = detail.assessment as unknown as {
+        id: string; initialStatus: number; finalStatus: number; reasonsJson: string; ruleIdsJson: string;
+        action: string; aiSummary?: string; aiConsulted: boolean; decidedAtUtc: string;
+      };
+      const inp = detail.input as unknown as EvidenceInput;
+      setInput(inp);
+      setDecision({
+        id: a.id,
+        initialStatus: a.initialStatus, finalStatus: a.finalStatus,
+        reasons: JSON.parse(a.reasonsJson ?? "[]"), ruleIds: JSON.parse(a.ruleIdsJson ?? "[]"),
+        action: a.action,
+        aiAssessment: a.aiSummary ? { summary: a.aiSummary, anomalies: [], recommendedAction: "", confidence: 0.7, model: "recorded" } : null,
+        aiConsulted: a.aiConsulted, decidedAtUtc: a.decidedAtUtc,
+      });
+      setNav("overview");
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="border-b bg-white">
-        <div className="mx-auto max-w-6xl px-6 py-5">
-          <h1 className="text-2xl font-bold">POC Trust — Point-of-Care Diagnostic Integrity Layer</h1>
-          <p className="text-sm text-slate-600">Deterministic TRUST/REVIEW/VERIFY is authoritative. AI is advisory only. Clinician decides.</p>
-          <div className="mt-3 flex gap-2 text-sm">
-            {(["dashboard", "form", "audit"] as const).map((t) => (
-              <button key={t} onClick={() => setTab(t)} className={`rounded border px-3 py-1 capitalize ${tab === t ? "bg-slate-900 text-white" : "bg-white"}`}>{t === "form" ? "Event Form" : t}</button>
-            ))}
-            <span className="mx-2" />
-            {["trust", "review", "verify", "missing", "offline"].map((d) => (
-              <button key={d} onClick={() => evaluate(d)} className="rounded border px-2 py-1 capitalize">{d}</button>
-            ))}
-          </div>
+    <div className="min-h-screen bg-[#F7F9FC] text-[#132238]">
+      {demoMode && (
+        <div role="banner" className="bg-[#0B1F3A] px-4 py-2 text-center text-sm font-semibold text-white">
+          DEMONSTRATION MODE — SYNTHETIC DATA ONLY
         </div>
-      </header>
-
-      <main className="mx-auto max-w-6xl px-6 py-6">
-        {tab === "dashboard" && (
-          <div className="grid gap-6 md:grid-cols-3">
-            <div className="rounded-xl border bg-white p-5"><h2 className="font-semibold">Dashboard</h2>
-              <p className="text-sm">Trust {counts.Trust} · Review {counts.Review} · Verify {counts.Verify} (last 100 audits)</p>
-              {!decision && <p className="mt-2 text-sm text-slate-500">Run a demo or submit the Event Form.</p>}
-            </div>
-            <div className="rounded-xl border bg-white p-5 md:col-span-2"><h2 className="font-semibold mb-2">Assessment View</h2>
-              {!decision && <p className="text-sm text-slate-500">No assessment yet.</p>}
-              {decision && (
-                <div className="space-y-3 text-sm">
-                  <div className="flex flex-wrap gap-2">
-                    <span className={`rounded border px-3 py-1 font-semibold ${badge(decision.initialStatus)}`}>Initial: {statusName(decision.initialStatus)}</span>
-                    <span className={`rounded border px-3 py-1 font-semibold ${badge(decision.finalStatus)}`}>Final: {statusName(decision.finalStatus)}</span>
-                    <span className="rounded border px-3 py-1">{decision.aiConsulted ? "AI consulted" : "Rules only"}</span>
-                  </div>
-                  <p><b>Action:</b> {decision.action}</p>
-                  <p className="text-slate-500">Audit ID: {decision.id}</p>
-                  <ul className="list-disc pl-5">{decision.reasons.map((r, i) => <li key={i}>{r}</li>)}</ul>
-                  {decision.aiAssessment && (
-                    <div className="rounded border bg-slate-50 p-3">
-                      <b>AI advisory — not a diagnosis:</b>
-                      <p>{decision.aiAssessment.summary}</p>
-                      <ul className="list-disc pl-5">{decision.aiAssessment.anomalies.map((a, i) => <li key={i}>{a}</li>)}</ul>
-                    </div>
-                  )}
-                </div>
-              )}
-              {error && <p className="text-red-700">Backend unreachable ({error}). Run API first.</p>}
-            </div>
+      )}
+      <div className="flex">
+        <aside className={`hidden min-h-screen shrink-0 flex-col bg-[#0B1F3A] text-white transition-all md:flex ${collapsed ? "w-16" : "w-60"}`} aria-label="Primary">
+          <div className="flex items-center justify-between p-3">
+            <Brand collapsed={collapsed} />
+            <button onClick={() => setCollapsed(!collapsed)} aria-label={collapsed ? "Expand navigation" : "Collapse navigation"} className="rounded p-2 text-slate-300 hover:bg-white/10">☰</button>
           </div>
-        )}
+          <nav className="flex flex-col gap-1 p-2">
+            {NAV.map((n) => (
+              <button
+                key={n.id}
+                onClick={() => setNav(n.id)}
+                aria-current={nav === n.id ? "page" : undefined}
+                className={`pt-navbtn rounded-md px-3 py-2 text-left text-sm ${nav === n.id ? "bg-white font-semibold text-[#0B1F3A]" : "text-slate-200 hover:bg-white/10"}`}
+              >
+                {collapsed ? n.label[0] : n.label}
+              </button>
+            ))}
+          </nav>
+          <div className="mt-auto p-3 text-xs text-slate-300">
+            {!collapsed && <p>Deterministic rules authoritative · AI advisory only.</p>}
+          </div>
+        </aside>
 
-        {tab === "form" && (
-          <section className="rounded-xl border bg-white p-5">
-            <h2 className="font-semibold mb-4">Diagnostic Event Form (synthetic data only)</h2>
-            <div className="grid gap-3 text-sm md:grid-cols-2">
-              <label>Test type<input className="mt-1 w-full rounded border px-2 py-1" value={form.testType} onChange={(e) => set("testType", e.target.value)} /></label>
-              <label>Result<input className="mt-1 w-full rounded border px-2 py-1" value={form.result} onChange={(e) => set("result", e.target.value)} /></label>
-              <label>Device<input className="mt-1 w-full rounded border px-2 py-1" value={form.deviceId} onChange={(e) => set("deviceId", e.target.value)} /></label>
-              <label>Operator<input className="mt-1 w-full rounded border px-2 py-1" value={form.operatorId} onChange={(e) => set("operatorId", e.target.value)} /></label>
-              <label className="flex items-center gap-2"><input type="checkbox" checked={form.qcPassed} onChange={(e) => set("qcPassed", e.target.checked)} /> QC passed</label>
-              <label className="flex items-center gap-2"><input type="checkbox" checked={form.operatorCompetent} onChange={(e) => set("operatorCompetent", e.target.checked)} /> Operator competent</label>
-              <label>Calibration due<input type="datetime-local" className="mt-1 w-full rounded border px-2 py-1" value={form.calibrationDueUtc} onChange={(e) => set("calibrationDueUtc", e.target.value)} /></label>
-              <label>Reagent expiry<input type="datetime-local" className="mt-1 w-full rounded border px-2 py-1" value={form.reagentExpiryUtc} onChange={(e) => set("reagentExpiryUtc", e.target.value)} /></label>
-              <label>Reagent lot<input className="mt-1 w-full rounded border px-2 py-1" value={form.reagentLot} onChange={(e) => set("reagentLot", e.target.value)} /></label>
-              <label>Provenance<input className="mt-1 w-full rounded border px-2 py-1" value={form.provenance} onChange={(e) => set("provenance", e.target.value)} /></label>
-              <label>Temp °C<input type="number" step="0.1" className="mt-1 w-full rounded border px-2 py-1" value={form.temperatureC} onChange={(e) => set("temperatureC", Number(e.target.value))} /></label>
-              <label>Humidity %<input type="number" className="mt-1 w-full rounded border px-2 py-1" value={form.humidityPct} onChange={(e) => set("humidityPct", Number(e.target.value))} /></label>
-              <label className="flex items-center gap-2"><input type="checkbox" checked={form.powerInterruption} onChange={(e) => set("powerInterruption", e.target.checked)} /> Power interruption</label>
-              <label>Connectivity<select className="mt-1 w-full rounded border px-2 py-1" value={form.connectivity} onChange={(e) => set("connectivity", e.target.value)}><option>online</option><option>offline</option></select></label>
+        <div className="min-w-0 flex-1">
+          <header className="flex flex-wrap items-center gap-2 border-b border-[#DCE3EC] bg-white px-4 py-3">
+            <div className="md:hidden"><Brand collapsed /></div>
+            <nav className="flex flex-wrap gap-1 md:hidden" aria-label="Primary mobile">
+              {NAV.slice(0, 4).map((n) => (
+                <button key={n.id} onClick={() => setNav(n.id)} className={`rounded border px-2 py-1.5 text-xs ${nav === n.id ? "bg-[#0B1F3A] text-white" : ""}`}>{n.label}</button>
+              ))}
+            </nav>
+            <div className="ml-auto flex items-center gap-2 text-xs">
+              <span role="status" aria-label={online ? "Online" : "Offline"} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-semibold ${online ? "border-[#167A5A]/30 bg-[#EAF7F1] text-[#167A5A]" : "border-[#B7791F]/40 bg-[#FFF7E6] text-[#B7791F]"}`}>
+                <span aria-hidden="true">{online ? "●" : "○"}</span> {online ? "Online" : "Offline"}
+              </span>
+              <span className="text-[#607087]">Pending {pending.length}{lastSynced ? ` · synced ${new Date(lastSynced).toLocaleTimeString()}` : ""}</span>
+              {pending.length > 0 && <button onClick={syncPending} className="rounded border px-2 py-1 font-semibold">Sync now</button>}
             </div>
-            <button disabled={loading} onClick={() => evaluate()} className="mt-4 rounded bg-slate-900 px-4 py-2 text-white disabled:opacity-50">{loading ? "Evaluating…" : "Evaluate reliability"}</button>
-          </section>
-        )}
+          </header>
 
-        {tab === "audit" && (
-          <section className="rounded-xl border bg-white p-5">
-            <h2 className="font-semibold mb-2">Audit View (append-only, prototype)</h2>
-            <p className="text-sm text-slate-600 mb-3">Input → rules → initial → AI? → final → action → timestamp. No cryptographic immutability claimed.</p>
-            <table className="w-full text-left text-sm">
-              <thead><tr className="border-b"><th>Time</th><th>Final</th><th>AI?</th><th>Action</th><th>ID</th></tr></thead>
-              <tbody>{audit.map((a) => (
-                <tr key={a.id} className="border-b"><td>{new Date(a.timestampUtc).toLocaleString()}</td>
-                  <td><span className={`rounded border px-2 py-0.5 ${badge(a.finalStatus)}`}>{statusName(a.finalStatus)}</span></td>
-                  <td>{a.aiConsulted ? "yes" : "no"}</td><td className="max-w-md truncate">{a.action}</td><td className="font-mono text-xs">{a.assessmentId.slice(0, 8)}</td></tr>
-              ))}</tbody>
-            </table>
-          </section>
-        )}
-      </main>
+          <main className="mx-auto max-w-6xl space-y-4 p-4 md:p-6">
+            {error && <p role="alert" className="rounded-lg border border-[#C43D3D]/30 bg-[#FDEEEE] px-3 py-2 text-sm text-[#C43D3D]">{error}</p>}
+            {nav === "overview" && (
+              decision ? (
+                <AssessmentDetail
+                  decision={decision} input={input} demoMode={demoMode}
+                  onRepeat={() => { setPrefill({ ...emptyForm(), ...input } as FormState); setFormKey((k) => k + 1); setNav("new"); }}
+                  onCheckDevice={() => setNav("devices")}
+                  onBack={() => setNav("assessments")}
+                />
+              ) : (
+                <Overview summary={summary} loading={loadingSummary} demoMode={demoMode} onDemo={runDemo} onOpen={openAssessment} />
+              )
+            )}
+            {nav === "new" && <NewAssessment key={formKey} initial={prefill} submitting={submitting} error={error} onSubmit={submit} />}
+            {nav === "assessments" && <AssessmentsList items={assessments} onOpen={openAssessment} />}
+            {nav === "audit" && <AuditTrail rows={audit} />}
+            {nav === "devices" && <DevicesPage />}
+            {nav === "operators" && <OperatorsPage />}
+            {nav === "qc" && <QualityPage />}
+            {nav === "settings" && <SettingsPage demoMode={demoMode} onDemoMode={setDemoMode} />}
+            {submitting && nav === "overview" && !decision && <div className="skeleton h-48 rounded-xl" aria-label="Loading assessment" />}
+          </main>
+        </div>
+      </div>
     </div>
   );
 }
