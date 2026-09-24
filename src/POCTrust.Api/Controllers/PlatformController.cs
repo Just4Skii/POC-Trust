@@ -1,6 +1,8 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using POCTrust.Core.Entities;
+using POCTrust.Core.Integrity;
 using POCTrust.Infrastructure.Data;
 using POCTrust.Infrastructure.Services;
 
@@ -12,6 +14,8 @@ public sealed class PlatformController(PocTrustDbContext db) : ControllerBase
 {
     // Stored evidence is camelCase (canonical since the persistence fix); PascalCase lookups are
     // still attempted so records written by earlier prototype builds keep rendering correctly.
+    private static readonly JsonSerializerOptions PersistedJson = new(JsonSerializerDefaults.Web);
+
     private static List<AssessmentRecord> Sorted(IEnumerable<AssessmentRecord> rows, int take) =>
         rows.OrderByDescending(a => a.DecidedAtUtc)
             .ThenByDescending(a => a.Id)   // stable tie-break: timestamps vary in fractional precision
@@ -47,6 +51,67 @@ public sealed class PlatformController(PocTrustDbContext db) : ControllerBase
             ruleIds = JsonDocument.Parse(string.IsNullOrWhiteSpace(a.RuleIdsJson) ? "[]" : a.RuleIdsJson),
             audit = audits.Where(x => x.AssessmentId == id).OrderBy(x => x.TimestampUtc).ThenBy(x => x.Id).ToList(),
         });
+    }
+
+    /// <summary>
+    /// The Result Integrity Record for one assessment: a portable, auditable, evidence-linked
+    /// projection derived from the persisted assessment and its sealed audit entries — never a
+    /// re-evaluation and never a second copy of the data. The record states what evidence the
+    /// engine had, its classified quality under the demonstration policy, why the disposition
+    /// occurred, and what action follows. It is an operational integrity assessment, not a
+    /// measure of clinical validity.
+    /// </summary>
+    [HttpGet("assessments/{id:guid}/integrity-record")]
+    public async Task<ActionResult> IntegrityRecord(Guid id, CancellationToken ct = default)
+    {
+        var a = await db.Assessments.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (a is null)
+            return NotFound(ApiError.Message("No assessment with this id exists."));
+
+        DiagnosticContext input;
+        try
+        {
+            input = JsonSerializer.Deserialize<DiagnosticContext>(
+                string.IsNullOrWhiteSpace(a.InputJson) ? "{}" : a.InputJson, PersistedJson)
+                ?? throw new JsonException("Stored evidence was empty.");
+        }
+        catch (JsonException)
+        {
+            return UnprocessableEntity(ApiError.Message("Stored evidence for this assessment could not be interpreted."));
+        }
+
+        var audits = await db.Audit.AsNoTracking().Where(x => x.AssessmentId == id).ToListAsync(ct);
+        var sealedCount = audits.Count(x => !string.IsNullOrEmpty(x.Hash));
+        var auditReference = new IntegrityAuditReference(
+            audits.Count,
+            sealedCount,
+            "sha256-chain",
+            audits.Count > 0 && sealedCount == audits.Count
+                ? "Sealed audit record available"
+                : "Assessment record available",
+            "Counts reference the append-only audit trail for this assessment; sealing makes the trail tamper-evident.");
+
+        var snapshot = new IntegrityDecisionSnapshot(
+            a.Id, input, a.FinalStatus,
+            ParseStringList(a.RuleIdsJson), ParseStringList(a.ReasonsJson),
+            a.Action, a.AiConsulted, a.AiSummary, a.DecidedAtUtc, auditReference);
+
+        return Ok(ResultIntegrityProjector.Project(snapshot));
+    }
+
+    private static string[] ParseStringList(string json)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "[]" : json);
+            return doc.RootElement.ValueKind == JsonValueKind.Array
+                ? doc.RootElement.EnumerateArray()
+                    .Where(e => e.ValueKind == JsonValueKind.String)
+                    .Select(e => e.GetString() ?? "")
+                    .ToArray()
+                : [];
+        }
+        catch { return []; }
     }
 
     [HttpGet("dashboard/summary")]
