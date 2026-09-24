@@ -17,7 +17,9 @@ import {
   evidenceSources,
   isEvidenceQualityState,
   parseRir,
+  qualityConcerns,
   stateTone,
+  stateWord,
 } from "../src/lib/rir.ts";
 import { evidenceSignals, markerPct, bandLeftPct, bandRightPct } from "../src/lib/signals.ts";
 import { seededSamples, tracePathD, hashSeed } from "../src/lib/telemetry.ts";
@@ -332,6 +334,106 @@ check("rir: sources list derives only from available evidence", () => {
     ],
   });
   assert.deepEqual(evidenceSources(record), ["Event record", "Device quality-control record"]);
+});
+
+// ── Integrity upgrade (spec chunk 3): causality, conflicts, timeline, policy ───────────────
+check("rir: causality, conflicts and timeline parse defensively from the endpoint payload", () => {
+  // Missing sections fall back safely (older cached payloads, pending states).
+  const minimal = parseRir({ assessmentId: "a", disposition: "Review" });
+  assert.ok(minimal);
+  assert.equal(minimal.causality, null);
+  assert.deepEqual(minimal.conflicts, []);
+  assert.equal(minimal.timeline, null);
+  assert.deepEqual(minimal.policy.contextualDomains, []);
+
+  const full = parseRir({
+    assessmentId: "a", disposition: "Verify",
+    domains: [
+      { domain: "cal", state: "expired", verification: "Boundary evaluated…", relatedRuleIds: ["CAL_EXPIRED"], sourceIdentifier: null },
+    ],
+    conflicts: [{
+      sourceA: "Device quality-control record", sourceAState: "VALID",
+      sourceB: "Site environment snapshot", sourceBState: "FAILED",
+      conflict: "QC passed while environment out of range.", whyItMatters: "Context matters.", relatedRuleIds: "ENV_TEMP",
+    }],
+    causality: {
+      verified: true,
+      derivationNote: "ok",
+      primaryDrivers: [{ ruleId: "CAL_EXPIRED", statement: "Calibration overdue.", domain: "calibration", domainLabel: "Calibration", evidenceState: "expired", role: "primary" }],
+      secondaryConsiderations: [{ ruleId: "OPERATOR_NOT_COMPETENT", statement: "Operator competency lapsed.", domain: "operator", domainLabel: "Operator competency", evidenceState: "expired", role: "secondary" }],
+      contextualNotes: [{ ruleId: "", statement: "Environment evidence is valid.", domain: "environment", domainLabel: "Environment", evidenceState: "valid", role: "informational" }],
+      counterfactual: {
+        label: "Deterministic decision comparison", method: "Rule-based counterfactual",
+        changedEvidence: "Calibration", change: "treated as current",
+        currentDisposition: "VERIFY", counterfactualDisposition: "REVIEW",
+        statement: "If calibration evidence were current…", basisNote: "…no probability…",
+      },
+    },
+    timeline: {
+      label: "Demonstration decision history", note: "synthetic",
+      entries: [
+        { timeUtc: "2026-09-01T09:42:00Z", kind: "decision", title: "Disposition TRUST recorded", detail: "All deterministic checks passed.", basis: "demo-history" },
+        { timeUtc: "2026-09-01T14:03:00Z", kind: "transition", title: "Disposition changed", detail: "New finding: …", transition: "TRUST → REVIEW", basis: "derived" },
+      ],
+    },
+    policy: { id: "rural-phc-demo", contextualDomains: ["environment", "power", "connectivity"], selectionNote: "rural site marker" },
+  });
+  assert.ok(full.causality && full.causality.verified);
+  assert.equal(full.causality.primaryDrivers[0].evidenceState, "expired");
+  assert.equal(full.causality.counterfactual.method, "Rule-based counterfactual");
+  assert.equal(full.conflicts[0].sourceBState, "FAILED");
+  assert.equal(full.timeline.label, "Demonstration decision history");
+  assert.equal(full.timeline.entries[1].transition, "TRUST → REVIEW");
+  assert.deepEqual(full.policy.contextualDomains, ["environment", "power", "connectivity"]);
+  // Garbage inside the new sections must not throw and must fall back per-field.
+  const garbage = parseRir({
+    assessmentId: "a", disposition: "Trust",
+    causality: { primaryDrivers: "nope", counterfactual: 42, verified: "yes" },
+    conflicts: "nope", timeline: 7,
+  });
+  assert.ok(garbage);
+  assert.deepEqual(garbage.causality.primaryDrivers, []);
+  assert.equal(garbage.causality.counterfactual, null);
+  assert.deepEqual(garbage.conflicts, []);
+  assert.equal(garbage.timeline, null);
+});
+
+check("rir: quality concerns summary counts only concerning domain states", () => {
+  const record = parseRir({
+    assessmentId: "a", disposition: "Review",
+    domains: [
+      { domain: "cal", state: "aging" },
+      { domain: "op", state: "expired" },
+      { domain: "env", state: "valid" },
+      { domain: "qc", state: "valid" },
+      { domain: "prov", state: "unverified-source" },
+    ],
+  });
+  const concerns = qualityConcerns(record);
+  assert.equal(concerns.count, 3);
+  assert.equal(concerns.breakdown, "1 aging · 1 expired · 1 unverified source");
+  // Valid records read clean.
+  const clean = parseRir({ assessmentId: "b", disposition: "Trust", domains: [{ domain: "qc", state: "valid" }] });
+  assert.deepEqual(qualityConcerns(clean), { count: 0, breakdown: "" });
+  // Signal-map node words use the same vocabulary as the record.
+  assert.equal(stateWord("expired"), "EXPIRED");
+  assert.equal(stateWord("unverified-source"), "UNVERIFIED SOURCE");
+});
+
+check("rir: policy chip data carries required + contextual evidence and selection note", () => {
+  const record = parseRir({
+    assessmentId: "a", disposition: "Trust",
+    policy: {
+      id: "rural-phc-demo", name: "Rural PHC POC Test", version: "demo-v1", kind: "demonstration",
+      requiredDomains: ["device", "quality-control", "calibration", "operator", "reagent", "provenance"],
+      contextualDomains: ["environment", "power", "connectivity"],
+      selectionNote: "Selected because the event's recorded provenance identifies a rural PHC site.",
+    },
+  });
+  assert.equal(record.policy.id, "rural-phc-demo");
+  assert.equal(record.policy.requiredDomains.length, 6);
+  assert.ok(record.policy.contextualDomains.includes("environment"));
+  assert.match(record.policy.selectionNote, /rural PHC site/);
 });
 
 let failed = 0;

@@ -13,8 +13,10 @@ import type { EvidenceInput } from "../types";
  * TRUTHFULNESS: row values are the real recorded values of this assessment. Trace shapes are
  * seeded presentation aids derived from the record identifier — deterministic per record —
  * never a live device feed. The header always labels demonstration evidence as synthetic.
- * Rows that contributed to the decision carry a tick. Traces draw in once (staggered ~50 ms),
- * then only a faint cosmetic sweep every ~9 s runs while on-screen and the tab is visible.
+ * Rows that contributed to the decision are tagged "↳ contributor"; contextual rows are tagged
+ * "↳ contextual" (spec section 23: monitor ↔ evidence cards ↔ decision drivers ↔ record are one
+ * system). Traces draw in once (staggered ~50 ms), then only a faint cosmetic sweep every ~9 s
+ * runs while on-screen and the tab is visible.
  */
 
 interface MonitorRow {
@@ -140,9 +142,12 @@ export function EvidenceMonitor({ input, ruleIds }: { input: EvidenceInput; rule
                 </svg>
               </span>
               <span className="ml-auto flex shrink-0 items-center gap-2">
-                {r.contributed && (
-                  <span className="mono text-[10px] font-semibold" style={{ color }} title="Contributed to this decision" aria-label="Contributed to this decision">✓</span>
-                )}
+                <span
+                  className="mono text-[10px] font-medium"
+                  style={{ color: r.contributed ? color : "rgba(148,163,184,0.75)" }}
+                >
+                  {r.contributed ? "↳ contributor" : "↳ contextual"}
+                </span>
                 <span className="mono rounded-full border px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.08em]" style={{ color, borderColor: `${color}66` }}>
                   {CHIP_WORD[r.state]}
                 </span>

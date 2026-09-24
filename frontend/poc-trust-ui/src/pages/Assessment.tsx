@@ -4,7 +4,10 @@ import { AiFallback, ContextualAnalysis } from "../components/ContextualAnalysis
 import { EvidencePanel, WhyPanel } from "../components/Evidence";
 import { EvidenceFlow, SignalMap } from "../components/Flow";
 import { EvidenceMonitor } from "../components/Instrument";
-import { IntegrityRecord } from "../components/IntegrityRecord";
+import {
+  DecisionDriversPanel, IntegrityRecordDocument, IntegrityTimelinePanel, ResultIntegritySummary,
+  useIntegrityRecord,
+} from "../components/IntegrityRecord";
 import { StatusBadge } from "../components/StatusBadge";
 import { ReliabilityArc, SignalRailViz } from "../components/Visuals";
 import { evidenceItems } from "../lib/evidence";
@@ -137,6 +140,9 @@ export function AssessmentDetail({
   const heroRef = usePointerLight<HTMLDivElement>();
   const items = evidenceItems(input, decision.ruleIds ?? []);
   const signals = evidenceSignals(input, decision.ruleIds ?? []);
+  // One fetch feeds the whole integrity story: summary card, drivers, timeline and document.
+  const rirLoad = useIntegrityRecord(decision.id);
+  const [recordOpen, setRecordOpen] = useState(false);
   // Motion signature per state (Section 12) — plays once on reveal, then static.
   const sigWrap =
     finalName === "Trust" ? "pt-sig-trust inline-block"
@@ -205,8 +211,17 @@ export function AssessmentDetail({
           ))}
         </div>
       </section>
-      {/* The central artefact: derived on the backend from the stored assessment. */}
-      <IntegrityRecord id={decision.id} />
+      {/* Assessment experience hierarchy (spec section 18) — progressive disclosure:
+          status → can-I-rely → action → result → RIR summary → decision drivers →
+          evidence flow/signal map → reasons → evidence cards → monitor → advisory →
+          integrity timeline → full provenance → technical details. The five-second rule wins. */}
+      <ResultIntegritySummary
+        load={rirLoad}
+        open={recordOpen}
+        onToggle={() => setRecordOpen((o) => !o)}
+      />
+
+      <DecisionDriversPanel load={rirLoad} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <EvidenceFlow input={input} ruleIds={decision.ruleIds ?? []} status={finalName} />
@@ -242,6 +257,15 @@ export function AssessmentDetail({
 
       <ContextualAnalysis decision={decision} />
       <AiFallback show={aiFailed} />
+
+      <IntegrityTimelinePanel load={rirLoad} />
+
+      <IntegrityRecordDocument
+        load={rirLoad}
+        open={recordOpen}
+        onToggle={() => setRecordOpen((o) => !o)}
+      />
+
       <AuditLifecycle row={auditRow} status={decision.finalStatus} action={decision.action} />
     </article>
   );

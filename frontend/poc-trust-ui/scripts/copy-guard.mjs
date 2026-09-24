@@ -146,6 +146,12 @@ const BANNED_TSX = [
   [/\bdiagnostic correctness\b/i, "forbidden framing: diagnostic correctness"],
   [/\bpatient safety probability\b/i, "forbidden framing: patient safety probability"],
   [/\bmedical confidence\b/i, "forbidden framing: medical confidence"],
+  // Spec chunk 3 (sections 10–21): decision drivers are qualitative — primary / secondary /
+  // informational. Invented numeric contribution percentages and fake cryptographic provenance
+  // are forbidden in presentation code.
+  [/contribut\w*\s+\d+(\.\d+)?\s*%/i, "invented numeric contribution percentage"],
+  [/\b\d+(\.\d+)?%\s+(?:of\s+)?(?:the\s+)?decision\b/i, "invented decision-share percentage"],
+  [/\b[0-9a-f]{64}\b/i, "hash-like fake provenance identifier"],
 ];
 const tsxFiles = walk(join(root, "src")).filter((f) => f.endsWith(".tsx"));
 for (const file of tsxFiles) {
@@ -158,6 +164,19 @@ for (const file of tsxFiles) {
   }
 }
 console.log(`  scanned ${tsxFiles.length} presentation files`);
+
+// ── 6. Required wording (spec chunk 3) — the honesty labels must exist ──────
+console.log("Required wording (integrity upgrade):");
+const integrityRecordSrc = readFileSync(join(root, "src", "components", "IntegrityRecord.tsx"), "utf8");
+const instrumentSrc = readFileSync(join(root, "src", "components", "Instrument.tsx"), "utf8");
+const evidenceLibSrc = readFileSync(join(root, "src", "lib", "evidence.ts"), "utf8");
+check("counterfactual carries the label 'Deterministic decision comparison'", integrityRecordSrc.includes("Deterministic decision comparison"));
+check("counterfactual carries the method 'Rule-based counterfactual'", integrityRecordSrc.includes("Rule-based counterfactual"));
+check("conflict panel states the application detected an evidence inconsistency", /detected evidence inconsistency/.test(integrityRecordSrc));
+check("monitor marks contributing rows (↳ contributor)", instrumentSrc.includes("↳ contributor"));
+check("monitor marks contextual rows (↳ contextual)", instrumentSrc.includes("↳ contextual"));
+check("evidence provenance preserves 'as claimed' identity wording", /as claimed/.test(evidenceLibSrc));
+check("summary card inspects the full record (progressive disclosure)", integrityRecordSrc.includes("Inspect Integrity Record"));
 
 console.log("");
 if (failures > 0) {

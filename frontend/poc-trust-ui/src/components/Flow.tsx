@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { evidenceItems, type EvidenceItem } from "../lib/evidence";
+import { evidenceItems, qualityFor, type EvidenceItem } from "../lib/evidence";
+import { stateWord as qualityStateWord } from "../lib/rir";
 import { useReducedMotion } from "../lib/hooks";
 import type { EvidenceInput, Status } from "../types";
 
@@ -204,10 +205,12 @@ export function EvidenceFlow({
 }
 
 /**
- * Signal Map (Section 17) — EVIDENCE HEALTH on a clean, symmetric structure (never a force
- * layout). Links draw toward POC Trust; the state node arrives last. Hover/focus cross-links
- * with the evidence cards (shared highlight). Fully keyboard navigable; degrades to a plain
- * list at narrow widths with the same information.
+ * Signal Map (spec section 24) — communicates evidence → quality state → POC Trust → disposition
+ * on a clean, fixed structure (never a force layout). Each node carries its precise evidence
+ * quality state (VALID / AGING / EXPIRED / FAILED…), and links colour along the path so the
+ * problematic nodes are visually linked into the decision. Hover/focus cross-links with the
+ * evidence cards (shared highlight). Fully keyboard navigable; degrades to a plain list at
+ * narrow widths with the same information.
  */
 export function SignalMap({
   input, ruleIds, status, highlight, onHighlight,
@@ -220,8 +223,18 @@ export function SignalMap({
 }) {
   const flow = buildNodes(input, ruleIds);
   const byKey = Object.fromEntries(flow.map((n) => [n.key, n]));
-  const calItem = evidenceItems(input, ruleIds).find((i) => i.key === "cal");
+  const evidenceList = evidenceItems(input, ruleIds);
+  const calItem = evidenceList.find((i) => i.key === "cal");
   const calState: NodeState = input.calibrationDueUtc ? (calItem?.state ?? "ok") : "none";
+  // Precise evidence-quality word per node (VALID / AGING / EXPIRED / FAILED / MISSING…) —
+  // the SAME rule-first classification the integrity record uses, so map and record agree.
+  const qualityWord = (evidenceKey: string | undefined): string | null => {
+    if (!evidenceKey) return null;
+    if (evidenceKey === "device") return qualityStateWord(qualityFor("device", input, ruleIds));
+    const item = evidenceList.find((i) => i.key === evidenceKey);
+    if (!item || item.state === "ok" && !item.contributed) return qualityStateWord(item?.quality ?? "valid");
+    return qualityStateWord(item.quality);
+  };
 
   interface MapNode {
     id: string; label: string; pos: [number, number];
@@ -257,7 +270,10 @@ export function SignalMap({
   return (
     <section aria-label="Evidence health" className="pt-card p-4">
       <h3 className="pt-label text-[#0B1F3A]">Evidence health</h3>
-      <p className="mt-1 text-xs text-[#607087]">Evidence that contributed to this decision is highlighted — hover or focus a node.</p>
+      <p className="mt-1 text-xs text-[#607087]">
+        Evidence → quality state → POC Trust → disposition. Problem nodes are coloured along the
+        path into the decision — hover or focus a node.
+      </p>
 
       <div className="relative mx-auto mt-3 hidden h-[470px] w-full max-w-[430px] sm:block" onMouseLeave={() => onHighlight(null)}>
         <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full" aria-hidden="true">
@@ -316,6 +332,12 @@ export function SignalMap({
                 <span aria-hidden="true" className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle ${STATE_DOT[n.state]}`} />
               )}
               {n.label}
+              {(() => {
+                const qw = qualityWord(n.evidenceKey);
+                return n.evidenceKey && n.state && n.state !== "none" && n.evaluable !== false && qw
+                  ? <span className="ml-1 opacity-60">· {qw}</span>
+                  : null;
+              })()}
             </button>
           );
         })}
