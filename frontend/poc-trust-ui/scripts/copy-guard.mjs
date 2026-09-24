@@ -17,10 +17,12 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   DEMO_DEVICE_NAMES,
+  EVIDENCE_STATE_COPY,
   KNOWN_RULE_IDS,
   RULE_COPY,
   STATUS_COPY,
   deviceLabel,
+  evidenceStateCopy,
   facilityLabel,
   findMachineText,
   formatEventTime,
@@ -104,6 +106,17 @@ assertHuman("unknown device passes through", deviceLabel("DEV-99"));
 assertHuman("missing operator", operatorLabel(""));
 assertHuman("missing facility", facilityLabel(""));
 
+// ── 3b. Evidence-quality taxonomy copy (Result Integrity Record) ─────────────
+console.log("Evidence-quality taxonomy:");
+for (const [state, c] of Object.entries(EVIDENCE_STATE_COPY)) {
+  assertHuman(`state label ${state}`, c.label);
+  assertHuman(`state meaning ${state}`, c.meaning);
+}
+// Every state must humanize with a fallback; unknown states never leak machine text.
+assertHuman("unknown state fallback", evidenceStateCopy("SOMETHING_NEW").label);
+assertHuman("unverified-source label", evidenceStateCopy("unverified-source").label);
+assertHuman("unverified-source meaning", evidenceStateCopy("unverified-source").meaning);
+
 // ── 4. Detector self-test — proves the guard fails on a deliberate leak ──────
 console.log("Detector self-test (deliberate leaks must be caught):");
 for (const [leak, why] of [
@@ -128,6 +141,11 @@ const BANNED_TSX = [
   ...KNOWN_RULE_IDS.map((id) => [new RegExp(`\\b${id}\\b`), `raw rule id ${id}`]),
   [/\bAI unavailable\b/, "raw AI-unavailable marker"],
   [/\.toLocaleString\(/, "locale-machine timestamp (use formatEventTime)"],
+  // Forbidden framings (spec: the record is an operational integrity assessment — never these):
+  [/\bclinical truth\b/i, "forbidden framing: clinical truth"],
+  [/\bdiagnostic correctness\b/i, "forbidden framing: diagnostic correctness"],
+  [/\bpatient safety probability\b/i, "forbidden framing: patient safety probability"],
+  [/\bmedical confidence\b/i, "forbidden framing: medical confidence"],
 ];
 const tsxFiles = walk(join(root, "src")).filter((f) => f.endsWith(".tsx"));
 for (const file of tsxFiles) {

@@ -99,6 +99,31 @@ export function humanizeReason(reason: string): HumanReason {
   return { label: "Decision note", text: cleaned || "Recorded decision note." };
 }
 
+// ── Evidence-quality taxonomy (Result Integrity Record) ─────────────────────
+//
+// Evidence is no longer only pass/fail. These classifications describe the QUALITY of recorded
+// evidence under the selected demonstration policy; the relationship between a state and the
+// TRUST/REVIEW/VERIFY disposition stays governed by the deterministic engine — these strings
+// never decide anything. Every lookup has a humanized fallback (copy guard enforces it).
+
+export const EVIDENCE_STATE_COPY: Record<string, { label: string; meaning: string }> = {
+  valid: { label: "Valid", meaning: "Evidence exists and is current enough for the selected demonstration policy." },
+  aging: { label: "Aging", meaning: "Evidence is still valid but approaching a configured review boundary." },
+  missing: { label: "Missing", meaning: "Required evidence was not available for this event." },
+  stale: { label: "Stale", meaning: "Evidence exists but is too old to confidently support the assessment." },
+  expired: { label: "Expired", meaning: "Evidence has passed its configured validity boundary." },
+  failed: { label: "Failed", meaning: "A control explicitly failed." },
+  conflicting: { label: "Conflicting", meaning: "Evidence sources disagree or the evidence set is internally inconsistent." },
+  "unverified-source": { label: "Unverified source", meaning: "Evidence exists but its provenance or source could not be sufficiently verified." },
+};
+
+export function evidenceStateCopy(state: string): { label: string; meaning: string } {
+  return EVIDENCE_STATE_COPY[state] ?? {
+    label: humanizeToken(state) || "Unclassified",
+    meaning: "Evidence-quality classification recorded for this assessment.",
+  };
+}
+
 // ── Status presentation ──────────────────────────────────────────────────────
 
 export const STATUS_COPY: Record<Status, { meaning: string; strip: string }> = {

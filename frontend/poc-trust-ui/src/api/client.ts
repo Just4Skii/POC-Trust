@@ -1,4 +1,5 @@
 import type { AssessmentSummary, AuditRow, DashboardSummary, Decision, DemoResetResult, DemoSeedResult, DemoStatus } from "../types";
+import type { RirRecord } from "../lib/rir";
 
 /** Surfaces the API's safe error envelope ({"error":"..."}) instead of a bare status code. */
 export class ApiError extends Error {
@@ -52,6 +53,10 @@ export const api = {
         audit: AuditRow[];
       }>,
     ),
+  /** The derived Result Integrity Record for a stored assessment (404 while an offline-pending
+   *  event has not reached the store yet — that is a waiting state, not an error). */
+  integrityRecord: (id: string) =>
+    fetch(`/api/assessments/${encodeURIComponent(id)}/integrity-record`).then(json<RirRecord>),
   audit: (take = 100) => fetch(`/api/assessments/audit?take=${take}`).then(json<AuditRow[]>),
   auditDetail: (assessmentId: string) => fetch(`/api/audit/${assessmentId}`).then(json<AuditRow[]>),
   /** Run one demonstration scenario (trust / review / verify / missing / offline) through the

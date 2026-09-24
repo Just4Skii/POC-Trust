@@ -4,6 +4,7 @@ import { AiFallback, ContextualAnalysis } from "../components/ContextualAnalysis
 import { EvidencePanel, WhyPanel } from "../components/Evidence";
 import { EvidenceFlow, SignalMap } from "../components/Flow";
 import { EvidenceMonitor } from "../components/Instrument";
+import { IntegrityRecord } from "../components/IntegrityRecord";
 import { StatusBadge } from "../components/StatusBadge";
 import { ReliabilityArc, SignalRailViz } from "../components/Visuals";
 import { evidenceItems } from "../lib/evidence";
@@ -204,6 +205,9 @@ export function AssessmentDetail({
           ))}
         </div>
       </section>
+      {/* The central artefact: derived on the backend from the stored assessment. */}
+      <IntegrityRecord id={decision.id} />
+
       <div className="grid gap-4 lg:grid-cols-2">
         <EvidenceFlow input={input} ruleIds={decision.ruleIds ?? []} status={finalName} />
         <SignalMap

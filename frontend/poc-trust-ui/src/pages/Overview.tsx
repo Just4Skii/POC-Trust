@@ -85,7 +85,9 @@ export function Overview({
             <h2 className="text-lg font-bold text-[#0B1F3A]">Can this result be relied on?</h2>
             <p className="text-sm text-[#607087]">
               Every assessment below is decided by deterministic rules from recorded evidence — always
-              explainable, always auditable. Real persisted data{summary ? ` · ${summary.counts.total} assessments` : ""}.
+              explainable, always auditable. Each one becomes a Result Integrity Record: the evidence
+              behind the result, why the disposition occurred, and the action that follows. Real
+              persisted data{summary ? ` · ${summary.counts.total} assessments` : ""}.
               {" "}{demoActive ? "Demonstration scenarios are loaded — synthetic, clearly labelled." : "No demonstration data loaded — assessments appear here as they are recorded."}
             </p>
             <StoryStrip />

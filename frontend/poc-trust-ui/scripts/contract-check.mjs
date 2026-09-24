@@ -10,7 +10,15 @@
 import assert from "node:assert/strict";
 import { completeSync, enqueueEvent, readQueue, QUEUE_KEY } from "../src/lib/queue.ts";
 import { normaliseEvidenceInput, toDecision } from "../src/lib/history.ts";
-import { evidenceItems } from "../src/lib/evidence.ts";
+import { evidenceItems, qualityFor } from "../src/lib/evidence.ts";
+import {
+  EVIDENCE_STATES,
+  coverageGlyph,
+  evidenceSources,
+  isEvidenceQualityState,
+  parseRir,
+  stateTone,
+} from "../src/lib/rir.ts";
 import { evidenceSignals, markerPct, bandLeftPct, bandRightPct } from "../src/lib/signals.ts";
 import { seededSamples, tracePathD, hashSeed } from "../src/lib/telemetry.ts";
 import { EVAL_STEPS, stepDomainStates } from "../src/lib/pipeline.ts";
@@ -250,6 +258,80 @@ check("pipeline: rail outcomes mirror the real evidence — never all-green for 
   for (const step of EVAL_STEPS) {
     assert.equal(clean[step.key], "ok", `clean record: ${step.key} must read ok`);
   }
+});
+
+// ── Result Integrity Record (RIR) ──────────────────────────────────────────────────────────
+check("rir: qualityFor mirrors the backend rule-first derivation", () => {
+  const input = {
+    deviceId: "DEV-02", qcPassed: true, operatorId: "OP-12", operatorCompetent: false,
+    reagentLot: "LOT-44", provenance: "site-B/DEV-02/OP-12",
+  };
+  const rules = ["CAL_NEAR_DUE", "REAGENT_NEAR_EXPIRY", "OPERATOR_NOT_COMPETENT", "POWER_INTERRUPTION", "MULTI_CONTEXT"];
+  assert.equal(qualityFor("cal", input, rules), "aging");
+  assert.equal(qualityFor("reagent", input, rules), "aging");
+  assert.equal(qualityFor("op", input, rules), "expired");
+  assert.equal(qualityFor("env", input, rules), "valid");
+  assert.equal(qualityFor("qc", input, rules), "valid");
+
+  const missing = { deviceId: "DEV-04", qcPassed: true, operatorId: "", reagentLot: "", provenance: "" };
+  const missingRules = ["PROVENANCE_INCOMPLETE"];
+  assert.equal(qualityFor("op", missing, missingRules), "missing");
+  assert.equal(qualityFor("reagent", missing, missingRules), "missing");
+  assert.equal(qualityFor("prov", missing, missingRules), "missing");
+
+  const failed = { deviceId: "DEV-03", qcPassed: false, operatorId: "OP-3", reagentLot: "LOT-91", provenance: "s/D/OP" };
+  const failedRules = ["QC_FAILED", "CAL_EXPIRED", "REAGENT_EXPIRED", "ENV_TEMP", "ENV_HUMIDITY"];
+  assert.equal(qualityFor("qc", failed, failedRules), "failed");
+  assert.equal(qualityFor("cal", failed, failedRules), "expired");
+  assert.equal(qualityFor("reagent", failed, failedRules), "expired");
+  assert.equal(qualityFor("env", failed, failedRules), "failed");
+});
+
+check("rir: state vocabulary is the eight-value taxonomy with tones for every state", () => {
+  assert.deepEqual(
+    [...EVIDENCE_STATES].sort(),
+    ["aging", "conflicting", "expired", "failed", "missing", "stale", "unverified-source", "valid"],
+  );
+  for (const s of EVIDENCE_STATES) {
+    const tone = stateTone(s);
+    assert.ok(tone.chip.length > 0 && tone.dot.length > 0, `tone for ${s}`);
+    assert.ok(isEvidenceQualityState(s));
+  }
+  assert.equal(isEvidenceQualityState("PASS"), false); // legacy binary state must not reappear
+  assert.equal(isEvidenceQualityState(undefined), false);
+});
+
+check("rir: parseRir is defensive — garbage never reaches the document view", () => {
+  assert.equal(parseRir(null), null);
+  assert.equal(parseRir("nope"), null);
+  assert.equal(parseRir({}), null);
+  const record = parseRir({
+    assessmentId: "a", disposition: "Review",
+    evidenceQuality: { coverage: { items: [{ domain: "cal", state: "AGING" }] } },
+    domains: [{ domain: "cal", state: 42, note: null }],
+    decisionDrivers: ["ok", 5, null, ""],
+  });
+  assert.ok(record);
+  assert.equal(record.domains[0].state, "missing"); // unknown state falls back safely
+  assert.equal(record.evidenceQuality.coverage.items[0].state, "missing");
+  assert.deepEqual(record.decisionDrivers, ["ok"]);
+});
+
+check("rir: coverage glyph distinguishes available evidence from absent evidence", () => {
+  assert.equal(coverageGlyph({ domain: "qc", label: "QC", available: true, state: "failed" }), "✓");
+  assert.equal(coverageGlyph({ domain: "env", label: "Env", available: false, state: "missing" }), "?");
+});
+
+check("rir: sources list derives only from available evidence", () => {
+  const record = parseRir({
+    assessmentId: "a", disposition: "Trust",
+    domains: [
+      { domain: "device", available: true, source: "Event record" },
+      { domain: "qc", available: true, source: "Device quality-control record" },
+      { domain: "maintenance", available: false, source: "Not captured in this prototype" },
+    ],
+  });
+  assert.deepEqual(evidenceSources(record), ["Event record", "Device quality-control record"]);
 });
 
 let failed = 0;
