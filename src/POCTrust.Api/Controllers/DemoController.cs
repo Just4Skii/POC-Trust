@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using POCTrust.Api.Services;
+using POCTrust.Core.Interfaces;
+using POCTrust.Infrastructure.AI;
 using POCTrust.Infrastructure.Data;
 
 namespace POCTrust.Api.Controllers;
@@ -14,6 +16,8 @@ namespace POCTrust.Api.Controllers;
 /// - every seed is submitted through the real assessment pipeline — the deterministic engine
 ///   computes status, reasons, action and audit, and the seed self-check compares the result
 ///   against the expected status (a mismatch flags the seed definition, never the engine);
+/// - advisory summaries during seeding come from the built-in stub provider: offline-safe,
+///   reproducible, and no external AI calls are made to load a demonstration;
 /// - reset removes ONLY demo-marked assessments and their audit trail rows — any other
 ///   (real / demo-scenario / user-created) record is never touched;
 /// - nothing is seeded automatically on startup.
@@ -26,6 +30,11 @@ public sealed class DemoController(
     IHostEnvironment env) : ControllerBase
 {
     private const string MarkerPrefix = "\"demoKey\":\"demo-";
+
+    /// <summary>Demonstration seeding uses the built-in advisory provider so a demo load is fast,
+    /// reproducible and works without network access. Only the advisory summary source differs —
+    /// statuses, reasons, actions and audit still come from the real pipeline.</summary>
+    private static readonly IAIProvider SeedAdvisory = new StubAiProvider();
 
     private static string Marker(string key) => $"\"demoKey\":\"{key}\"";
 
@@ -66,7 +75,7 @@ public sealed class DemoController(
                 skipped.Add(seed.Key);
                 continue;
             }
-            var decision = await orchestrator.EvaluateAsync(seed.Build(now), ct);
+            var decision = await orchestrator.EvaluateAsync(seed.Build(now), SeedAdvisory, ct);
             if (decision.FinalStatus != seed.Expected)
                 mismatches.Add(new { key = seed.Key, expected = seed.Expected.ToString().ToUpperInvariant(), computed = decision.FinalStatus.ToString().ToUpperInvariant() });
             loaded.Add(new { key = seed.Key, id = decision.Id, title = seed.Title, status = decision.FinalStatus.ToString().ToUpperInvariant(), aiConsulted = decision.AiConsulted });

@@ -6,3 +6,5 @@ appsettings.Development.json
 node_modules/
 dist/
 .env
+.*.log
+.*.err

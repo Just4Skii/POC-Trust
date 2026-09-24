@@ -5,7 +5,13 @@ namespace POCTrust.Api.Services;
 
 public sealed class AssessmentOrchestrator(IReliabilityEngine engine, IAIProvider ai, IAuditStore audit)
 {
-    public async Task<ReliabilityDecision> EvaluateAsync(DiagnosticContext context, CancellationToken ct = default)
+    public Task<ReliabilityDecision> EvaluateAsync(DiagnosticContext context, CancellationToken ct = default)
+        => EvaluateAsync(context, null, ct);
+
+    /// <param name="aiOverride">Optional advisory provider override (e.g. the built-in stub so
+    /// demonstration seeding is offline-safe and reproducible). The deterministic engine and every
+    /// safety invariant are unchanged — only the advisory summary source differs.</param>
+    public async Task<ReliabilityDecision> EvaluateAsync(DiagnosticContext context, IAIProvider? aiOverride, CancellationToken ct = default)
     {
         // 1-2. receive + validate input
         ArgumentNullException.ThrowIfNull(context);
@@ -29,7 +35,7 @@ public sealed class AssessmentOrchestrator(IReliabilityEngine engine, IAIProvide
                 // 7. optionally call AI with timeout guard
                 using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
                 using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, timeout.Token);
-                var raw = await ai.AssessAsync(context, linked.Token);
+                var raw = await (aiOverride ?? ai).AssessAsync(context, linked.Token);
 
                 // 8. validate AI response (never trust authoritative status claims)
                 assessment = ValidateAi(raw);
