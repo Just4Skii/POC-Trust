@@ -80,10 +80,10 @@ Settings page refuses key entry by design.
 | Gate | Result |
 |---|---|
 | `dotnet build` | 0 warnings, 0 errors |
-| `dotnet test` | **79 / 79 passed** (58 prior + 21 new hardening tests) |
+| `dotnet test` | **103 / 103 passed** (58 core + 21 hardening + 11 demo invariants + 13 integrity-record tests) |
 | `npm run build` | OK (fonts bundled offline) |
 | `npm run lint` (oxlint) | 0 warnings, 0 errors |
-| `npm run check:contract` | **15 / 15 passed** + copy guard clean |
+| `npm run check:contract` | **20 / 20 passed** + copy guard clean (incl. evidence-quality vocabulary and forbidden-framing scan) |
 | Live smoke: auto-seed, `/health`, `/api/system/status`, `/api/audit/verify`, idempotent replay, tamper detection, rate limit burst | all verified |
 
 ## Architecture
@@ -92,7 +92,22 @@ Settings page refuses key entry by design.
 Diagnostic Event → Evidence → ReliabilityEngine → Initial status
   → NeedsAi? → IAIProvider (advisory) → EnforceFinalStatus (VERIFY-locked)
   → Action → SQLite (Assessments + sealed append-only Audit) → API response
+                                              ↘ GET /assessments/{id}/integrity-record
+                                                ResultIntegrityProjector (derived, rule-first)
+                                                → Result Integrity Record (rir-v1)
 ```
+
+### Result Integrity Record
+
+Each persisted assessment projects a portable, auditable, evidence-linked **Result Integrity
+Record**: the evidence the engine had, its classified quality under the demonstration policy
+(`valid / aging / missing / stale / expired / failed / conflicting / unverified-source`),
+why the disposition occurred, and the action that follows. The record is **derived, never
+stored twice** — a pure function of the stored assessment and its sealed audit entries, with
+every evidence state traced to the rule IDs the deterministic engine recorded. It is an
+operational integrity assessment under a configured demonstration policy, not a measure of
+clinical validity. The UI renders it as a document on every assessment detail page, with
+one-click export of the exact canonical JSON.
 
 - Backend: ASP.NET Core (.NET 10), EF Core/SQLite, `AssessmentOrchestrator` pipeline.
 - AI: `OpenAiCompatibleProvider`, `StubAiProvider` fallback — the deterministic result never

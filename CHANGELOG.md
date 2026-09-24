@@ -1,5 +1,59 @@
 # Changelog
 
+## 1.2.0-integrity-records — Result Integrity Record (25 September 2026)
+
+The product upgrade from "POC Trust gives TRUST / REVIEW / VERIFY" to "POC Trust creates an
+evidence-linked **Result Integrity Record** (RIR) that explains the quality of the evidence,
+why the disposition occurred, what changed it, and what action follows." Implemented strictly
+as the spec directs: the RIR is a **derived projection** over the existing persisted assessment
+and its sealed audit entries — no parallel persistence, no duplicate source of truth, and the
+deterministic engine, orchestrator and AI abstraction are completely untouched (absent from
+the diff; 103/103 tests green).
+
+### Added
+
+- **Evidence-quality taxonomy** (backend `POCTrust.Core/Integrity`): evidence is now classified
+  as `valid / aging / missing / stale / expired / failed / conflicting / unverified-source`.
+  Classification is **rule-first** — every state derives from the rule IDs the engine actually
+  recorded at decision time, so the projection can never quietly re-decide a stored assessment
+  (regression-tested). `stale` is defined but reserved: no current engine rule produces it.
+- **Evidence domain model**: ten canonical domains (device identity, quality control,
+  calibration, operator competency, reagent lot, environment, power, connectivity, provenance,
+  maintenance). Each row answers: is evidence available, what state is it in, what is its
+  source, when was it recorded, did it contribute to the decision. Maintenance is honestly
+  reported as not captured in this prototype and not required by the demonstration policy.
+- **Evidence coverage**: "N / 7 required domains available" — the required set is exactly the
+  engine's rule families. A failed control still counts as evidence the engine HAD (coverage is
+  about existence, not quality). Missing evidence never invents a value; the consequence is
+  stated instead.
+- **Lightweight policy context**: thresholds are surfaced as the explicit "POC Trust
+  demonstration policy demo-v1" (7-day calibration review boundary, 14-day reagent near-expiry
+  boundary, 15–30 °C / 10–85 % environment ranges) — mirroring the engine's existing
+  configuration, labelled as a prototype policy, never as clinically validated requirements.
+- **`GET /api/assessments/{id}/integrity-record`**: narrow additive endpoint returning the
+  canonical RIR (`rir-v1`), self-describing JSON with string-valued states for portability.
+  Deterministic: the same stored record always projects a byte-identical record, anchored at
+  the decision time. 404 with a safe error envelope for unknown ids.
+- **RIR document view** (assessment detail): the central artefact rendered from the real
+  record — identity (result / test / event), integrity disposition with statement, the
+  four-dimension evidence-quality summary, coverage glyphs, all evidence domains with state
+  chips and contribution markers, decision drivers (persisted reasons with machine prefixes
+  stripped, pipeline notes excluded), recommended action, provenance sources, policy applied,
+  advisory contextual note (explicitly advisory), sealed audit reference, and an honest basis
+  note ("operational integrity assessment … not a measure of clinical validity").
+  Download/Copy record (JSON) makes the portability claim concrete — the exported bytes are
+  exactly the displayed record. Designed states for loading / not-yet-synchronised (offline
+  pending) / service error — no fabricated records.
+- **Evidence rows upgraded** with the taxonomy quality state, mirroring the backend derivation
+  (contract-tested so presentation cannot disagree with the decision).
+- **Copy-guard extensions**: the evidence-quality vocabulary and its fallbacks are enforced
+  human-safe, and the forbidden framings (clinical truth, diagnostic correctness, patient
+  safety probability, medical confidence) are banned from all presentation files.
+- **13 new backend tests** (`ResultIntegrityRecordTests`): per-scenario coverage and state
+  expectations, byte-identical determinism, the never-re-evaluates invariant, vocabulary and
+  policy assertions, driver hygiene, audit reference, endpoint 200/404.
+
+
 ## 1.1.0-demo-polish — Final Visual Polish Pass (25 September 2026)
 
 Demonstration-first polish over the productized appliance, per the v2 polish spec. The
