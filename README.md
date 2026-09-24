@@ -113,12 +113,21 @@ blank `result` are client errors (400).
 
 ## Competition demo (synthetic data only)
 
-1. Open Overview — demonstration data is already loaded (or press Load demonstration data)
-2. Run TRUST → decision → evidence
-3. Run REVIEW → Contextual Analysis
-4. Run VERIFY → safety interruption, no AI at all
-5. Open Audit Trail → trace evidence → rules → decision → action
-6. Finish with `GET /api/audit/verify` — the sealed chain reports valid
+A 2–3 minute walkthrough lives in [`docs/demo-script.md`](docs/demo-script.md); captured
+screenshots (desktop + mobile) live in [`docs/assets/`](docs/assets/).
+
+1. Open Overview — demonstration data is already loaded; the header shows the compact
+   **Demo · synthetic data only** pill, and the hero reads Evidence → Decision → Explanation →
+   Action → Audit
+2. Run the **Demonstration Scenarios** cards (Trust / Review / Verify / Missing / Offline) —
+   each card runs a real evaluation through the backend pipeline and opens the resulting record
+3. Or click a reliability tile to filter the Assessments list to that state
+4. Trust → calm confirmation; Review → ranked reasons, advisory Contextual Analysis; Verify →
+   hard stop with **no** advisory section anywhere
+5. Open Audit Trail → trace evidence → rules → decision → action; every entry is sealed into a
+   SHA-256 hash chain (verify with `GET /api/audit/verify`)
+6. Demonstration lifecycle (load / reset) lives in Settings with a scoped confirmation — reset
+   removes only demo-marked records
 
 Simulated: external AI content via stub when no key is set; the offline queue remains a
 localStorage prototype (transport metadata, not a reliability rule; connectivity is NOT a
