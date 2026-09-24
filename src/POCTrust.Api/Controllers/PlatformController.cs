@@ -9,8 +9,13 @@ namespace POCTrust.Api.Controllers;
 [Route("api")]
 public sealed class PlatformController(PocTrustDbContext db) : ControllerBase
 {
+    // Stored evidence is camelCase (canonical since the persistence fix); PascalCase lookups are
+    // still attempted so records written by earlier prototype builds keep rendering correctly.
     private static List<AssessmentRecord> Sorted(IEnumerable<AssessmentRecord> rows, int take) =>
-        rows.OrderByDescending(a => a.DecidedAtUtc).Take(take).ToList();
+        rows.OrderByDescending(a => a.DecidedAtUtc)
+            .ThenByDescending(a => a.Id)   // stable tie-break: timestamps vary in fractional precision
+            .Take(take)
+            .ToList();
 
     [HttpGet("assessments")]
     public async Task<ActionResult> History([FromQuery] int take = 100, CancellationToken ct = default)
@@ -39,7 +44,7 @@ public sealed class PlatformController(PocTrustDbContext db) : ControllerBase
             input = JsonDocument.Parse(string.IsNullOrWhiteSpace(a.InputJson) ? "{}" : a.InputJson),
             reasons = JsonDocument.Parse(string.IsNullOrWhiteSpace(a.ReasonsJson) ? "[]" : a.ReasonsJson),
             ruleIds = JsonDocument.Parse(string.IsNullOrWhiteSpace(a.RuleIdsJson) ? "[]" : a.RuleIdsJson),
-            audit = audits.Where(x => x.AssessmentId == id).OrderBy(x => x.TimestampUtc).ToList(),
+            audit = audits.Where(x => x.AssessmentId == id).OrderBy(x => x.TimestampUtc).ThenBy(x => x.Id).ToList(),
         });
     }
 
@@ -61,7 +66,7 @@ public sealed class PlatformController(PocTrustDbContext db) : ControllerBase
             offlineCount = ordered.Count(a => (TryGet(a.InputJson, "Connectivity") ?? "online") == "offline"),
             aiConsultedCount = ordered.Count(a => a.AiConsulted),
             recent = ordered.Take(8).Select(a => new { a.Id, a.Result, a.DeviceId, a.FinalStatus, a.DecidedAtUtc }),
-            recentAudit = audits.OrderByDescending(a => a.TimestampUtc).Take(8).ToList(),
+            recentAudit = audits.OrderByDescending(a => a.TimestampUtc).ThenByDescending(a => a.Id).Take(8).ToList(),
             source = "real persisted assessments; empty on fresh install — use Demonstration Mode",
         });
     }
@@ -112,7 +117,7 @@ public sealed class PlatformController(PocTrustDbContext db) : ControllerBase
     public async Task<ActionResult> AuditDetail(Guid assessmentId, CancellationToken ct = default)
     {
         var rows = await db.Audit.AsNoTracking().ToListAsync(ct);
-        return Ok(rows.Where(a => a.AssessmentId == assessmentId).OrderBy(a => a.TimestampUtc).ToList());
+        return Ok(rows.Where(a => a.AssessmentId == assessmentId).OrderBy(a => a.TimestampUtc).ThenBy(a => a.Id).ToList());
     }
 
     private static string? TryGet(string json, string prop)

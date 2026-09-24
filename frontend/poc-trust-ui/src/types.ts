@@ -3,10 +3,11 @@ export type StatusCode = Status | number;
 
 export interface AiAssessment {
   summary: string;
-  anomalies: string[];
-  recommendedAction: string;
-  confidence: number;
-  model: string;
+  /** Only populated when the provider/decision actually supplied them — never fabricated for history. */
+  anomalies?: string[];
+  recommendedAction?: string;
+  confidence?: number;
+  model?: string;
 }
 
 export interface Decision {

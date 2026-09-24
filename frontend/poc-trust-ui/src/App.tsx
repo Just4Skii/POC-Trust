@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
-import { api } from "./api/client";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ApiError, api } from "./api/client";
 import { Brand } from "./components/Brand";
+import { normaliseEvidenceInput, toDecision, type StoredAssessment } from "./lib/history";
+import { completeSync, enqueueEvent, readQueue, type QueuedEvent } from "./lib/queue";
 import type { AssessmentSummary, AuditRow, DashboardSummary, Decision, EvidenceInput } from "./types";
 import { AssessmentDetail, NewAssessment, emptyForm, type FormState } from "./pages/Assessment";
 import { AssessmentsList, AuditTrail } from "./pages/Lists";
@@ -38,10 +40,6 @@ function demoInput(kind: string): EvidenceInput {
   }
 }
 
-function loadPending(): Record<string, unknown>[] {
-  try { return JSON.parse(localStorage.getItem("poctrust-pending") ?? "[]"); } catch { return []; }
-}
-
 export default function App() {
   const [nav, setNav] = useState<Nav>("overview");
   const [collapsed, setCollapsed] = useState(false);
@@ -57,8 +55,10 @@ export default function App() {
   const [assessments, setAssessments] = useState<AssessmentSummary[]>([]);
   const [audit, setAudit] = useState<AuditRow[]>([]);
   const [online, setOnline] = useState(navigator.onLine);
-  const [pending, setPending] = useState<Record<string, unknown>[]>(loadPending());
+  const [pending, setPending] = useState<QueuedEvent[]>(() => readQueue(window.localStorage));
   const [lastSynced, setLastSynced] = useState<string | null>(localStorage.getItem("poctrust-synced"));
+  // Latch so rapid clicks cannot start a second submission while one is in flight.
+  const inFlight = useRef(false);
 
   const refresh = useCallback(async () => {
     setLoadingSummary(true);
@@ -82,72 +82,70 @@ export default function App() {
   }, []);
 
   async function runDemo(kind: string) {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setDemoMode(true); setSubmitting(true); setError("");
     try {
       const d = await api.demo(kind);
       setDecision(d); setInput(demoInput(kind));
       setNav("overview");
     } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
-    finally { setSubmitting(false); }
+    finally { inFlight.current = false; setSubmitting(false); }
+  }
+
+  function queueLocally(body: Record<string, unknown>, reason: string) {
+    setPending(enqueueEvent(window.localStorage, body));
+    setError(reason);
   }
 
   async function submit(body: Record<string, unknown>) {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setSubmitting(true); setError("");
-    const isOffline = body.connectivity === "offline" || !navigator.onLine;
     try {
-      if (isOffline && body.connectivity === "offline") {
-        // Honest prototype: evaluate locally-available path via backend when reachable,
-        // else queue. Try backend first so demo/offline still goes through real engine.
+      if (body.connectivity === "offline") {
+        // Honest prototype boundary: the offline path still asks the real engine. If the backend is
+        // unreachable the event is only *queued* — no reliability evaluation happens locally.
         try {
           const d = await api.evaluate(body);
           setDecision(d); setInput(body as EvidenceInput); setNav("overview"); return;
-        } catch {
-          const q = [...pending, { ...body, _queuedAt: new Date().toISOString() }];
-          localStorage.setItem("poctrust-pending", JSON.stringify(q));
-          setPending(q);
-          setError("Backend unreachable — event queued locally as pending (prototype offline queue).");
+        } catch (e) {
+          if (e instanceof ApiError) throw e;   // rejected by the backend: not a connectivity failure
+          queueLocally(body, "Backend unreachable — event queued locally as pending (prototype offline queue).");
           return;
         }
       }
       const d = await api.evaluate(body);
       setDecision(d); setInput(body as EvidenceInput); setNav("overview");
     } catch (e) {
-      const q = [...pending, { ...body, _queuedAt: new Date().toISOString() }];
-      localStorage.setItem("poctrust-pending", JSON.stringify(q));
-      setPending(q);
-      setError(e instanceof Error ? `${e.message} — queued locally.` : String(e));
-    } finally { setSubmitting(false); }
+      if (e instanceof ApiError) {
+        setError(e.message);   // invalid/unservable request — queueing it would only mislead
+      } else {
+        const message = e instanceof Error ? e.message : String(e);
+        queueLocally(body, `${message} — queued locally.`);
+      }
+    } finally { inFlight.current = false; setSubmitting(false); }
   }
 
   async function syncPending() {
-    const q = loadPending();
-    let ok = 0;
-    for (const body of q) {
-      try { await api.evaluate(body); ok++; } catch { break; }
+    const snapshot = readQueue(window.localStorage);
+    const syncedIds: string[] = [];
+    for (const body of snapshot) {
+      try { await api.evaluate(body); syncedIds.push(body._queueId); }
+      catch { break; }   // first failure: unsynced entries stay queued (existing partial-failure behaviour)
     }
-    const rest = q.slice(ok);
-    localStorage.setItem("poctrust-pending", JSON.stringify(rest));
-    setPending(rest);
+    // completeSync re-reads storage, so anything queued while this sync ran is preserved.
+    setPending(completeSync(window.localStorage, syncedIds));
     await refresh();
   }
 
   async function openAssessment(id: string) {
     try {
       const detail = await api.assessmentDetail(id);
-      const a = detail.assessment as unknown as {
-        id: string; initialStatus: number; finalStatus: number; reasonsJson: string; ruleIdsJson: string;
-        action: string; aiSummary?: string; aiConsulted: boolean; decidedAtUtc: string;
-      };
-      const inp = detail.input as unknown as EvidenceInput;
-      setInput(inp);
-      setDecision({
-        id: a.id,
-        initialStatus: a.initialStatus, finalStatus: a.finalStatus,
-        reasons: JSON.parse(a.reasonsJson ?? "[]"), ruleIds: JSON.parse(a.ruleIdsJson ?? "[]"),
-        action: a.action,
-        aiAssessment: a.aiSummary ? { summary: a.aiSummary, anomalies: [], recommendedAction: "", confidence: 0.7, model: "recorded" } : null,
-        aiConsulted: a.aiConsulted, decidedAtUtc: a.decidedAtUtc,
-      });
+      // Records store camelCase evidence; earlier builds wrote PascalCase, so reads are
+      // case-insensitive and a reopened assessment shows the values it was created with.
+      setInput(normaliseEvidenceInput(detail.input));
+      setDecision(toDecision(detail.assessment as unknown as StoredAssessment, detail.reasons, detail.ruleIds));
       setNav("overview");
     } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
   }
@@ -210,7 +208,7 @@ export default function App() {
                   onBack={() => setNav("assessments")}
                 />
               ) : (
-                <Overview summary={summary} loading={loadingSummary} demoMode={demoMode} onDemo={runDemo} onOpen={openAssessment} />
+                <Overview summary={summary} loading={loadingSummary} demoMode={demoMode} submitting={submitting} onDemo={runDemo} onOpen={openAssessment} />
               )
             )}
             {nav === "new" && <NewAssessment key={formKey} initial={prefill} submitting={submitting} error={error} onSubmit={submit} />}

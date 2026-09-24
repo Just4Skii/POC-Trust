@@ -9,6 +9,9 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.6" />
+    <!-- Pin the transitive Microsoft.OpenApi to the patched 2.x line (GHSA-v5pm-xwqc-g5wc / CVE-2026-49451,
+         fixed in 2.7.5). Microsoft.AspNetCore.OpenApi 10.0.6 otherwise resolves the vulnerable 2.0.0. -->
+    <PackageReference Include="Microsoft.OpenApi" Version="2.7.5" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.*">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>

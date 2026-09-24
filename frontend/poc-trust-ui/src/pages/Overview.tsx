@@ -2,11 +2,12 @@ import { StatusBadge } from "../components/StatusBadge";
 import type { DashboardSummary } from "../types";
 
 export function Overview({
-  summary, loading, demoMode, onDemo, onOpen,
+  summary, loading, demoMode, submitting, onDemo, onOpen,
 }: {
   summary: DashboardSummary | null;
   loading: boolean;
   demoMode: boolean;
+  submitting: boolean;
   onDemo: (kind: string) => void;
   onOpen: (id: string) => void;
 }) {
@@ -66,11 +67,16 @@ export function Overview({
           <p className="text-sm text-slate-300">Evaluator path: Overview → demo TRUST → REVIEW → VERIFY → Audit Trail.</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {["trust", "review", "verify", "missing", "offline"].map((k) => (
-              <button key={k} onClick={() => onDemo(k)} className="pt-action rounded-md bg-white px-3 py-2 text-sm font-semibold capitalize text-[#0B1F3A] hover:bg-slate-100">
+              <button key={k} onClick={() => onDemo(k)} disabled={submitting} className="pt-action rounded-md bg-white px-3 py-2 text-sm font-semibold capitalize text-[#0B1F3A] hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50">
                 {k}
               </button>
             ))}
           </div>
+          {submitting && <p role="status" className="mt-2 text-xs text-slate-300">Evaluating — one assessment at a time.</p>}
+          <p className="mt-3 text-xs text-slate-400">
+            Offline is synchronisation metadata in this prototype: the deterministic engine has no
+            connectivity rule, so offline alone neither raises nor lowers reliability.
+          </p>
         </div>
       </div>
 

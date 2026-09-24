@@ -11,7 +11,7 @@ export function AuditTimeline({ rows }: { rows: AuditRow[] }) {
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge value={a.finalStatus} size="sm" />
             <span className="text-xs text-[#607087]">{new Date(a.timestampUtc).toLocaleString()}</span>
-            <span className="text-xs text-[#607087]">WHO/WHAT in record {a.assessmentId.slice(0, 8)} · AI {a.aiConsulted ? "consulted" : "not consulted"}</span>
+            <span className="text-xs text-[#607087]">Identifiers as recorded · record {a.assessmentId.slice(0, 8)} · AI {a.aiConsulted ? "consulted" : "not consulted"}</span>
           </div>
           <p className="mt-1 text-sm text-[#132238]">{a.action}</p>
           {a.aiSummary && <p className="text-xs text-[#607087]">AI: {a.aiSummary.slice(0, 180)}</p>}

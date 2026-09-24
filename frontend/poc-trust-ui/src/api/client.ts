@@ -1,7 +1,28 @@
 import type { AssessmentSummary, AuditRow, DashboardSummary, Decision } from "../types";
 
+/** Surfaces the API's safe error envelope ({"error":"..."}) instead of a bare status code. */
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
+async function errorMessage(res: Response): Promise<string> {
+  try {
+    const body = (await res.json()) as { error?: unknown };
+    if (typeof body.error === "string" && body.error) return body.error;
+  } catch {
+    /* non-JSON error body — fall through to the status code */
+  }
+  return `API ${res.status}`;
+}
+
 async function json<T>(res: Response): Promise<T> {
-  if (!res.ok) throw new Error(`API ${res.status}`);
+  if (!res.ok) throw new ApiError(await errorMessage(res), res.status);
   return res.json() as Promise<T>;
 }
 

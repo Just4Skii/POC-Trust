@@ -7,9 +7,17 @@ namespace POCTrust.Infrastructure.Services;
 
 public sealed class EfAuditStore(PocTrustDbContext db) : IAuditStore
 {
+    /// <summary>
+    /// Canonical persisted evidence format: camelCase (web defaults) so stored records read back
+    /// with the same property names the public API and UI contract use (result, deviceId,
+    /// operatorCompetent, calibrationDueUtc...). Records written by earlier builds are PascalCase;
+    /// readers therefore also accept case-insensitive lookups.
+    /// </summary>
+    private static readonly JsonSerializerOptions PersistedJson = new(JsonSerializerDefaults.Web);
+
     public async Task SaveAsync(DiagnosticContext context, ReliabilityDecision decision, CancellationToken ct = default)
     {
-        var inputJson = JsonSerializer.Serialize(context);
+        var inputJson = JsonSerializer.Serialize(context, PersistedJson);
         db.Assessments.Add(new AssessmentRecord
         {
             Id = decision.Id,
