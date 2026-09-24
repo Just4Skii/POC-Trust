@@ -157,7 +157,7 @@ export default function App() {
     <div className="min-h-screen bg-[#F7F9FC] text-[#132238]">
       {demoActive && (
         <div role="banner" className="bg-[#0B1F3A] px-4 py-2 text-center text-sm font-semibold text-white">
-          DEMONSTRATION MODE — SYNTHETIC DATA ONLY
+          DEMONSTRATION DATA LOADED — SYNTHETIC RECORDS, CLEARLY LABELLED
         </div>
       )}
       <div className="flex">

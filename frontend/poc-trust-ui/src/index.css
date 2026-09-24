@@ -50,7 +50,7 @@ body {
 }
 
 /* Visible focus for keyboard users */
-a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible {
   outline: 3px solid var(--color-medblue);
   outline-offset: 2px;
 }

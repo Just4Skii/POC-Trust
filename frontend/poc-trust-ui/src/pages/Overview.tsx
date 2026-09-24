@@ -17,24 +17,27 @@ export function Overview({
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-[#DCE3EC] bg-white p-5">
-        <h2 className="text-lg font-bold text-[#0B1F3A]">Operational overview</h2>
+        <h2 className="text-lg font-bold text-[#0B1F3A]">Can this result be relied on?</h2>
         <p className="text-sm text-[#607087]">
-          Real persisted data{summary ? ` · ${summary.counts.total} assessments` : ""}. {demoActive ? "Demonstration scenarios are loaded — synthetic, clearly labelled." : "No demonstration data loaded — assessments appear here as they are recorded."}
+          Every assessment below is decided by deterministic rules from recorded evidence — always
+          explainable, always auditable. Real persisted data{summary ? ` · ${summary.counts.total} assessments` : ""}.
+          {" "}{demoActive ? "Demonstration scenarios are loaded — synthetic, clearly labelled." : "No demonstration data loaded — assessments appear here as they are recorded."}
         </p>
         {loading && <div className="mt-3 grid grid-cols-3 gap-3">{[0, 1, 2].map((i) => <div key={i} className="skeleton h-20 rounded-lg" />)}</div>}
         {summary && !loading && (
           <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
             {([
-              ["Trust", summary.counts.trust, "✓"],
-              ["Review", summary.counts.review, "!"],
-              ["Verify", summary.counts.verify, "■"],
-            ] as const).map(([label, n, icon]) => (
-              <div key={label} className="rounded-lg border border-[#DCE3EC] p-4">
+              ["Trust", summary.counts.trust, "✓", "border-l-[#167A5A]", "May be relied on subject to routine controls."],
+              ["Review", summary.counts.review, "!", "border-l-[#B7791F]", "A trained operator should review before reliance."],
+              ["Verify", summary.counts.verify, "■", "border-l-[#C43D3D]", "Do not rely alone — repeat or confirm."],
+            ] as const).map(([label, n, icon, accent, hint]) => (
+              <div key={label} className={`rounded-lg border border-l-4 border-[#DCE3EC] ${accent} p-4`}>
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">{label}</span>
                   <span aria-hidden="true" className="text-[#607087]">{icon}</span>
                 </div>
                 <div className="text-3xl font-bold" aria-label={`${label} count ${n}`}>{n}</div>
+                <p className="mt-1 text-xs text-[#607087]">{hint}</p>
               </div>
             ))}
           </div>
@@ -91,6 +94,23 @@ export function Overview({
             connectivity rule, so offline alone neither raises nor lowers reliability.
           </p>
         </div>
+      </div>
+
+      <div className="rounded-xl border border-[#DCE3EC] bg-white p-5">
+        <h3 className="font-semibold text-[#0B1F3A]">How every decision is made</h3>
+        <ol className="mt-3 grid gap-3 md:grid-cols-3">
+          {([
+            ["1", "Evidence is recorded", "Quality control, calibration, operator competency, reagent, environment and provenance — captured with the result."],
+            ["2", "Deterministic rules decide", "The same evidence always produces the same status — Trust, Review or Verify — with the reasons shown alongside."],
+            ["3", "An advisory note may follow", "Contextual Analysis can add a plain-language note for review cases. It never changes the decision."],
+          ] as const).map(([n, title, body]) => (
+            <li key={n} className="rounded-lg border border-[#DCE3EC] p-4">
+              <span aria-hidden="true" className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#0B1F3A] text-xs font-bold text-white">{n}</span>
+              <p className="mt-2 font-medium text-[#132238]">{title}</p>
+              <p className="mt-1 text-xs text-[#607087]">{body}</p>
+            </li>
+          ))}
+        </ol>
       </div>
 
       <p className="text-xs text-[#607087]">

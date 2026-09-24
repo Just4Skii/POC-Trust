@@ -2,7 +2,7 @@ import { useState } from "react";
 import { AiFallback, ContextualAnalysis } from "../components/ContextualAnalysis";
 import { EvidencePanel, WhyPanel } from "../components/Evidence";
 import { StatusBadge } from "../components/StatusBadge";
-import { formatEventTime, isAiUnavailableReason } from "../lib/labels";
+import { STATUS_COPY, formatEventTime, isAiUnavailableReason } from "../lib/labels";
 import { scenarioFor } from "../lib/scenarios";
 import { canRelyText, statusName, type Decision, type EvidenceInput } from "../types";
 
@@ -99,7 +99,7 @@ export function NewAssessment({
         <label className="md:col-span-2">Provenance (who / where / device / reagent)<input className={inputCls} value={form.provenance ?? ""} onChange={(e) => set("provenance", e.target.value)} placeholder="site-A/DEV-01/OP-07" /></label>
       </Section>
       {(localError || error) && <p role="alert" className="text-sm font-semibold text-[#C43D3D]">{localError || error}</p>}
-      <button onClick={submit} disabled={submitting} className="pt-action rounded-lg bg-[#0B1F3A] px-5 py-3 font-semibold text-white disabled:opacity-50">
+      <button onClick={submit} disabled={submitting} className="pt-action w-full rounded-lg bg-[#0B1F3A] px-5 py-3 font-semibold text-white disabled:opacity-50 sm:w-auto">
         {submitting ? "Evaluating…" : "Evaluate reliability"}
       </button>
     </div>
@@ -129,11 +129,11 @@ export function AssessmentDetail({
         </p>
       )}
       <section aria-label="Reliability decision" className={`rounded-2xl border-2 ${heroBorder} ${heroBg} p-6 text-center md:p-10`}>
-        <p className="text-xs font-semibold uppercase tracking-widest text-[#607087]">Reliability decision</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-[#607087]">{STATUS_COPY[finalName].strip}</p>
         <div className="mt-2 flex justify-center"><StatusBadge value={decision.finalStatus} size="lg" /></div>
         <p className="mt-3 text-lg font-semibold text-[#132238]">{canRelyText(decision.finalStatus)}</p>
         {finalName === "Verify" && <p className="mt-1 font-bold text-[#C43D3D]">Do not rely on this result alone.</p>}
-        <p className="mt-2 text-sm text-[#607087]">Result: <b className="text-[#132238]">{input.result ?? "—"}</b> · Initial {statusName(decision.initialStatus)} · {formatEventTime(decision.decidedAtUtc)}</p>
+        <p className="mt-2 text-sm text-[#607087]">Result: <b className="text-[#132238]">{input.result ?? "—"}</b> · initial assessment: {statusName(decision.initialStatus)} · {formatEventTime(decision.decidedAtUtc)}</p>
         <p className="mt-3 rounded-lg bg-white/70 px-4 py-2 text-sm font-medium text-[#132238]">Next action: {decision.action}</p>
         <div className="mt-4 flex flex-wrap justify-center gap-2">
           <button onClick={() => document.getElementById("pt-evidence")?.scrollIntoView({ behavior: "smooth" })} className="pt-action rounded-md border border-[#0B1F3A] bg-white px-4 py-2 text-sm font-semibold">Review Evidence</button>
