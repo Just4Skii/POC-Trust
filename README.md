@@ -161,6 +161,17 @@ validation.
 No clinical validation, regulatory approval, hospital deployment, live NHLS integration,
 real patient outcomes, or medical certification is claimed.
 
+### Languages (preview)
+
+The operator-facing explanation chain — reasons, next actions, evidence labels, audit pipeline
+stages — is localised from static reviewed catalogs: **English (canonical source)**, isiZulu,
+isiXhosa and Afrikaans (**machine-drafted previews, pending clinical-linguistic review**). The
+decision screen always shows the canonical status code beside the localised label
+(`REVIEW · Ukubuyekezwa`) with a "Show in English" toggle; switching is instant and offline-safe
+(catalogs ship with the app). Language claims follow an explicit honesty policy — nothing is
+called "supported" until reviewed. Architecture, review workflow and glossary:
+[`docs/localisation.md`](docs/localisation.md).
+
 ## AI key (backend only, never commit)
 
 ```bash

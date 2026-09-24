@@ -1,5 +1,71 @@
 # Changelog
 
+## 1.5.0-localised-interaction — Localised Clinical Interaction Layer foundations (25 September 2026)
+
+The first localisation increment (spec sections 1–8): the operator-facing explanation chain can
+now be presented in isiZulu, isiXhosa and Afrikaans — without moving a single decision. The
+machine-readable record, the deterministic engine, TRUST/REVIEW/VERIFY semantics, AI safety
+boundaries and all API contracts are untouched (zero backend changes; 131/131 tests, 0 warnings).
+
+The one-line rule holds: **the decision is language-neutral; only the explanation around it is
+localised.**
+
+### Added
+
+- **Static reviewed message catalogs** (section 4): stable message keys across the whole
+  explanation chain — `driver.<rule>.{title,explanation,action}` for all 12 engine rule IDs,
+  `evidence.<item>.label` + freshness templates, `evidence.state.*.{label,meaning}` (8 states),
+  `decision.<state>.{label,description,strip,next_action,can_rely}`, `audit.stage.*` (8 pipeline
+  stages) and `ui.*` navigation/selector/hero strings — 116 keys × 4 locales (en-ZA source of
+  truth; zu-ZA, xh-ZA, af-ZA drafts). English bundles eagerly and is the mandatory fallback;
+  other locales lazy-load as ~2.5 kB gzip chunks.
+- **react-i18next** chosen and justified (smallest mainstream React option with built-in lazy
+  bundles, `Intl.PluralRules` plurals — ICU-equivalent — and interpolation); no runtime
+  translation API is ever called for safety-critical text; no keys in the repo.
+- **Family-unit fallback** (section 4): a driver/decision family renders in a locale only when
+  its whole key family resolves there; otherwise it falls back to English AS A UNIT — an
+  operator never sees a half-translated explanation chain. Missing strings never surface as
+  raw keys or empty strings.
+- **Review workflow** (section 6): per-key metadata (status draft/in_review/reviewed, source
+  human/machine_draft/machine_edited, reviewer, reviewed_at, source_hash = sha256 of the English
+  source). `npm run i18n:sync` maintains meta; an English change reverts affected translations
+  to draft automatically; `--check` fails the gate on drift.
+- **Completeness gate** (section 4): `npm run check:i18n` (wired into `check:contract`)
+  enforces engine-rule → key-family coverage, exact key parity across locales, machine-text
+  safety of every catalog value in every locale, the claims policy, and the decision-screen
+  pattern.
+- **Decision-screen pattern** (sections 2 & 8): canonical status code always visible beside the
+  localised label (`REVIEW · Ukubuyekezwa`), a **Show in English** toggle for canonical wording
+  (session-scoped — never changes the stored preference), and the honest
+  "Language preview — draft translations · Not yet reviewed by clinical linguists" label
+  wherever drafts are shown.
+- **Language selector** (section 8): ONE compact control — sidebar footer + duplicated in
+  Settings, deliberately not the header — listing languages in their own language with support
+  states derived from real catalog metadata (never hard-coded). Device-level preference in
+  local storage; browser-language default; instant switching with no reload, no form-state loss;
+  `<html lang>` follows the active locale.
+- **Terminology glossary** with the 15 mandated terms × 4 locales in `docs/localisation.md`,
+  all marked draft, with the English-term fallback rule stated (a mistranslated safety
+  instruction is worse than an English technical term).
+
+### Claims policy (section 7)
+
+No locale is claimed "supported" — zu/xh/af are machine-drafted previews pending qualified
+native-speaker review. The copy guard bans overclaims ("fully localised", "clinically validated
+translations", …) and the preview label appears wherever draft strings render. The home-language
+rationale cites the primary Stats SA Census 2022 source rather than repeating figures.
+
+### Verification record
+
+- `dotnet build` 0 warnings; `dotnet test` **131/131** (zero backend changes).
+- `npm run build` ok (catalogs code-split per locale); `npm run lint` 0/0; contract 27/27 +
+  copy guard + i18n meta sync + i18n completeness all green.
+- Live browser QA: isiZulu/isiXhosa/Afrikaans decision screens (TRUST/REVIEW/VERIFY) render the
+  canonical code + localised label pair, translated reasons with suggested actions, evidence
+  rows, audit pipeline stages and preview labels; Show-in-English toggles both ways; switching
+  is instant with `poctrust.language` persisted and `<html lang>` synced; English rendering is
+  unchanged; no horizontal overflow at 390 px. Screenshots in `docs/assets/i18n-*.png`.
+
 ## 1.4.0-integrity-overview — Dashboard Integrity Overview, Enriched Rows, Audit Pipeline, Demonstration Moment (25 September 2026)
 
 The third RIR increment (spec sections 26–39): the integrity story now reaches the whole
