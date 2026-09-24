@@ -54,6 +54,10 @@ export const api = {
     ),
   audit: (take = 100) => fetch(`/api/assessments/audit?take=${take}`).then(json<AuditRow[]>),
   auditDetail: (assessmentId: string) => fetch(`/api/audit/${assessmentId}`).then(json<AuditRow[]>),
+  /** Run one demonstration scenario (trust / review / verify / missing / offline) through the
+   *  real backend pipeline. Creates a new demo-marked assessment each call, like the spec's
+   *  "repeated clicks create new assessments through the real flow". */
+  demoKind: (kind: string) => fetch(`/api/assessments/demo/${encodeURIComponent(kind)}`).then(json<Decision>),
   summary: () => fetch("/api/dashboard/summary").then(json<DashboardSummary>),
   devices: () => fetch("/api/devices").then(json<{ items: unknown[]; note: string }>),
   operators: () => fetch("/api/operators").then(json<{ items: unknown[]; note: string }>),

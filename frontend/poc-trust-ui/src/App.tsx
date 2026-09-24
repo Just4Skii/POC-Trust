@@ -59,6 +59,10 @@ export default function App() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncedFlash, setSyncedFlash] = useState(false);
+  // List filters (spec Sections 18/26): status tiles and operational rows drill into the list.
+  const [statusFilter, setStatusFilter] = useState<"all" | "Trust" | "Review" | "Verify">("all");
+  const [deviceFilter, setDeviceFilter] = useState<string | null>(null);
+  const [operatorFilter, setOperatorFilter] = useState<string | null>(null);
   const runTimers = useRef<number[]>([]);
   const scenarioCache = useRef<Map<string, string>>(new Map());
   const navRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -274,6 +278,25 @@ export default function App() {
     } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
   }
 
+  /**
+   * Overview scenario card (spec Section 21): runs ONE demonstration scenario through the real
+   * backend endpoint (GET /api/assessments/demo/{kind}) — a genuine evaluation that persists a
+   * demo-marked record — then opens the resulting assessment. Never fabricates a result.
+   */
+  async function runScenarioKind(kind: string) {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setSubmitting(true); setError("");
+    try {
+      await api.demoKind(kind);
+      setDecision(null);
+      await refresh();
+      const list = await api.assessments(1);
+      if (list[0]?.id) await openAssessment(list[0].id);
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
+    finally { inFlight.current = false; setSubmitting(false); }
+  }
+
   // Command layer: ⌘/Ctrl+K toggles the palette; "?" opens shortcuts (never while typing).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -319,11 +342,6 @@ export default function App() {
       {demoActive && (
         <div aria-hidden="true" className="pt-demo-topline fixed left-0 right-0 top-0 z-40 h-[2px]" />
       )}
-      {demoActive && (
-        <div role="banner" className="pt-fade px-4 py-2 text-center text-sm font-semibold text-white" style={{ backgroundImage: "linear-gradient(90deg, #0B1F3A, #1E5AA8 55%, #0F8B8D)" }}>
-          DEMONSTRATION DATA LOADED — SYNTHETIC RECORDS, CLEARLY LABELLED
-        </div>
-      )}
       <div className="flex">
         <aside className={`pt-sidebar hidden min-h-screen shrink-0 flex-col text-white transition-all md:flex ${collapsed ? "w-16" : "w-60"}`} aria-label="Primary">
           <div className="flex items-center justify-between p-3">
@@ -363,9 +381,16 @@ export default function App() {
             </nav>
             <div className="ml-auto flex flex-wrap items-center justify-end gap-2 text-xs">
               {demoActive && (
-                <span className="mono hidden rounded-full border border-[#0F8B8D]/40 bg-[#EAF7F7] px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.08em] text-[#0B1F3A] sm:inline-block">
-                  Demo · synthetic data only
-                </span>
+                <>
+                  {/* Compact persistent environment indicator (spec Section 16): a pill in the
+                      header — never a full-width bar; shortens at narrow widths but never hides. */}
+                  <span className="mono rounded-full border border-[#0F8B8D]/40 bg-[#EAF7F7] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#0B1F3A] sm:hidden">
+                    Demo · synthetic
+                  </span>
+                  <span className="mono hidden rounded-full border border-[#0F8B8D]/40 bg-[#EAF7F7] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#0B1F3A] sm:inline-block">
+                    Demo · synthetic data only
+                  </span>
+                </>
               )}
               <span aria-hidden="true" className="mono hidden rounded border border-[#DCE3EC] px-2 py-1 text-[10px] text-[#8A97A8] lg:inline-block">Ctrl/⌘ K</span>
               <button onClick={() => setPaletteOpen(true)} aria-label="Open command palette" className="rounded border border-[#DCE3EC] px-2.5 py-1 font-semibold hover:bg-[#F7F9FC]">⌕</button>
@@ -391,7 +416,13 @@ export default function App() {
                   onBack={() => setNav("assessments")}
                 />
               ) : (
-                <Overview summary={summary} loading={loadingSummary} demo={demo} submitting={submitting} lastSynced={lastSynced} onSeed={seedDemo} onReset={resetDemo} onOpen={openAssessment} />
+                <Overview
+                  summary={summary} loading={loadingSummary} demo={demo} submitting={submitting}
+                  lastSynced={lastSynced} onSeed={seedDemo} onReset={resetDemo} onOpen={openAssessment}
+                  onCreate={() => setNav("new")} onViewAll={() => setNav("assessments")}
+                  onFilterStatus={(s) => { setStatusFilter(s); setDeviceFilter(null); setOperatorFilter(null); setNav("assessments"); }}
+                  onRunScenarioKind={runScenarioKind}
+                />
               )
             )}
             {nav === "new" && <NewAssessment key={formKey} initial={prefill} submitting={submitting} error={error} onSubmit={submit} />}
@@ -401,10 +432,17 @@ export default function App() {
                 {run.form && <EvidenceFlow input={run.form} ruleIds={[]} status={null} running={!run.outcomes} />}
               </div>
             )}
-            {nav === "assessments" && <AssessmentsList items={assessments} onOpen={openAssessment} />}
+            {nav === "assessments" && (
+              <AssessmentsList
+                items={assessments} onOpen={openAssessment}
+                statusFilter={statusFilter} onStatusFilter={setStatusFilter}
+                deviceFilter={deviceFilter} onDeviceFilter={setDeviceFilter}
+                operatorFilter={operatorFilter} onOperatorFilter={setOperatorFilter}
+              />
+            )}
             {nav === "audit" && <AuditTrail rows={audit} />}
-            {nav === "devices" && <DevicesPage />}
-            {nav === "operators" && <OperatorsPage />}
+            {nav === "devices" && <DevicesPage onViewAssessments={(deviceId) => { setDeviceFilter(deviceId); setStatusFilter("all"); setOperatorFilter(null); setNav("assessments"); }} />}
+            {nav === "operators" && <OperatorsPage onViewAssessments={(operatorId) => { setOperatorFilter(operatorId); setStatusFilter("all"); setDeviceFilter(null); setNav("assessments"); }} />}
             {nav === "qc" && <QualityPage />}
             {nav === "settings" && <SettingsPage demo={demo} busy={submitting} onSeed={seedDemo} onReset={resetDemo} />}
             {submitting && nav === "overview" && !decision && <div className="skeleton h-48 rounded-xl" aria-label="Loading assessment" />}

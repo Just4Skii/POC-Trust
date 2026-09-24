@@ -125,6 +125,7 @@ export function AssessmentDetail({
   onBack: () => void;
 }) {
   const finalName = statusName(decision.finalStatus);
+  const isKindRun = typeof input.demoKey === "string" && input.demoKey.startsWith("demo-kind-");
   const heroBg = finalName === "Trust" ? "bg-[#EAF7F1]" : finalName === "Review" ? "bg-[#FFF7E6]" : "bg-[#FDEEEE]";
   const heroBorder = finalName === "Trust" ? "border-[#167A5A]" : finalName === "Review" ? "border-[#B7791F]" : "border-[#C43D3D]";
   const aiFailed = decision.reasons.some(isAiUnavailableReason);
@@ -142,15 +143,16 @@ export function AssessmentDetail({
     : "pt-sig-verify inline-flex";
 
   return (
-    <article className={`space-y-4 ${scenario ? "pt-demo" : "pt-fade"}`}>
-      {scenario && (
+    <article className={`space-y-4 ${scenario || isKindRun ? "pt-demo" : "pt-fade"}`}>
+      {(scenario || isKindRun) && (
         <p role="note" className="pt-fade rounded-lg border border-[#0F8B8D]/40 bg-[#EAF7F7] px-4 py-2 text-sm text-[#0B1F3A]">
           {scnIndex >= 0 && (
             <span className="mono mr-2 rounded bg-[#0B1F3A] px-1.5 py-0.5 text-[10px] font-semibold text-white">
               SCN-{String(scnIndex + 1).padStart(2, "0")}
             </span>
           )}
-          <b>Demonstration scenario — {scenario.story}.</b> {scenario.summary} Synthetic record, clearly labelled.
+          <b>{scenario ? `Demonstration scenario — ${scenario.story}.` : "Demonstration run — a fresh evaluation of a curated scenario."}</b>{" "}
+          {scenario ? scenario.summary : "This record was created through the real pipeline by a demonstration scenario card. It is synthetic and demo-marked."} Synthetic record, clearly labelled.
         </p>
       )}
       <section

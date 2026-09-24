@@ -78,7 +78,7 @@ export function AuditLifecycle({ row, status, action }: { row: AuditRow | undefi
     { label: "Decision recorded", sub: action, anchor: true },
     row.aiConsulted
       ? { label: "Contextual Analysis consulted", sub: "Advisory context only — it does not change the deterministic decision.", secondary: true }
-      : { label: "Contextual Analysis not consulted", sub: "The deterministic decision stands on its own.", secondary: true },
+      : { label: "Advisory context not consulted", sub: "The deterministic decision stands on its own — no advisory note was recorded for this assessment.", secondary: true },
   ];
 
   return (

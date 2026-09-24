@@ -357,6 +357,12 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 /* Ambient animations pause when the tab is hidden (Section 31) */
 .pt-paused *, .pt-paused *::before, .pt-paused *::after { animation-play-state: paused !important; }
 
+/* ── Responsive guard (spec Section 29): no horizontal overflow at any width ──
+   Grid/flex items default to min-width:auto, which lets long content blow a track
+   past the viewport. Layout children may always shrink; long text truncates. */
+.grid > *, .flex > *, [class*="grid-cols"] > * { min-width: 0; }
+body { overflow-x: clip; }
+
 /* ── Reduced motion: remove decorative movement, keep clear state changes ── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
