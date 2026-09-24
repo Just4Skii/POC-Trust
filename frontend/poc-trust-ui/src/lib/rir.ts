@@ -1,4 +1,4 @@
-import type { Status } from "../types";
+import type { DemonstrationSequence, DemonstrationStep, IntegrityOverview, RowIntegrity, Status } from "../types";
 
 /**
  * Result Integrity Record (RIR) client types + pure presentation helpers.
@@ -462,4 +462,84 @@ function humanFallback(domain: unknown): string {
   return typeof domain === "string" && domain.trim()
     ? domain.replace(/-/g, " ").replace(/\b\w/g, (m) => m.toUpperCase())
     : "Evidence domain";
+}
+
+// ── List rows, dashboard overview and the demonstration sequence (spec 26/27/30) ──
+
+/**
+ * Human phrase for a list row's primary driver: "Calibration expired" composed from the
+ * projector's structured driver (label + quality-state word), or the recorded driver sentence
+ * as fallback (e.g. TRUST records, which have no primary drivers at all). Never a machine token.
+ */
+export function driverPhrase(row: RowIntegrity): string | null {
+  if (row.primaryDriverLabel && row.primaryDriverState) {
+    return `${row.primaryDriverLabel} ${row.primaryDriverState.replace("-", " ")}`;
+  }
+  return row.primaryDriverStatement ?? null;
+}
+
+/** Defensive parse of one history row's compact integrity fields — garbage never crashes a row. */
+export function parseRowIntegrity(raw: unknown): RowIntegrity | null {
+  if (typeof raw !== "object" || raw === null) return null;
+  const r = raw as Record<string, unknown>;
+  const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
+  const str = (v: unknown) => (typeof v === "string" && v.length > 0 ? v : null);
+  return {
+    coverageAvailable: num(r.coverageAvailable),
+    coverageRequired: num(r.coverageRequired),
+    concerns: num(r.concerns),
+    agingCount: num(r.agingCount),
+    expiredCount: num(r.expiredCount),
+    failedCount: num(r.failedCount),
+    conflictCount: num(r.conflictCount),
+    primaryDriverLabel: str(r.primaryDriverLabel),
+    primaryDriverState: str(r.primaryDriverState),
+    primaryDriverStatement: str(r.primaryDriverStatement),
+    policy: typeof r.policy === "string" ? r.policy : "",
+    auditEntries: num(r.auditEntries),
+    auditSealed: num(r.auditSealed),
+    auditAvailable: r.auditAvailable === true,
+  };
+}
+
+/** Defensive parse of the dashboard's Integrity Overview aggregates (spec 26). */
+export function parseIntegrityOverview(raw: unknown): IntegrityOverview | null {
+  if (typeof raw !== "object" || raw === null) return null;
+  const r = raw as Record<string, unknown>;
+  const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
+  return {
+    assessments: num(r.assessments),
+    coveragePercent: num(r.coveragePercent),
+    coverageStatement: typeof r.coverageStatement === "string" ? r.coverageStatement : "",
+    assessmentsWithConcerns: num(r.assessmentsWithConcerns),
+    conflicts: num(r.conflicts),
+    assessmentsWithAging: num(r.assessmentsWithAging),
+    note: typeof r.note === "string" ? r.note : "",
+  };
+}
+
+/** Defensive parse of the stored demonstration sequence (spec 30). */
+export function parseDemonstration(raw: unknown): DemonstrationSequence | null {
+  if (typeof raw !== "object" || raw === null) return null;
+  const r = raw as Record<string, unknown>;
+  const steps: DemonstrationStep[] = (Array.isArray(r.steps) ? r.steps : []).map((s) => {
+    const w = (s ?? {}) as Record<string, unknown>;
+    return {
+      assessmentId: typeof w.assessmentId === "string" ? w.assessmentId : "",
+      result: typeof w.result === "string" ? w.result : "",
+      testType: typeof w.testType === "string" ? w.testType : "",
+      decidedAtUtc: typeof w.decidedAtUtc === "string" ? w.decidedAtUtc : "",
+      disposition: typeof w.disposition === "string" ? w.disposition : "",
+      policy: typeof w.policy === "string" ? w.policy : "",
+      change: typeof w.change === "string" && w.change.length > 0 ? w.change : null,
+    };
+  }).filter((s) => s.assessmentId !== "" && s.disposition !== "");
+  return {
+    available: r.available === true && steps.length >= 2,
+    label: typeof r.label === "string" ? r.label : "Watch one result become trustworthy, then watch its integrity context change.",
+    note: typeof r.note === "string" ? r.note : "",
+    aiInvolved: r.aiInvolved === true,
+    steps,
+    source: typeof r.source === "string" ? r.source : "",
+  };
 }

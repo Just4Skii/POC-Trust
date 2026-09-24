@@ -2,6 +2,7 @@ import { AuditTimeline } from "../components/AuditTimeline";
 import { EmptyState } from "../components/EmptyState";
 import { StatusBadge } from "../components/StatusBadge";
 import { deviceLabel, formatEventTime } from "../lib/labels";
+import { driverPhrase, parseRowIntegrity } from "../lib/rir";
 import { statusName } from "../types";
 import type { AssessmentSummary, AuditRow } from "../types";
 
@@ -81,22 +82,50 @@ export function AssessmentsList({
         </div>
       ) : (
         <ul className="mt-2 divide-y divide-[#DCE3EC] pt-stagger">
-          {filtered.map((a, i) => (
+          {filtered.map((a, i) => {
+            // Compact integrity fields come from the same backend projector as the full record
+            // (spec section 27): each row is understandable before opening it. Missing fields
+            // (older payload, unprojectable record) simply render a plainer row — never invented ones.
+            const integ = parseRowIntegrity(a.integrity ?? null);
+            const driver = integ
+              ? (integ.primaryDriverLabel && integ.primaryDriverState
+                  ? driverPhrase(integ)
+                  : integ.concerns > 0 && integ.primaryDriverStatement
+                    ? integ.primaryDriverStatement
+                    : null)
+              : null;
+            return (
             <li key={a.id} style={{ ["--d" as string]: `${Math.min(i, 8) * 45}ms` }}>
               <button onClick={() => onOpen(a.id)} className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 py-2.5 text-left transition-colors hover:bg-[#F7F9FC]">
                 <StatusBadge value={a.finalStatus} size="sm" />
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-medium">{a.result} · {a.testType ?? "Assessment"}</span>
-                  <span className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-[#607087]">
+                  <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#607087]">
                     <span>{deviceLabel(a.deviceId)} · {a.operatorId ?? "Operator not recorded"}</span>
+                    {integ && integ.coverageRequired > 0 && (
+                      <span className="mono text-[11px]">
+                        Evidence: {integ.coverageAvailable}/{integ.coverageRequired}
+                        {integ.conflictCount > 0 ? ` · ${integ.conflictCount} conflict${integ.conflictCount === 1 ? "" : "s"}` : ""}
+                      </span>
+                    )}
+                    {driver && <span className="min-w-0 truncate">Primary driver: {driver}</span>}
+                    {integ && integ.policy && <span>Policy: {integ.policy}</span>}
+                  </span>
+                  <span className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px]">
                     {a.connectivity === "offline" && <span className="rounded bg-[#EAF2FB] px-1.5 py-0.5 text-[10px] font-semibold text-[#1E5AA8]">Offline event</span>}
-                    {a.aiConsulted && <span className="rounded bg-[#EAF7F7] px-1.5 py-0.5 text-[10px] font-semibold text-[#0F8B8D]">Contextual Analysis</span>}
+                    {a.aiConsulted
+                      ? <span className="rounded bg-[#EAF7F7] px-1.5 py-0.5 text-[10px] font-semibold text-[#0F8B8D]">AI: Contextual Analysis</span>
+                      : <span className="rounded bg-[#F0F3F8] px-1.5 py-0.5 text-[10px] font-semibold text-[#607087]">AI: Not consulted</span>}
+                    <span className="rounded bg-[#F0F3F8] px-1.5 py-0.5 text-[10px] font-semibold text-[#607087]">
+                      {integ?.auditAvailable ? "Audit: Available" : "Audit: Pending"}
+                    </span>
                   </span>
                 </span>
                 <span className="mono text-xs text-[#607087]">{formatEventTime(a.decidedAtUtc)}</span>
               </button>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
       {filteredByDrilldown && filtered.length > 0 && (

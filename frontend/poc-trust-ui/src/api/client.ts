@@ -1,4 +1,4 @@
-import type { AssessmentSummary, AuditRow, DashboardSummary, Decision, DemoResetResult, DemoSeedResult, DemoStatus } from "../types";
+import type { AssessmentSummary, AuditRow, DashboardSummary, Decision, DemoResetResult, DemoSeedResult, DemoStatus, DemonstrationSequence } from "../types";
 import type { RirRecord } from "../lib/rir";
 
 /** Surfaces the API's safe error envelope ({"error":"..."}) instead of a bare status code. */
@@ -64,6 +64,9 @@ export const api = {
    *  "repeated clicks create new assessments through the real flow". */
   demoKind: (kind: string) => fetch(`/api/assessments/demo/${encodeURIComponent(kind)}`).then(json<Decision>),
   summary: () => fetch("/api/dashboard/summary").then(json<DashboardSummary>),
+  /** The stored demonstration decision sequence (TRUST → REVIEW → VERIFY with derived
+   *  "why it changed" lines) — deterministic engine output, no advisory involvement. */
+  demonstration: () => fetch("/api/dashboard/demonstration").then(json<DemonstrationSequence>),
   devices: () => fetch("/api/devices").then(json<{ items: unknown[]; note: string }>),
   operators: () => fetch("/api/operators").then(json<{ items: unknown[]; note: string }>),
   qc: () => fetch("/api/quality-controls").then(json<Record<string, unknown>>),

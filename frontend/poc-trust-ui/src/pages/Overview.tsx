@@ -1,11 +1,13 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { api } from "../api/client";
 import { ActivityFeed } from "../components/ActivityFeed";
 import { EmptyState } from "../components/EmptyState";
 import { StatusBadge } from "../components/StatusBadge";
 import { SegmentedBar, Sparkline } from "../components/Visuals";
 import { SystemPulse, Ticker } from "../components/SystemPulse";
 import { deviceLabel, formatEventTime } from "../lib/labels";
-import type { AssessmentSummary, DashboardSummary, DemoStatus } from "../types";
+import { parseDemonstration } from "../lib/rir";
+import type { AssessmentSummary, DashboardSummary, DemonstrationSequence, DemoStatus, IntegrityOverview } from "../types";
 
 /** Assessments recorded per day for the last 7 days — computed from real persisted records. */
 function trendPoints(rows: AssessmentSummary[]): { day: string; value: number }[] {
@@ -39,6 +41,164 @@ function StoryStrip() {
   );
 }
 
+/**
+ * Integrity Overview (spec section 26) — four aggregate metrics over the seeded records, each
+ * calculated by the backend from the STORED records at request time. Nothing here is preset:
+ * when the store is empty the card says so, and under demonstration mode the environment is
+ * labelled explicitly. An operational-integrity reading, never a clinical one.
+ */
+function IntegrityOverviewCard({ integrity, demoActive }: { integrity: IntegrityOverview | null | undefined; demoActive: boolean }) {
+  if (!integrity || integrity.assessments === 0) return null;
+  const concernTone = integrity.assessmentsWithConcerns > 0 ? "warn" : undefined;
+  const conflictTone = integrity.conflicts > 0 ? "warn" : undefined;
+  const agingTone = integrity.assessmentsWithAging > 0 ? "warn" : undefined;
+  return (
+    <div className="rounded-xl border border-[#DCE3EC] bg-white p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h3 className="font-semibold text-[#0B1F3A]">Integrity overview</h3>
+          <p className="mt-0.5 text-xs text-[#607087]">Evidence coverage, concerns, conflicts and aging across the stored assessments.</p>
+        </div>
+        <span className="mono rounded-full border border-[#0F8B8D]/40 bg-[#EAF7F7] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#0B1F3A]">
+          {demoActive ? "Demonstration mode — synthetic data only" : "From stored records"}
+        </span>
+      </div>
+      <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <MetricTile label="Evidence coverage" value={integrity.coverageStatement} note={`${integrity.assessments} assessments`} />
+        <MetricTile
+          label="Evidence concerns"
+          value={`${integrity.assessmentsWithConcerns} assessment${integrity.assessmentsWithConcerns === 1 ? "" : "s"}`}
+          note="with evidence concerns"
+          tone={concernTone}
+        />
+        <MetricTile
+          label="Conflicts"
+          value={integrity.conflicts === 0 ? "None" : `${integrity.conflicts} detected`}
+          note="detected evidence inconsistencies"
+          tone={conflictTone}
+        />
+        <MetricTile
+          label="Aging evidence"
+          value={`${integrity.assessmentsWithAging} assessment${integrity.assessmentsWithAging === 1 ? "" : "s"}`}
+          note="with aging evidence"
+          tone={agingTone}
+        />
+      </div>
+      <p className="mt-3 text-xs text-[#607087]">{integrity.note}</p>
+    </div>
+  );
+}
+
+function MetricTile({ label, value, note, tone }: { label: string; value: string; note: string; tone?: "warn" }) {
+  return (
+    <div className={`rounded-lg border p-3 ${tone === "warn" ? "border-[#B7791F]/40 bg-[#FFF7E6]/60" : "border-[#DCE3EC] bg-white"}`}>
+      <p className="pt-label text-[#8A97A8]">{label}</p>
+      <p className="mt-1 text-lg font-bold text-[#132238]">{value}</p>
+      <p className="mt-0.5 text-xs text-[#607087]">{note}</p>
+    </div>
+  );
+}
+
+/**
+ * Demonstration moment (spec section 30): the stored demonstration decision sequence — one
+ * result TRUST → REVIEW → VERIFY as its evidence quality changes — with the “why did it
+ * change” lines derived from the recorded findings. Fully deterministic: the advisory AI has
+ * no part in it. This is the core proof of the integrity engine.
+ */
+function DemonstrationMoment({
+  demo, onSeed, onOpen,
+}: {
+  demo: DemoStatus | null;
+  onSeed: () => void;
+  onOpen: (id: string) => void;
+}) {
+  const [seq, setSeq] = useState<DemonstrationSequence | null>(null);
+  const [failed, setFailed] = useState(false);
+  const records = demo?.demoRecords ?? 0;
+
+  useEffect(() => {
+    let alive = true;
+    setFailed(false);
+    api
+      .demonstration()
+      .then((raw) => { if (alive) setSeq(parseDemonstration(raw)); })
+      .catch(() => { if (alive) setFailed(true); });
+    return () => { alive = false; };
+  }, [records]);
+
+  if (failed) return null; // the card is a demonstration aid — never an error surface
+
+  const steps = seq?.steps ?? [];
+  const last = steps.length > 0 ? steps[steps.length - 1] : null;
+  const statusValue = (d: string) =>
+    d === "TRUST" ? "Trust" : d === "REVIEW" ? "Review" : d === "VERIFY" ? "Verify" : null;
+  const changes = steps.slice(1).map((s) => s.change).filter((c): c is string => !!c);
+
+  return (
+    <div className="rounded-xl border border-[#DCE3EC] bg-white p-5">
+      <h3 className="font-semibold text-[#0B1F3A]">Demonstration moment</h3>
+      <p className="mt-0.5 text-xs text-[#607087]">
+        {seq?.label ?? "Watch one result become trustworthy, then watch its integrity context change."}
+      </p>
+
+      {!seq && <div className="mt-3 skeleton h-24 rounded-lg" aria-hidden="true" />}
+
+      {seq && !seq.available && (
+        <div className="mt-3">
+          <EmptyState
+            title="The demonstration sequence is not loaded"
+            note="Load the demonstration dataset to record the three-step sequence through the real deterministic pipeline."
+            primaryLabel={demo ? "Run demonstration" : undefined}
+            onPrimary={demo ? onSeed : undefined}
+          />
+        </div>
+      )}
+
+      {seq && seq.available && (
+        <div className="mt-3">
+          <ol className="space-y-1.5" aria-label="Demonstration decision sequence">
+            {steps.map((s, i) => {
+              const sv = statusValue(s.disposition);
+              return (
+                <li key={s.assessmentId} className="flex flex-wrap items-center gap-2">
+                  {sv ? <StatusBadge value={sv} size="sm" /> : <span className="mono text-xs font-semibold">{s.disposition}</span>}
+                  <span className="text-sm text-[#132238]">{s.result}</span>
+                  <span className="mono text-[11px] text-[#8A97A8]">{s.policy}</span>
+                  {i < steps.length - 1 && <span aria-hidden="true" className="text-[#C9D4E3]">↓</span>}
+                </li>
+              );
+            })}
+          </ol>
+
+          {changes.length > 0 && (
+            <div className="mt-3 rounded-lg border border-[#DCE3EC] bg-[#F7F9FC] p-3">
+              <p className="pt-label text-[#0B1F3A]">Why did it change?</p>
+              <ul className="mt-1 space-y-1 text-xs text-[#607087]">
+                {changes.map((c, i) => <li key={i}>· {c}</li>)}
+              </ul>
+            </div>
+          )}
+
+          <p className="mt-2 text-xs text-[#607087]">
+            {seq.aiInvolved
+              ? "Advisory context was recorded for some steps — dispositions still come from the deterministic engine only."
+              : "No advisory involvement — every change comes from the deterministic rules alone."}
+          </p>
+          {last && (
+            <button
+              onClick={() => onOpen(last.assessmentId)}
+              className="pt-action mt-3 min-h-[40px] rounded-md bg-[#0B1F3A] px-4 py-2 text-sm font-semibold text-white hover:bg-[#13294a]"
+            >
+              Open the latest record
+            </button>
+          )}
+          <p className="mono mt-2 text-[10px] text-[#8A97A8]">{seq.note}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Overview({
   summary, loading, demo, submitting, lastSynced, onSeed, onReset, onOpen, onCreate, onViewAll, onFilterStatus, onRunScenarioKind,
 }: {
@@ -59,14 +219,15 @@ export function Overview({
   const trend = useMemo(() => trendPoints(summary?.recent ?? []), [summary]);
   const [runningKind, setRunningKind] = useState<string | null>(null);
 
-  /** Demonstration scenario cards (spec Section 21) — each runs the REAL backend flow
-   *  (GET /api/assessments/demo/{kind}), never a frontend-fabricated result. */
+  /** Demonstration scenario cards (spec Section 21, updated by the integrity upgrade / section 29):
+   *  each runs the REAL backend flow (GET /api/assessments/demo/{kind}); the body describes what
+   *  the opened record's Result Integrity Record will show — the record itself is the proof. */
   const scenarioCards = [
-    { kind: "trust", tone: "border-l-[#167A5A]", icon: "✓", title: "Clean evidence", body: "All configured reliability checks pass.", primary: true },
-    { kind: "review", tone: "border-l-[#B7791F]", icon: "!", title: "Context requires review", body: "Multiple evidence signals require attention.", primary: true },
-    { kind: "verify", tone: "border-l-[#C43D3D]", icon: "■", title: "Verification required", body: "Critical reliability evidence has failed.", primary: true },
-    { kind: "missing", tone: "border-l-[#8A97A8]", icon: "◇", title: "Provenance incomplete", body: "What the engine decides when records are missing.", primary: false },
-    { kind: "offline", tone: "border-l-[#1E5AA8]", icon: "◈", title: "Synchronization scenario", body: "Offline metadata — reliability comes from evidence alone.", primary: false },
+    { kind: "trust", tone: "border-l-[#167A5A]", icon: "✓", title: "Clean evidence", body: "All evidence valid — the record shows complete coverage, no conflicts and all key evidence current.", primary: true },
+    { kind: "review", tone: "border-l-[#B7791F]", icon: "!", title: "Context requires review", body: "Aging and contextual concerns — the record keeps complete coverage, names the concerns and offers advisory context.", primary: true },
+    { kind: "verify", tone: "border-l-[#C43D3D]", icon: "■", title: "Verification required", body: "A critical domain fails — the record shows the failed critical evidence with the primary driver identified.", primary: true },
+    { kind: "missing", tone: "border-l-[#8A97A8]", icon: "◇", title: "Provenance incomplete", body: "Records absent at capture — coverage is incomplete and the engine derives the disposition from what exists.", primary: false },
+    { kind: "offline", tone: "border-l-[#1E5AA8]", icon: "◈", title: "Synchronization scenario", body: "Offline capture only — connectivity stays synchronisation metadata; nothing local is invented.", primary: false },
   ] as const;
 
   function runCard(kind: string) {
@@ -129,6 +290,11 @@ export function Overview({
             </p>
           </>
         )}
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <IntegrityOverviewCard integrity={summary?.integrity} demoActive={demoActive} />
+        <DemonstrationMoment demo={demo} onSeed={onSeed} onOpen={onOpen} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

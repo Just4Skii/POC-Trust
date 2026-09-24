@@ -152,6 +152,18 @@ const BANNED_TSX = [
   [/contribut\w*\s+\d+(\.\d+)?\s*%/i, "invented numeric contribution percentage"],
   [/\b\d+(\.\d+)?%\s+(?:of\s+)?(?:the\s+)?decision\b/i, "invented decision-share percentage"],
   [/\b[0-9a-f]{64}\b/i, "hash-like fake provenance identifier"],
+  // Spec chunk 4 (section 33 — humanization): zero raw machine text in the primary UI.
+  [/\bEVIDENCE_STATE\b/, "raw machine identifier EVIDENCE_STATE (use humanized evidence-state copy)"],
+  [/\bRIR_ID\b/, "raw machine identifier RIR_ID (the UI says Record ID)"],
+  [/\bPOLICY_ID\b/, "raw machine identifier POLICY_ID (the UI says Policy)"],
+  [/\bRULE_WEIGHT\b/, "raw machine identifier RULE_WEIGHT (weights do not exist)"],
+  [/\bSOURCE_CONFIDENCE\b/, "raw machine identifier SOURCE_CONFIDENCE (no such measure exists)"],
+  // Spec chunk 4 (section 34 — clinical honesty): claims that require validation this
+  // prototype does not have must never appear.
+  [/\bclinically safe\b/i, "forbidden claim: clinically safe"],
+  [/\bdiagnostically correct\b/i, "forbidden claim: diagnostically correct"],
+  [/\bclinical risk score\b/i, "forbidden claim: clinical risk score"],
+  [/\bpatient safety prediction\b/i, "forbidden claim: patient safety prediction"],
 ];
 const tsxFiles = walk(join(root, "src")).filter((f) => f.endsWith(".tsx"));
 for (const file of tsxFiles) {
@@ -177,6 +189,17 @@ check("monitor marks contributing rows (↳ contributor)", instrumentSrc.include
 check("monitor marks contextual rows (↳ contextual)", instrumentSrc.includes("↳ contextual"));
 check("evidence provenance preserves 'as claimed' identity wording", /as claimed/.test(evidenceLibSrc));
 check("summary card inspects the full record (progressive disclosure)", integrityRecordSrc.includes("Inspect Integrity Record"));
+
+// ── 7. Required wording (spec chunk 4) — dashboard, rows, audit pipeline, demo moment ──
+console.log("Required wording (integrity upgrade, chunk 4):");
+const overviewSrc = readFileSync(join(root, "src", "pages", "Overview.tsx"), "utf8");
+const listsSrc = readFileSync(join(root, "src", "pages", "Lists.tsx"), "utf8");
+const auditTimelineSrc = readFileSync(join(root, "src", "components", "AuditTimeline.tsx"), "utf8");
+check("integrity overview card labels the demonstration environment", overviewSrc.includes("Demonstration mode — synthetic data only"));
+check("integrity overview carries the four section-26 metrics", ["Evidence coverage", "Evidence concerns", "Conflicts", "Aging evidence"].every((t) => overviewSrc.includes(t)));
+check("demonstration moment shows the progression and the why panel", overviewSrc.includes("Demonstration moment") && overviewSrc.includes("Why did it change?"));
+check("history rows expose evidence coverage, primary driver and policy", ["Evidence:", "Primary driver:", "Policy:", "Audit: Available", "AI: Not consulted"].every((t) => listsSrc.includes(t)));
+check("audit lifecycle follows the section-28 pipeline stages", ["Evidence received", "Evidence quality evaluated", "Rules evaluated", "Decision drivers identified", "Disposition recorded", "Audit saved"].every((t) => auditTimelineSrc.includes(t)));
 
 console.log("");
 if (failures > 0) {

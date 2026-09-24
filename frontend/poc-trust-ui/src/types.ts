@@ -36,6 +36,58 @@ export interface AssessmentSummary {
   testType?: string;
   operatorId?: string;
   connectivity?: string;
+  /** Compact integrity fields derived by the same projector as the full record (spec 27).
+   *  Optional: rows render fine without it (older cached payload, unprojectable record). */
+  integrity?: RowIntegrity | null;
+}
+
+/** Compact per-row integrity fields — the list-row mirror of the full Result Integrity Record. */
+export interface RowIntegrity {
+  coverageAvailable: number;
+  coverageRequired: number;
+  concerns: number;
+  agingCount: number;
+  expiredCount: number;
+  failedCount: number;
+  conflictCount: number;
+  primaryDriverLabel: string | null;
+  primaryDriverState: string | null;
+  primaryDriverStatement: string | null;
+  policy: string;
+  auditEntries: number;
+  auditSealed: number;
+  auditAvailable: boolean;
+}
+
+/** Dashboard Integrity Overview aggregates (spec 26) — calculated from the stored records. */
+export interface IntegrityOverview {
+  assessments: number;
+  coveragePercent: number;
+  coverageStatement: string;
+  assessmentsWithConcerns: number;
+  conflicts: number;
+  assessmentsWithAging: number;
+  note: string;
+}
+
+/** One step of the stored demonstration decision sequence (spec 30). */
+export interface DemonstrationStep {
+  assessmentId: string;
+  result: string;
+  testType: string;
+  decidedAtUtc: string;
+  disposition: string;
+  policy: string;
+  change: string | null;
+}
+
+export interface DemonstrationSequence {
+  available: boolean;
+  label: string;
+  note: string;
+  aiInvolved: boolean;
+  steps: DemonstrationStep[];
+  source: string;
 }
 
 export interface AuditRow {
@@ -56,6 +108,7 @@ export interface DashboardSummary {
   aiConsultedCount: number;
   recent: AssessmentSummary[];
   recentAudit: AuditRow[];
+  integrity?: IntegrityOverview;
   source: string;
 }
 

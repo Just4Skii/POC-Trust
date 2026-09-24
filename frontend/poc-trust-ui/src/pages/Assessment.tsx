@@ -266,7 +266,7 @@ export function AssessmentDetail({
         onToggle={() => setRecordOpen((o) => !o)}
       />
 
-      <AuditLifecycle row={auditRow} status={decision.finalStatus} action={decision.action} />
+      <AuditLifecycle row={auditRow} status={decision.finalStatus} action={decision.action} rir={rirLoad} />
     </article>
   );
 }

@@ -14,9 +14,13 @@ import { evidenceItems, qualityFor } from "../src/lib/evidence.ts";
 import {
   EVIDENCE_STATES,
   coverageGlyph,
+  driverPhrase,
   evidenceSources,
   isEvidenceQualityState,
+  parseDemonstration,
+  parseIntegrityOverview,
   parseRir,
+  parseRowIntegrity,
   qualityConcerns,
   stateTone,
   stateWord,
@@ -434,6 +438,86 @@ check("rir: policy chip data carries required + contextual evidence and selectio
   assert.equal(record.policy.requiredDomains.length, 6);
   assert.ok(record.policy.contextualDomains.includes("environment"));
   assert.match(record.policy.selectionNote, /rural PHC site/);
+});
+
+// ── Integrity upgrade chunk 4: rows, overview, demonstration sequence ───────────────────────
+check("rows: driverPhrase composes a human phrase from the structured primary driver", () => {
+  assert.equal(
+    driverPhrase({
+      coverageAvailable: 6, coverageRequired: 7, concerns: 2, agingCount: 1, expiredCount: 1,
+      failedCount: 0, conflictCount: 0, primaryDriverLabel: "Calibration", primaryDriverState: "expired",
+      primaryDriverStatement: "Calibration overdue since 2026-09-15.", policy: "Rural PHC POC Test",
+      auditEntries: 1, auditSealed: 1, auditAvailable: true,
+    }),
+    "Calibration expired",
+  );
+  // TRUST records have no primary drivers: fall back to the recorded sentence, never invent one.
+  assert.equal(
+    driverPhrase({
+      coverageAvailable: 7, coverageRequired: 7, concerns: 0, agingCount: 0, expiredCount: 0,
+      failedCount: 0, conflictCount: 0, primaryDriverLabel: null, primaryDriverState: null,
+      primaryDriverStatement: "All deterministic checks passed.", policy: "General POC Demonstration",
+      auditEntries: 1, auditSealed: 1, auditAvailable: true,
+    }),
+    "All deterministic checks passed.",
+  );
+  assert.equal(driverPhrase({ primaryDriverLabel: null, primaryDriverState: null, primaryDriverStatement: null }), null);
+});
+
+check("rows: parseRowIntegrity is defensive — garbage never crashes a list row", () => {
+  assert.equal(parseRowIntegrity(null), null);
+  assert.equal(parseRowIntegrity("nope"), null);
+  assert.equal(parseRowIntegrity(42), null);
+  const partial = parseRowIntegrity({ coverageAvailable: 6, policy: "Rural PHC POC Test", auditAvailable: "yes" });
+  assert.ok(partial);
+  assert.equal(partial.coverageRequired, 0);
+  assert.equal(partial.primaryDriverLabel, null);
+  assert.equal(partial.auditAvailable, false);
+  assert.equal(partial.policy, "Rural PHC POC Test");
+});
+
+check("dashboard: integrity overview parses defensively and defaults honestly", () => {
+  assert.equal(parseIntegrityOverview(undefined), null);
+  const overview = parseIntegrityOverview({ assessments: 13, coveragePercent: 97, coverageStatement: "97% complete", assessmentsWithConcerns: 8, conflicts: 3, assessmentsWithAging: 4 });
+  assert.ok(overview);
+  assert.equal(overview.coveragePercent, 97);
+  assert.equal(overview.conflicts, 3);
+  const junk = parseIntegrityOverview({ assessments: "many", coveragePercent: NaN, note: 5 });
+  assert.ok(junk);
+  assert.equal(junk.assessments, 0);
+  assert.equal(junk.coveragePercent, 0);
+  assert.equal(junk.note, "");
+});
+
+check("demonstration: sequence parses defensively; availability requires two real steps", () => {
+  assert.equal(parseDemonstration(null), null);
+  // Garbage steps degrade to an unavailable empty sequence — the card then shows its
+  // designed "not loaded" state instead of inventing steps or crashing.
+  const garbageSteps = parseDemonstration({ available: true, steps: "nope" });
+  assert.ok(garbageSteps);
+  assert.equal(garbageSteps.available, false);
+  assert.deepEqual(garbageSteps.steps, []);
+  const single = parseDemonstration({ available: true, steps: [{ assessmentId: "a", disposition: "TRUST", change: null }] });
+  assert.ok(single);
+  assert.equal(single.available, false, "one step is not a sequence");
+
+  const full = parseDemonstration({
+    available: true, aiInvolved: false, label: "Watch one result become trustworthy, then watch its integrity context change.",
+    note: "demonstration data", source: "engine only",
+    steps: [
+      { assessmentId: "a", result: "Hb 12.8", testType: "Hb", decidedAtUtc: "2026-08-25T14:00:00Z", disposition: "TRUST", policy: "General POC Demonstration", change: null },
+      { assessmentId: "b", result: "Glucose 6.1", testType: "Glucose", decidedAtUtc: "2026-09-19T13:00:00Z", disposition: "REVIEW", policy: "General POC Demonstration", change: "New finding: Calibration due within 7 days." },
+      { assessmentId: "c", result: "Hb 10.2", testType: "Hb", decidedAtUtc: "2026-09-24T14:00:00Z", disposition: "VERIFY", policy: "General POC Demonstration", change: "New finding: Calibration overdue since 2026-09-23." },
+    ],
+  });
+  assert.ok(full && full.available);
+  assert.equal(full.steps.length, 3);
+  assert.equal(full.steps[2].disposition, "VERIFY");
+  assert.match(full.steps[2].change ?? "", /Calibration overdue/);
+  // Incomplete steps (no id or disposition) are dropped, never rendered as ghosts.
+  const filtered = parseDemonstration({ available: true, steps: [{ assessmentId: "", disposition: "TRUST" }, { assessmentId: "b", disposition: "", change: "x" }, { assessmentId: "c", disposition: "VERIFY" }] });
+  assert.ok(filtered);
+  assert.equal(filtered.steps.length, 1);
 });
 
 let failed = 0;

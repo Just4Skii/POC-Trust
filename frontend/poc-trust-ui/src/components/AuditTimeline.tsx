@@ -2,6 +2,7 @@ import { StatusBadge } from "./StatusBadge";
 import { TechnicalDetails } from "./TechnicalDetails";
 import { formatEventTime } from "../lib/labels";
 import { statusName, type AuditRow, type StatusCode } from "../types";
+import type { RirLoad } from "./IntegrityRecord";
 
 /**
  * Audit Trail (Section 14) — the lifecycle of an assessment made traceable. A hairline spine
@@ -64,21 +65,54 @@ export function AuditTimeline({ rows }: { rows: AuditRow[] }) {
 }
 
 /**
- * Per-assessment lifecycle reveal for the decision page: Assessment received → Evidence
- * recorded → Reliability checks evaluated → Decision recorded (the anchor node) →
- * Contextual Analysis (visually secondary — never looks like it overrides the decision).
+ * Per-assessment lifecycle reveal for the decision page — the audit trail as one connected
+ * pipeline (spec section 28): Evidence received → Evidence quality evaluated → Rules evaluated
+ * → Decision drivers identified → Disposition recorded → Contextual Analysis consulted (only
+ * when it actually was) → Audit saved. Every stage is bound to real stored data: the audit row
+ * plus, when loaded, the derived Result Integrity Record. The advisory stage is visually
+ * secondary — it must never read as if the AI created the decision.
  */
-export function AuditLifecycle({ row, status, action }: { row: AuditRow | undefined; status: StatusCode; action: string }) {
+export function AuditLifecycle({
+  row, status, action, rir,
+}: {
+  row: AuditRow | undefined;
+  status: StatusCode;
+  action: string;
+  /** The derived integrity record (or its loading state) — enriches the quality, driver and
+   *  audit-saved stages when available; every stage still renders honestly without it. */
+  rir?: RirLoad;
+}) {
   if (!row) return null;
   const anchorColor = nodeColor(status);
+  const record = rir?.kind === "ready" ? rir.record : null;
+  const primaryDriver = record?.causality?.verified && record.causality.primaryDrivers.length > 0
+    ? record.causality.primaryDrivers[0]
+    : null;
   const events: { label: string; sub?: string; anchor?: boolean; secondary?: boolean }[] = [
-    { label: "Assessment received" },
-    { label: "Evidence recorded", sub: "Device, quality, operator, environment and provenance captured with the result." },
-    { label: "Reliability checks evaluated", sub: `${statusName(row.initialStatus)} initial assessment → ${statusName(status)} final state.` },
-    { label: "Decision recorded", sub: action, anchor: true },
+    { label: "Evidence received", sub: "Device, quality, operator, environment and provenance captured with the result." },
+    {
+      label: "Evidence quality evaluated",
+      sub: record
+        ? `${record.evidenceQuality.coverage.statement} · ${record.evidenceQuality.freshness}.`
+        : "Classified under the configured demonstration policy — see the Result Integrity Record.",
+    },
+    { label: "Rules evaluated", sub: `${statusName(row.initialStatus)} initial assessment → ${statusName(status)} final state.` },
+    {
+      label: "Decision drivers identified",
+      sub: primaryDriver
+        ? `${primaryDriver.statement}${record && record.causality!.secondaryConsiderations.length > 0 ? ` Plus ${record.causality!.secondaryConsiderations.length} secondary consideration${record.causality!.secondaryConsiderations.length === 1 ? "" : "s"}.` : ""}`
+        : "Driver roles derive from the recorded findings — see the Result Integrity Record.",
+    },
+    { label: "Disposition recorded", sub: action, anchor: true },
     row.aiConsulted
       ? { label: "Contextual Analysis consulted", sub: "Advisory context only — it does not change the deterministic decision.", secondary: true }
       : { label: "Advisory context not consulted", sub: "The deterministic decision stands on its own — no advisory note was recorded for this assessment.", secondary: true },
+    {
+      label: "Audit saved",
+      sub: record
+        ? `${record.audit.status.toLowerCase()} — ${record.audit.sealedEntries} of ${record.audit.entries} entr${record.audit.entries === 1 ? "y" : "ies"} sealed into the hash chain.`
+        : "Append-only entry, sealed into the tamper-evident hash chain.",
+    },
   ];
 
   return (
