@@ -1,5 +1,99 @@
 # Changelog
 
+## 1.3.0-decision-causality — Evidence Conflict, Decision Drivers, Integrity Timeline, Policies (25 September 2026)
+
+The second RIR increment (spec sections 10–25): the record now explains **why** the disposition
+occurred (decision causality derived from the engine's own findings), detects **evidence
+conflicts**, exposes **provenance detail without implying authentication**, shows an
+**integrity timeline** including a genuinely recorded demonstration decision history, offers a
+single **rule-based counterfactual** where the dependency is derivable, and formalises the
+**demonstration policies** that state what evidence matters. Frozen layers untouched
+(`ReliabilityEngine`, AI abstraction, orchestrator semantics; 117/117 tests green).
+
+### Added
+
+- **Decision causality** (`DecisionCausality` in the RIR): primary drivers, secondary
+  considerations and informational context, classified from the engine's recorded findings.
+  The projector re-runs the SAME deterministic rules on the SAME stored input at the SAME
+  decision instant as a **gated verification** — the re-run must reproduce the stored decision
+  exactly (status AND rule IDs) before any role classification is shown; otherwise the record
+  falls back to the plain reason sentences and says so. Roles are qualitative
+  (primary / secondary / informational) — no numeric weights exist anywhere.
+- **Rule-based counterfactual** (one, guarded): only when there is exactly one primary driver,
+  the driver has a well-defined "make current" mutation, no failed hard control is present, and
+  the mutation actually changes the outcome. Always labelled "Deterministic decision
+  comparison" / "Rule-based counterfactual", with an explicit "not a prediction — no
+  probability" basis note. Never an LLM output; never clinical.
+- **Evidence conflicts** (`EvidenceConflict`): detected inconsistencies between two recorded
+  sources (QC recorded as passed while the environment snapshot is outside the policy's
+  supported ranges; the engine's MULTI_CONTEXT interaction marker), each with source A, source
+  B, what conflicts, why it matters, and the related rule IDs. The record states that it has
+  detected an evidence inconsistency — never that it discovered a clinical truth. The old
+  inflated conflict-count estimate was replaced with this honest model.
+- **Integrity timeline**: decision-evolution view per record. Entries carry their basis inline
+  — `recorded` (from the stored assessment), `derived` (policy boundaries computed from
+  recorded timestamps, e.g. "calibration validity boundary passed"), or `demo-history`. When a
+  record belongs to the seeded decision sequence, the timeline is explicitly labelled
+  **"Demonstration decision history"**; single records are labelled a decision-time view. No
+  historical events are faked.
+- **Demonstration decision history** (seed data): a three-step sequence recorded through the
+  REAL pipeline at historical instants as calibration evidence ages — TRUST → REVIEW → VERIFY —
+  with transitions explained from the newly-appeared stored rules. Requires only a narrow,
+  additive decision-instant parameter on the orchestrator (ordinary submissions unaffected;
+  a decision can never be post-dated).
+- **Demonstration policies** (`DemonstrationPolicies`): exactly two synthetic policies —
+  "Rural PHC POC Test" (6 required domains; environment/power/connectivity contextual) and
+  "General POC Demonstration" (7 required). Selection is deterministic from the recorded
+  site marker and disclosed in the record (`selectionNote`). The policy states what evidence
+  is expected and sets the coverage denominator; the deterministic rules alone map evidence to
+  the disposition — a policy can never override a rule outcome or give the AI authority.
+  No policy-authoring platform was built.
+- **Provenance detail per evidence domain**: source identifier (device id, operator id, lot —
+  never a fabricated handle), verification wording that preserves "Operator ID as claimed" and
+  states what the prototype does NOT do (no authentication, no sensor attestation, no lot
+  genealogy), record reference, and the related rule IDs. No fake hashes anywhere.
+- **UI integration** (progressive disclosure, five-second rule first): the assessment page now
+  flows status → can-I-rely → action → **RESULT INTEGRITY summary card** (evidence X/Y,
+  quality concerns, consistency conflicts, traceability, disposition + policy chip) →
+  **decision drivers** (conflict cards, causal bars, counterfactual) → evidence flow and
+  signal map → reasons → evidence cards → Evidence Monitor → advisory Contextual Analysis →
+  **Integrity Timeline** → the full record document (behind "Inspect Integrity Record") →
+  audit. Evidence cards gained state/source/freshness/contribution with a per-domain details
+  disclosure; the monitor tags rows "↳ contributor" / "↳ contextual"; the signal map carries
+  the precise quality word per node (evidence → quality state → POC Trust → disposition).
+- **Guard extensions**: copy-guard bans invented contribution percentages and hash-like fake
+  provenance, requires the counterfactual labels, the inconsistency wording, "as claimed"
+  provenance and the inspect toggle; contract-check covers causality/conflict/timeline/policy
+  parsing (defensive fallbacks) and the quality-concerns summary (23/23 checks).
+- **14 new backend tests** (`IntegrityCausalityTests`): policy selection and policy-driven
+  coverage, role classification, counterfactual present/absent guards, conflict detection
+  (and consistent-bad-evidence producing none), the decision-history sequence end-to-end
+  (including audit-chain validity), provenance wording, related-rule mapping, and seeding the
+  back-dated history into a populated store.
+
+### Changed
+
+- **Audit trail commits to recording order** (`EfAuditStore`): audit entries are stamped when
+  they are appended, while the assessment row keeps the decision instant. For ordinary
+  submissions the two are milliseconds apart; this keeps the SHA-256 chain valid and honest
+  when the back-dated demonstration history is recorded (a hash chain over timestamp order
+  could never accept an older entry after a newer one). Sealing/verification semantics are
+  otherwise unchanged.
+- Coverage denominators are policy-driven (6 or 7 depending on the selected demonstration
+  policy); environment is contextual under the rural policy but still rule-relevant — the
+  engine's environment rules are untouched.
+- Demo dataset grows to 13 records (TRUST 5 · REVIEW 5 · VERIFY 3 + the 3-step history
+  sequence); lifecycle/invariant tests updated accordingly.
+
+### Honesty notes
+
+- The decision history is labelled demonstration data; nothing presents it as production
+  history.
+- The counterfactual re-runs the real rules with one evidence change and is always labelled;
+  it is a rule-based comparison, not a prediction, and carries no probability.
+- Conflict detection is inconsistency detection between recorded sources — nothing more.
+- Verification wording claims only what the prototype does: recorded claims, as claimed.
+
 ## 1.2.0-integrity-records — Result Integrity Record (25 September 2026)
 
 The product upgrade from "POC Trust gives TRUST / REVIEW / VERIFY" to "POC Trust creates an

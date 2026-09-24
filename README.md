@@ -80,11 +80,11 @@ Settings page refuses key entry by design.
 | Gate | Result |
 |---|---|
 | `dotnet build` | 0 warnings, 0 errors |
-| `dotnet test` | **103 / 103 passed** (58 core + 21 hardening + 11 demo invariants + 13 integrity-record tests) |
+| `dotnet test` | **117 / 117 passed** (58 core + 21 hardening + 11 demo invariants + 13 integrity-record tests + 14 decision-causality tests) |
 | `npm run build` | OK (fonts bundled offline) |
 | `npm run lint` (oxlint) | 0 warnings, 0 errors |
-| `npm run check:contract` | **20 / 20 passed** + copy guard clean (incl. evidence-quality vocabulary and forbidden-framing scan) |
-| Live smoke: auto-seed, `/health`, `/api/system/status`, `/api/audit/verify`, idempotent replay, tamper detection, rate limit burst | all verified |
+| `npm run check:contract` | **23 / 23 passed** + copy guard clean (incl. counterfactual labels, conflict wording, provenance "as claimed", percentage/hash bans) |
+| Live smoke: auto-seed, `/health`, `/api/system/status`, `/api/audit/verify`, idempotent replay, tamper detection, rate limit burst, decision-history timeline | all verified |
 
 ## Architecture
 
@@ -100,14 +100,23 @@ Diagnostic Event → Evidence → ReliabilityEngine → Initial status
 ### Result Integrity Record
 
 Each persisted assessment projects a portable, auditable, evidence-linked **Result Integrity
-Record**: the evidence the engine had, its classified quality under the demonstration policy
-(`valid / aging / missing / stale / expired / failed / conflicting / unverified-source`),
-why the disposition occurred, and the action that follows. The record is **derived, never
-stored twice** — a pure function of the stored assessment and its sealed audit entries, with
-every evidence state traced to the rule IDs the deterministic engine recorded. It is an
+Record**: the evidence the engine had, its classified quality under the selected demonstration
+policy (`valid / aging / missing / stale / expired / failed / conflicting / unverified-source`),
+**why the disposition occurred** (primary / secondary / informational decision drivers derived
+from the engine's recorded findings, with a single labelled rule-based counterfactual where the
+dependency is derivable), detected **evidence conflicts** (inconsistencies between two recorded
+sources — never clinical truth claims), an **integrity timeline** (recorded, derived and
+demonstration-history entries, honestly labelled), and the action that follows. The record is
+**derived, never stored twice** — a pure function of the stored assessment and its sealed audit
+entries, with every evidence state traced to the rule IDs the deterministic engine recorded.
+Two synthetic demonstration policies ("Rural PHC POC Test", "General POC Demonstration") state
+what evidence matters; the deterministic rules alone map evidence to the disposition. It is an
 operational integrity assessment under a configured demonstration policy, not a measure of
-clinical validity. The UI renders it as a document on every assessment detail page, with
-one-click export of the exact canonical JSON.
+clinical validity. The UI discloses it progressively on the assessment page: a compact RESULT
+INTEGRITY summary card with a policy chip, then decision drivers and conflicts, then the full
+record document behind "Inspect Integrity Record", with one-click export of the exact
+canonical JSON. A seeded three-step demonstration decision history (TRUST → REVIEW → VERIFY,
+recorded through the real pipeline) shows decision evolution, explicitly labelled.
 
 - Backend: ASP.NET Core (.NET 10), EF Core/SQLite, `AssessmentOrchestrator` pipeline.
 - AI: `OpenAiCompatibleProvider`, `StubAiProvider` fallback — the deterministic result never
