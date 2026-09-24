@@ -177,6 +177,32 @@ for (const file of tsxFiles) {
 }
 console.log(`  scanned ${tsxFiles.length} presentation files`);
 
+// ── 5b. Localisation spec (chunks 1–3) — claims policy and required pattern ───
+console.log("Localisation claims & pattern:");
+const BANNED_CLAIMS = [
+  [/\bfully\s+localised\b/i, "forbidden claim: fully localised"],
+  [/\bclinically\s+validated\s+translations?\b/i, "forbidden claim: clinically validated translations"],
+  [/supports?\s+south\s+africa'?s\s+three\s+major\s+languages/i, "forbidden claim: three major languages"],
+];
+const localisationFiles = [
+  join(root, "src", "components", "LanguagePicker.tsx"),
+  join(root, "src", "pages", "Meta.tsx"),
+  join(root, "src", "i18n", "strings.ts"),
+];
+for (const file of localisationFiles) {
+  const src = readFileSync(file, "utf8");
+  for (const [pattern, why] of BANNED_CLAIMS) {
+    if (pattern.test(src)) {
+      failures++;
+      console.error(`  FAIL ${file.replace(root, "").slice(1)} — ${why}`);
+    }
+  }
+}
+const pickerGuardSrc = readFileSync(join(root, "src", "components", "LanguagePicker.tsx"), "utf8");
+check("language menu entries render in their own language", ["isiZulu", "isiXhosa", "Afrikaans"].every((n) => pickerGuardSrc.includes(n)) || pickerGuardSrc.includes("SUPPORTED_LOCALES"));
+check("language support state comes from real catalog metadata", pickerGuardSrc.includes("useLocaleSupport"));
+check("selector stays out of the header (sidebar/settings only)", !readFileSync(join(root, "src", "App.tsx"), "utf8").split("<header")[1]?.includes("LanguagePicker"));
+
 // ── 6. Required wording (spec chunk 3) — the honesty labels must exist ──────
 console.log("Required wording (integrity upgrade):");
 const integrityRecordSrc = readFileSync(join(root, "src", "components", "IntegrityRecord.tsx"), "utf8");
@@ -199,7 +225,11 @@ check("integrity overview card labels the demonstration environment", overviewSr
 check("integrity overview carries the four section-26 metrics", ["Evidence coverage", "Evidence concerns", "Conflicts", "Aging evidence"].every((t) => overviewSrc.includes(t)));
 check("demonstration moment shows the progression and the why panel", overviewSrc.includes("Demonstration moment") && overviewSrc.includes("Why did it change?"));
 check("history rows expose evidence coverage, primary driver and policy", ["Evidence:", "Primary driver:", "Policy:", "Audit: Available", "AI: Not consulted"].every((t) => listsSrc.includes(t)));
-check("audit lifecycle follows the section-28 pipeline stages", ["Evidence received", "Evidence quality evaluated", "Rules evaluated", "Decision drivers identified", "Disposition recorded", "Audit saved"].every((t) => auditTimelineSrc.includes(t)));
+// Stage labels moved to the audit.<event>.* catalog family (localisation spec section 4);
+// the wording is still enforced — at the catalog source of truth, plus key usage in code.
+const enCatalogGuard = JSON.parse(readFileSync(join(root, "src", "i18n", "catalogs", "en-ZA.json"), "utf8"));
+check("audit lifecycle follows the section-28 pipeline stages", ["Evidence received", "Evidence quality evaluated", "Rules evaluated", "Decision drivers identified", "Disposition recorded", "Audit saved"].every((label) => Object.values(enCatalogGuard).includes(label)));
+check("audit lifecycle resolves stage labels through the catalog", ["audit.stage.evidence_received", "audit.stage.quality_evaluated", "audit.stage.rules_evaluated", "audit.stage.drivers_identified", "audit.stage.disposition_recorded", "audit.stage.audit_saved"].every((key) => auditTimelineSrc.includes(key)));
 
 console.log("");
 if (failures > 0) {

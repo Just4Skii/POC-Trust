@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "../api/client";
 import { EmptyState } from "../components/EmptyState";
+import { LanguagePicker } from "../components/LanguagePicker";
 import { StatusBadge } from "../components/StatusBadge";
+import { localeEntry, type LocaleCode } from "../i18n/locales";
+import { PENDING_SUPPORT, useLocaleSupport } from "../i18n/support";
 import { deviceLabel } from "../lib/labels";
 import { DEMO_SCENARIOS } from "../lib/scenarios";
 import type { DemoStatus } from "../types";
@@ -142,6 +146,55 @@ function ResetConfirm({ busy, onReset }: { busy: boolean; onReset: () => void })
   );
 }
 
+/**
+ * Language section (spec sections 6–8): the compact selector duplicated in Settings for
+ * discoverability, with support state, review counts and catalog versions derived from the
+ * REAL catalog metadata — never hard-coded. Until qualified native-speaker review completes,
+ * every non-English locale is honestly presented as a preview of draft translations.
+ */
+function LanguageCard() {
+  const { t } = useTranslation();
+  const support = useLocaleSupport() ?? PENDING_SUPPORT_ALL;
+  const locales: LocaleCode[] = ["en-ZA", "zu-ZA", "xh-ZA", "af-ZA"];
+  return (
+    <div className="rounded-lg border border-[#DCE3EC] bg-white p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="pt-label font-semibold text-[#132238]">{t("ui.language.label")}</p>
+          <p className="mt-0.5 text-xs text-[#607087]">{t("ui.language.supported_note")}</p>
+        </div>
+        <LanguagePicker />
+      </div>
+      <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+        {locales.map((code) => {
+          const s = support[code];
+          const preview = s.state !== "supported";
+          return (
+            <li key={code} className="rounded-md border border-[#DCE3EC] px-3 py-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-medium text-[#132238]">{localeEntry(code).native}</span>
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${preview ? "bg-[#FFF7E6] text-[#8A6116]" : "bg-[#EAF7F1] text-[#167A5A]"}`}>
+                  {preview ? t("ui.support.preview") : t("ui.support.reviewed")}
+                </span>
+              </div>
+              <p className="mt-1 text-[11px] text-[#607087]">
+                {t("ui.support.reviewed_count", { reviewed: s.reviewed, total: s.total })} · {t("ui.catalog.version", { version: s.version })}
+              </p>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="mt-3 rounded-md bg-[#FFF7E6] px-3 py-2 text-xs font-medium text-[#8A6116]">
+        {t("ui.preview.banner")} — {t("ui.preview.note")}
+      </p>
+    </div>
+  );
+}
+
+const PENDING_SUPPORT_ALL: Record<LocaleCode, typeof PENDING_SUPPORT> = Object.fromEntries(
+  ["en-ZA", "zu-ZA", "xh-ZA", "af-ZA"].map((c) => [c, PENDING_SUPPORT]),
+) as Record<LocaleCode, typeof PENDING_SUPPORT>;
+
 export function SettingsPage({
   demo, busy, onSeed, onReset,
 }: {
@@ -191,7 +244,9 @@ export function SettingsPage({
         )}
       </MetaPage>
       <MetaPage title="Settings" note="What this prototype does today, where its boundary sits, and what is planned next. AI keys are never entered here — backend user-secrets/env only.">
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="space-y-3">
+          <LanguageCard />
+          <div className="grid gap-3 md:grid-cols-3">
           <div className="rounded-lg border border-[#DCE3EC] p-4">
             <p className="pt-label font-semibold text-[#167A5A]">Implemented</p>
             <ul className="mt-2 space-y-1 text-xs text-[#607087]">
@@ -222,6 +277,7 @@ export function SettingsPage({
               <li>Retention policy and operational hardening</li>
               <li>Full offline deterministic execution</li>
             </ul>
+          </div>
           </div>
         </div>
       </MetaPage>

@@ -1,9 +1,10 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { evidenceItems, type EvidenceItem } from "../lib/evidence";
-import { humanizeReason } from "../lib/labels";
 import type { Decision, EvidenceInput } from "../types";
 import { statusName } from "../types";
 import { TechnicalDetails } from "./TechnicalDetails";
+import { humanizeReasonLocal } from "../i18n/strings";
 
 export function EvidencePanel({
   input, decision, highlight, onHighlight,
@@ -92,7 +93,11 @@ export function EvidencePanel({
 }
 
 export function WhyPanel({ decision }: { decision: Decision }) {
-  const reasons = decision.reasons.map(humanizeReason);
+  // Reasons flow through the central humanization module extended with the reviewed catalog
+  // (rule ID → message key → localised string). Each reason carries its family's presented
+  // next action so the reason, the evidence card and the action tell one consistent story.
+  const { t } = useTranslation();
+  const reasons = decision.reasons.map((r) => humanizeReasonLocal(r));
   return (
     <section aria-label="Why this decision" className="rounded-xl border border-[#DCE3EC] bg-white px-4 py-3">
       <h3 className="font-semibold text-[#132238]">Why this result received this status</h3>
@@ -102,6 +107,11 @@ export function WhyPanel({ decision }: { decision: Decision }) {
             <span aria-hidden="true" className="font-bold text-[#1E5AA8]">{i + 1}.</span>
             <span>
               <b>{r.label}.</b> {r.text}
+              {r.action && (
+                <span className="mt-1 block text-xs text-[#607087]">
+                  <b className="font-semibold">{t("ui.driver.suggested_action")}:</b> {r.action}
+                </span>
+              )}
             </span>
           </li>
         ))}

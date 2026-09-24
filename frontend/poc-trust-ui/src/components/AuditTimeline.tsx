@@ -1,5 +1,6 @@
 import { StatusBadge } from "./StatusBadge";
 import { TechnicalDetails } from "./TechnicalDetails";
+import { useTranslation } from "react-i18next";
 import { formatEventTime } from "../lib/labels";
 import { statusName, type AuditRow, type StatusCode } from "../types";
 import type { RirLoad } from "./IntegrityRecord";
@@ -82,6 +83,9 @@ export function AuditLifecycle({
    *  audit-saved stages when available; every stage still renders honestly without it. */
   rir?: RirLoad;
 }) {
+  // Stage labels come from the audit.<event>.* catalog family (localisable); the sub-lines
+  // embed real stored record content (language-neutral data) and stay canonical.
+  const { t } = useTranslation();
   if (!row) return null;
   const anchorColor = nodeColor(status);
   const record = rir?.kind === "ready" ? rir.record : null;
@@ -89,26 +93,26 @@ export function AuditLifecycle({
     ? record.causality.primaryDrivers[0]
     : null;
   const events: { label: string; sub?: string; anchor?: boolean; secondary?: boolean }[] = [
-    { label: "Evidence received", sub: "Device, quality, operator, environment and provenance captured with the result." },
+    { label: t("audit.stage.evidence_received"), sub: "Device, quality, operator, environment and provenance captured with the result." },
     {
-      label: "Evidence quality evaluated",
+      label: t("audit.stage.quality_evaluated"),
       sub: record
         ? `${record.evidenceQuality.coverage.statement} · ${record.evidenceQuality.freshness}.`
         : "Classified under the configured demonstration policy — see the Result Integrity Record.",
     },
-    { label: "Rules evaluated", sub: `${statusName(row.initialStatus)} initial assessment → ${statusName(status)} final state.` },
+    { label: t("audit.stage.rules_evaluated"), sub: `${statusName(row.initialStatus)} initial assessment → ${statusName(status)} final state.` },
     {
-      label: "Decision drivers identified",
+      label: t("audit.stage.drivers_identified"),
       sub: primaryDriver
         ? `${primaryDriver.statement}${record && record.causality!.secondaryConsiderations.length > 0 ? ` Plus ${record.causality!.secondaryConsiderations.length} secondary consideration${record.causality!.secondaryConsiderations.length === 1 ? "" : "s"}.` : ""}`
         : "Driver roles derive from the recorded findings — see the Result Integrity Record.",
     },
-    { label: "Disposition recorded", sub: action, anchor: true },
+    { label: t("audit.stage.disposition_recorded"), sub: action, anchor: true },
     row.aiConsulted
-      ? { label: "Contextual Analysis consulted", sub: "Advisory context only — it does not change the deterministic decision.", secondary: true }
-      : { label: "Advisory context not consulted", sub: "The deterministic decision stands on its own — no advisory note was recorded for this assessment.", secondary: true },
+      ? { label: t("audit.stage.advisory_consulted"), sub: "Advisory context only — it does not change the deterministic decision.", secondary: true }
+      : { label: t("audit.stage.advisory_not_consulted"), sub: "The deterministic decision stands on its own — no advisory note was recorded for this assessment.", secondary: true },
     {
-      label: "Audit saved",
+      label: t("audit.stage.audit_saved"),
       sub: record
         ? `${record.audit.status.toLowerCase()} — ${record.audit.sealedEntries} of ${record.audit.entries} entr${record.audit.entries === 1 ? "y" : "ies"} sealed into the hash chain.`
         : "Append-only entry, sealed into the tamper-evident hash chain.",

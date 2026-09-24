@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "../api/client";
 import { StatusBadge } from "./StatusBadge";
-import { evidenceStateCopy, formatEventTime } from "../lib/labels";
+import { formatEventTime } from "../lib/labels";
+import { evidenceStateLocal } from "../i18n/strings";
 import {
   coverageGlyph, evidenceSources, parseRir, qualityConcerns, rirDispositionStatus, stateTone,
   type RirCausality, type RirDomain, type RirRecord,
@@ -724,7 +725,7 @@ function PolicyChipStatic({ record }: { record: RirRecord }) {
 
 /** One evidence-domain row: state, source, freshness, contribution + a details disclosure. */
 function DomainRow({ domain: d, expanded, onToggle }: { domain: RirDomain; expanded: boolean; onToggle: () => void }) {
-  const st = evidenceStateCopy(d.state);
+  const st = evidenceStateLocal(d.state);
   const chip = stateTone(d.state);
   const contribution = d.contributedToDecision
     ? { text: "Contributed to the decision", cls: "bg-[#FFF7E6] text-[#8A6116]" }

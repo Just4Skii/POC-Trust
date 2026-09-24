@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AuditLifecycle } from "../components/AuditTimeline";
 import { AiFallback, ContextualAnalysis } from "../components/ContextualAnalysis";
 import { EvidencePanel, WhyPanel } from "../components/Evidence";
@@ -12,10 +13,15 @@ import { StatusBadge } from "../components/StatusBadge";
 import { ReliabilityArc, SignalRailViz } from "../components/Visuals";
 import { evidenceItems } from "../lib/evidence";
 import { usePointerLight } from "../lib/hooks";
-import { STATUS_COPY, formatEventTime, isAiUnavailableReason } from "../lib/labels";
+import { formatEventTime, isAiUnavailableReason } from "../lib/labels";
 import { evidenceSignals } from "../lib/signals";
 import { DEMO_SCENARIOS, scenarioFor } from "../lib/scenarios";
-import { canRelyText, statusName, type AuditRow, type Decision, type EvidenceInput } from "../types";
+import {
+  canRely, decisionNextAction, statusStrip,
+  type TextOptions,
+} from "../i18n/strings";
+import { FALLBACK_LOCALE, localeEntry, type LocaleCode } from "../i18n/locales";
+import { statusName, type AuditRow, type Decision, type EvidenceInput } from "../types";
 
 export interface FormState extends EvidenceInput {
   result: string;
@@ -130,6 +136,14 @@ export function AssessmentDetail({
 }) {
   const finalName = statusName(decision.finalStatus);
   const isKindRun = typeof input.demoKey === "string" && input.demoKey.startsWith("demo-kind-");
+  // Language presentation (spec sections 2 & 8): the canonical status code is ALWAYS visible
+  // (the badge); the localised label is supporting text beside it. "Show in English" lets a
+  // supervisor see the canonical wording without changing the operator's stored preference.
+  const { t, i18n } = useTranslation();
+  const activeLocale = (i18n.language as LocaleCode) || FALLBACK_LOCALE;
+  const isEnglishView = activeLocale === FALLBACK_LOCALE;
+  const [englishOverride, setEnglishOverride] = useState(false);
+  const ov: TextOptions | undefined = englishOverride && !isEnglishView ? { lng: FALLBACK_LOCALE } : undefined;
   const heroBg = finalName === "Trust" ? "bg-[#EAF7F1]" : finalName === "Review" ? "bg-[#FFF7E6]" : "bg-[#FDEEEE]";
   const heroBorder = finalName === "Trust" ? "border-[#167A5A]" : finalName === "Review" ? "border-[#B7791F]" : "border-[#C43D3D]";
   const aiFailed = decision.reasons.some(isAiUnavailableReason);
@@ -167,22 +181,43 @@ export function AssessmentDetail({
         aria-label="Reliability decision"
         className={`pt-lume-ring pt-light pt-settle rounded-2xl border-2 ${heroBorder} ${heroBg} p-6 text-center shadow-[var(--shadow-2)] md:p-10`}
       >
-        <p className="text-xs font-semibold uppercase tracking-widest text-[#607087]">{STATUS_COPY[finalName].strip}</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-[#607087]">{statusStrip(finalName, ov)}</p>
         <div className="mt-3 flex flex-col items-center justify-center gap-6 md:flex-row md:text-left">
           <div className="text-center">
             <span className={sigWrap}>
               <StatusBadge value={decision.finalStatus} size="lg" />
             </span>
+            {!isEnglishView && (
+              <p className="mt-2 text-base font-medium text-[#132238]" style={{ animation: "pt-fade 300ms var(--ease-enter) 60ms both" }}>
+                <span className="mono font-semibold tracking-[0.03em]">{finalName.toUpperCase()}</span>
+                <span aria-hidden="true" className="mx-1.5 text-[#8A97A8]">·</span>
+                <span>{t(`decision.${finalName.toLowerCase()}.label`, ov)}</span>
+                <span aria-hidden="true" className="mx-1.5 text-[#8A97A8]">·</span>
+                <button
+                  onClick={() => setEnglishOverride((o) => !o)}
+                  className="rounded border border-[#DCE3EC] bg-white px-2 py-0.5 text-xs font-semibold text-[#1E5AA8] hover:bg-[#F7F9FC]"
+                >
+                  {englishOverride
+                    ? t("ui.language.show_native", { language: localeEntry(activeLocale).native })
+                    : t("ui.language.show_english")}
+                </button>
+              </p>
+            )}
+            {!isEnglishView && !englishOverride && (
+              <p className="mono mt-1 text-[10px] uppercase tracking-[0.08em] text-[#8A97A8]">
+                {t("ui.preview.banner")} — {t("ui.preview.note")}
+              </p>
+            )}
             <p className="mt-4 text-lg font-semibold text-[#132238]" style={{ animation: "pt-fade 300ms var(--ease-enter) 120ms both" }}>
-              {canRelyText(decision.finalStatus)}
+              {canRely(finalName, ov)}
             </p>
             {finalName === "Verify" && (
               <p className="mt-1 font-bold text-[#C43D3D]" style={{ animation: "pt-fade 300ms var(--ease-enter) 200ms both" }}>
-                Do not rely on this result alone.
+                {t("ui.hero.do_not_rely", ov)}
               </p>
             )}
-            <p className="mt-2 text-sm text-[#607087]">Result: <b className="text-[#132238]">{input.result ?? "—"}</b> · initial assessment: {statusName(decision.initialStatus)} · <span className="mono">{formatEventTime(decision.decidedAtUtc)}</span></p>
-            <p className="mt-3 rounded-lg bg-white/70 px-4 py-2 text-sm font-medium text-[#132238]">Next action: {decision.action}</p>
+            <p className="mt-2 text-sm text-[#607087]">{t("ui.hero.result", ov)}: <b className="text-[#132238]">{input.result ?? "—"}</b> · {t("ui.hero.initial_assessment", ov)}: {statusName(decision.initialStatus)} · <span className="mono">{formatEventTime(decision.decidedAtUtc)}</span></p>
+            <p className="mt-3 rounded-lg bg-white/70 px-4 py-2 text-sm font-medium text-[#132238]">{t("ui.hero.next_action", ov)}: {decisionNextAction(finalName, ov)}</p>
           </div>
           <ReliabilityArc
             segments={items.map((i) => ({ key: i.key, label: i.label, state: i.state }))}
@@ -193,17 +228,17 @@ export function AssessmentDetail({
         </div>
         <div className="mt-4 flex flex-wrap justify-center gap-2 pt-stagger">
           {([
-            ["Review Evidence", () => document.getElementById("pt-evidence")?.scrollIntoView({ behavior: "smooth" }), false],
-            ["Check Device", onCheckDevice, false],
-            ["Repeat Test", onRepeat, true],
-            ["Back to history", onBack, false],
+            [t("ui.action.review_evidence"), () => document.getElementById("pt-evidence")?.scrollIntoView({ behavior: "smooth" }), false],
+            [t("ui.action.check_device"), onCheckDevice, false],
+            [t("ui.action.repeat_test"), onRepeat, true],
+            [t("ui.action.back_to_history"), onBack, false],
           ] as const).map(([label, fn, primary], i) => (
             <button
               key={label}
               onClick={fn}
               style={{ ["--d" as string]: `${i * 50}ms` }}
               className={`pt-action rounded-md px-4 py-2 text-sm font-semibold ${
-                primary ? "bg-[#0B1F3A] text-white" : label === "Back to history" ? "px-4 py-2 text-[#607087] underline" : "border border-[#0B1F3A] bg-white"
+                primary ? "bg-[#0B1F3A] text-white" : label === t("ui.action.back_to_history") ? "px-4 py-2 text-[#607087] underline" : "border border-[#0B1F3A] bg-white"
               }`}
             >
               {label}

@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ApiError, api } from "./api/client";
 import { Brand } from "./components/Brand";
 import { CommandPalette, ShortcutHelp, type RecentItem } from "./components/CommandPalette";
 import { EvidenceFlow } from "./components/Flow";
+import { LanguagePicker } from "./components/LanguagePicker";
 import { PipelineRail, type RailOutcome } from "./components/PipelineRail";
 import { StatusChip, type SyncView } from "./components/SystemPulse";
 import { normaliseEvidenceInput, toDecision, type StoredAssessment } from "./lib/history";
@@ -17,15 +19,15 @@ import { Overview } from "./pages/Overview";
 
 type Nav = "overview" | "new" | "assessments" | "audit" | "devices" | "operators" | "qc" | "settings";
 
-const NAV: { id: Nav; label: string; ready: boolean }[] = [
-  { id: "overview", label: "Overview", ready: true },
-  { id: "new", label: "New Assessment", ready: true },
-  { id: "assessments", label: "Assessments", ready: true },
-  { id: "audit", label: "Audit Trail", ready: true },
-  { id: "devices", label: "Devices", ready: true },
-  { id: "operators", label: "Operators", ready: true },
-  { id: "qc", label: "Quality Controls", ready: true },
-  { id: "settings", label: "Settings", ready: true },
+const NAV: { id: Nav; label: string; key: string; ready: boolean }[] = [
+  { id: "overview", label: "Overview", key: "overview", ready: true },
+  { id: "new", label: "New Assessment", key: "new", ready: true },
+  { id: "assessments", label: "Assessments", key: "assessments", ready: true },
+  { id: "audit", label: "Audit Trail", key: "audit", ready: true },
+  { id: "devices", label: "Devices", key: "devices", ready: true },
+  { id: "operators", label: "Operators", key: "operators", ready: true },
+  { id: "qc", label: "Quality Controls", key: "qc", ready: true },
+  { id: "settings", label: "Settings", key: "settings", ready: true },
 ];
 
 /** Staged evaluation presentation — pipeline rail + evidence flow during a real request. */
@@ -37,6 +39,9 @@ interface RunState {
 }
 
 export default function App() {
+  // Subscribes the tree to languageChanged — switching language re-renders instantly,
+  // with no page reload and no loss of form state (spec section 8).
+  const { t } = useTranslation();
   const [nav, setNav] = useState<Nav>("overview");
   const [collapsed, setCollapsed] = useState(false);
   const [demo, setDemo] = useState<DemoStatus | null>(null);
@@ -362,12 +367,15 @@ export default function App() {
                 aria-current={nav === n.id ? "page" : undefined}
                 className={`pt-navbtn rounded-md px-3 py-2 text-left text-sm transition-colors ${nav === n.id ? "bg-white font-semibold text-[#0B1F3A]" : "text-slate-200 hover:bg-white/10"}`}
               >
-                {collapsed ? n.label[0] : n.label}
+                {collapsed ? t(`ui.nav.${n.key}`)[0] : t(`ui.nav.${n.key}`)}
               </button>
             ))}
           </nav>
-          <div className="mt-auto p-3 text-xs text-slate-300">
-            {!collapsed && <p>Deterministic rules authoritative · AI advisory only.</p>}
+          <div className="mt-auto space-y-2 p-3 text-xs text-slate-300">
+            {!collapsed && <p>{t("ui.app.tagline")}</p>}
+            {/* The ONE compact language control (spec section 8) — sidebar footer, never the
+                header; duplicated in Settings. Collapsed view shows the label-less select. */}
+            <LanguagePicker compact={collapsed} />
           </div>
         </aside>
 
@@ -376,7 +384,7 @@ export default function App() {
             <div className="md:hidden"><Brand collapsed /></div>
             <nav className="flex flex-wrap gap-1 md:hidden" aria-label="Primary mobile">
               {NAV.slice(0, 4).map((n) => (
-                <button key={n.id} onClick={() => setNav(n.id)} className={`rounded border px-2 py-1.5 text-xs ${nav === n.id ? "bg-[#0B1F3A] text-white" : ""}`}>{n.label}</button>
+                <button key={n.id} onClick={() => setNav(n.id)} className={`rounded border px-2 py-1.5 text-xs ${nav === n.id ? "bg-[#0B1F3A] text-white" : ""}`}>{t(`ui.nav.${n.key}`)}</button>
               ))}
             </nav>
             <div className="ml-auto flex flex-wrap items-center justify-end gap-2 text-xs">
@@ -450,7 +458,7 @@ export default function App() {
           <CommandPalette
             open={paletteOpen}
             onClose={() => setPaletteOpen(false)}
-            pages={NAV.map((n) => ({ id: n.id, label: n.label }))}
+            pages={NAV.map((n) => ({ id: n.id, label: String(t(`ui.nav.${n.key}`)) }))}
             onNav={(id) => setNav(id as Nav)}
             demo={demo}
             onSeed={seedDemo}
