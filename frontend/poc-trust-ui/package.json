@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "check:contract": "node scripts/contract-check.mjs && node scripts/copy-guard.mjs",
+    "i18n:sync": "node scripts/i18n-meta.mjs",
+    "check:i18n": "node scripts/i18n-meta.mjs --check && node scripts/check-i18n.mjs",
+    "check:contract": "node scripts/contract-check.mjs && node scripts/copy-guard.mjs && node scripts/i18n-meta.mjs --check && node scripts/check-i18n.mjs",
     "check:copy": "node scripts/copy-guard.mjs",
     "preview": "vite preview"
   },
@@ -15,8 +17,10 @@
     "@fontsource-variable/inter": "^5.3.0",
     "@fontsource-variable/jetbrains-mono": "^5.3.0",
     "@fontsource-variable/sora": "^5.3.0",
+    "i18next": "^26.4.2",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "react-i18next": "^17.0.15"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",

@@ -1,0 +1,583 @@
+{
+  "audit.stage.advisory_consulted": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "bd455683c5eb1565ab8014d259976afb58caac53237047c451a2053ec9cdf27e"
+  },
+  "audit.stage.advisory_not_consulted": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "b87ae33df27a4c998e827fcd391f498c7ef5b4a53212b6a30b5e52de7ad362ef"
+  },
+  "audit.stage.audit_saved": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "1508584876d4a622d8fabc1c17a81f45acbe31437f9bddf042c282d1660c22c6"
+  },
+  "audit.stage.disposition_recorded": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "b8982f5fe77307cad7c7382c00fed9c6ef938579e419a3c7be04f6c216e6e361"
+  },
+  "audit.stage.drivers_identified": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "0b9c6f547aed641bfbf09137b07c958aa6f4c065baff5fd5fc970421328f8065"
+  },
+  "audit.stage.evidence_received": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "b3d39f99c952ef079f38c81b07f3040d6f313de9218c87aaa4e42aede9e5d638"
+  },
+  "audit.stage.quality_evaluated": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "ddfc7a90cda2f1721dd1f52e8e3b051c7258e983b30f8e12cb8ed0bebe287298"
+  },
+  "audit.stage.rules_evaluated": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "95d6024836626d8ca8b9be8813eb9fc2bdc827d27b6091f0fd7c2f08648ef715"
+  },
+  "decision.review.can_rely": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "25872ce72f90955dbd7ca5dbf517d8026a541215900767c5e8464e9ff0b03c42"
+  },
+  "decision.review.description": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "be5e8c3c47bf13b099908ffd82239db55bd9ee51b5a8de5cf3311de9ae48f16c"
+  },
+  "decision.review.label": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "aff0766a5290e117b8433c351bae7b7b23bed682b2369bd822d88a647cc58512"
+  },
+  "decision.review.next_action": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "1de0f7c5118b9c817c7bb237c46ed1f9da2ea24ae5046b275479af9230cbfe97"
+  },
+  "decision.review.strip": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "8528ceac3f736c56194480008c55084b303c25aab91c467092f6b8261559a319"
+  },
+  "decision.trust.can_rely": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "c40349c1472f0f7f4ddf38fa74419ccc360912e1ba39857387ac0763e0b92f03"
+  },
+  "decision.trust.description": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "f30de86e0bdaa491b5d8f5c8be43c5c329338bb97d6fe3d72890e6299c24f6e6"
+  },
+  "decision.trust.label": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "ade9248e0132b4112c81e94cce392e1068029bac214f23c79d10693e781a16f1"
+  },
+  "decision.trust.next_action": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "0bee0686bf7b930eeeea7e9090f79ed28bc958f1142eee6f53744d75b3857e22"
+  },
+  "decision.trust.strip": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "831fd16bc55edd9d3a96e6b6d7adf62cd228f31e8dcb702c6c9a8594b05efbf6"
+  },
+  "decision.verify.can_rely": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "7cffb805e884351ec669c3637ef2515b6ba60b9282d8adb0050f8ce6d3b3cfe4"
+  },
+  "decision.verify.description": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "a5afe7e9ae3eaa867071dac4a7e503e3ca4fd065edf46fa130b5d365d62c81fb"
+  },
+  "decision.verify.label": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "eea2745e2867a6772adc3e813211e6ce7b6ebd312d7e84a7c1b1aa2f8c75fd4b"
+  },
+  "decision.verify.next_action": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "0f9997008f12f7745f4485a459504f718cb5b32c7a444200f14a40dbfc9019d8"
+  },
+  "decision.verify.strip": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "b6ccf60390be65d4110a689c858f79a43a56dba500e115ee84cd8b3a54fd7db6"
+  },
+  "driver.all_checks_pass.action": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "18eafceed6abad50af5076a9cf2dd679f110f3fd871dfeb791909b83091f3c2e"
+  },
+  "driver.all_checks_pass.explanation": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "4c4f43b91a86586c5c140dbc70ce322cf23e3910f6854fa00408ec95c0cae45d"
+  },
+  "driver.all_checks_pass.title": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "dc22fa50ec3813e3c28ebbc91c5b7d38be2a2a9a7d4495291185faa1e60370e9"
+  },
+  "driver.cal_expired.action": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "f46a6daaf8d01883069208e6d6bec201c23482f51d8289120dd7047003ce9e50"
+  },
+  "driver.cal_expired.explanation": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "56055869b5249ca208ddf9801cdf64603adbe6e21dca485e8f13290a6e1f6354"
+  },
+  "driver.cal_expired.title": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "fc14b5f8c6e772840d48480f837dc4606be415ed4ee9df29983bd8117c310e74"
+  },
+  "driver.cal_near_due.action": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "35f7fbe56de243208c07678a95dc13509f784fa9d9f68514e37ae835042612c0"
+  },
+  "driver.cal_near_due.explanation": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "5a99ff15dd5a8d3f7936e442812b34783e5427a0daeaba1ada5ee2b6694f7a2e"
+  },
+  "driver.cal_near_due.title": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "6d296af566d809b96ee5d5ee619dd57d9961deb5177a7833a6fcd9783bda0bd8"
+  },
+  "driver.env_humidity.action": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "4f36f1beb47aac451fad2989a2449c65629b0d5d0567f064c2ef376f4edfb8bb"
+  },
+  "driver.env_humidity.explanation": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "dcc374226409244f49e01cad1822f0e8fad9a1b8c0675cfd322ffc34cec35a00"
+  },
+  "driver.env_humidity.title": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "de07ee8c7c3774ece25af43c0bef62c124dc37425a7024a7a5c8b8643f5e0ed2"
+  },
+  "driver.env_temp.action": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "be677394c96e64222b5085e447880844d4a962458761d79d9a3b92d6a245e03d"
+  },
+  "driver.env_temp.explanation": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "cb7f62589e719f0d7acdf551ee79f969ad65ddc6bce3bd4668b56a5c24b5ce62"
+  },
+  "driver.env_temp.title": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "301cf7cb1a5091f17a6bfaf048802a881d4b478790689a698de7712930c7cf76"
+  },
+  "driver.multi_context.action": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "7f5aa78774ef2bf641674ea564b5f29a04a2062261d15ec0f188a18741d5e72c"
+  },
+  "driver.multi_context.explanation": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "c6fd657f023a3ca3567e684b1b4dd544eb7e7168277b8df1a1955893a708bae2"
+  },
+  "driver.multi_context.title": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "977252cb78e27009fd218549f33bbd927dbab43a2b6ea56b7489c8b663f9ccae"
+  },
+  "driver.operator_not_competent.action": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "df3309dffbbff46bc2b307f2bf47e7d8dd3e036b1b55b59905228c703a6053cf"
+  },
+  "driver.operator_not_competent.explanation": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "c46cee5cd5d2ad0cf4dcb326efe0f9707fbfaff4d31615c8a909c7edf6edafaf"
+  },
+  "driver.operator_not_competent.title": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "7a95e6c347b5bc0c18057903f0f0ca2c3a0a683817cc4f4de1e953e844446c28"
+  },
+  "driver.power_interruption.action": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "978930a882562d62ab7bed8912850cffc599bbc6ab80f6e7f7410cc8bcc69200"
+  },
+  "driver.power_interruption.explanation": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "3da5ad39618816a3e2ff72bdb675537b0c6339604dfaee4f0394712363261259"
+  },
+  "driver.power_interruption.title": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "99b32d273b5bfc07b89dc58b6975090234a029f00df7589881564839ed8048e9"
+  },
+  "driver.provenance_incomplete.action": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "91a7818dc534ed4e257144b0a63da498468cf8f7039079119838dc8627fc2b30"
+  },
+  "driver.provenance_incomplete.explanation": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "ead6b0d6008255a9b31c1f7f174d19f73e1097ed7d3688cfc5314d84932760ae"
+  },
+  "driver.provenance_incomplete.title": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "325b44da6a50f3a6313355ba0e54cf8cae4ae50f22b8a288680d8000089ef3b5"
+  },
+  "driver.qc_failed.action": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "08c38dac259987d87b3a00e56cf6b38236f45bffa96b0b757026987f901988af"
+  },
+  "driver.qc_failed.explanation": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "5a75fc61469c4212d9dfdabbc13a2602ebcfdb3f9afcd8d821a8292ff5e69a43"
+  },
+  "driver.qc_failed.title": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "3790746a1dbff5a7bbc3ef78b3385b8804922a0344eba27d2a6c35a790a6f055"
+  },
+  "driver.reagent_expired.action": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "cce0b8cecc2d707f60eb0ff201837a76180de8744cfaeacdd47f7d3028d6f6b0"
+  },
+  "driver.reagent_expired.explanation": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "25dae97fc131ce47bbcd336cb35d00a5f0e6ed3cf4b0ed463dbfd9771fef0cd9"
+  },
+  "driver.reagent_expired.title": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "da62d39a5f88652d4c0f5f7c5f6a51977c70a775b1c6b19644bdf4ea102276a8"
+  },
+  "driver.reagent_near_expiry.action": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "2f02215e48475a427244595bb947561621e4e64ce87884e4d0d088ae9c08125a"
+  },
+  "driver.reagent_near_expiry.explanation": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "78b5ad5dfcc578a6f48b7edfcfae58e3f593acb2438afaabc63d316345a70eb5"
+  },
+  "driver.reagent_near_expiry.title": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "d151f270306ca70b7ee3300dad9b53ac9c940bf6fea907ca34676eb8640f09f1"
+  },
+  "evidence.cal.label": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "66e0feb89396c0aba6bacc46c06725f00e0acaa324d63300889b31e34937852f"
+  },
+  "evidence.cal.last_verified": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "2f2619c3612712fabdc512f4f5f8f71cb94bf36c527d1db413633de70cce313c"
+  },
+  "evidence.conn.label": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "5479401fc08bffe134c0091b1ba42474739fbae17592cda5a01375f9f40ae7e4"
+  },
+  "evidence.device.label": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "6ba0bdeccb426d7b2ccb601c4e07015f50b6b427ec52c93a3b95f2245b67bdd4"
+  },
+  "evidence.device.last_verified": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "433aaa5f76dbb0a90f8ff5672705d52365b5ca83030d7a47d024e763221797d2"
+  },
+  "evidence.env.label": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "9e471951a1b4106e54be128a21112b02914fe98cc79b2c92b49ee80c5464487c"
+  },
+  "evidence.op.label": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "291101a07fe980e93b900ae85c9eb824f9e7e93d0d754be7440b9386b615cad7"
+  },
+  "evidence.prov.label": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "1c4b8ff60530a1bfededcb2d51d87a004846e2f11f815cd417aa6cb403cda502"
+  },
+  "evidence.qc.label": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "4e732d31fab583803907c6c8f8889decc91f647894da259f1d4c99139de13000"
+  },
+  "evidence.reagent.label": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "37eb7cb4f8c1a4885ff699f01034242706ad050fd69cba26e327e240aa66d2d6"
+  },
+  "evidence.reagent.last_verified": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "b4a8f00a74b395b16f8ca7370a40e8eca568d858c57dd496fcfe872a88ebc1cf"
+  },
+  "evidence.state.aging.label": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "90dd095da6be9e4c755eac57dc8d59073723d13db6f4e68e1ab98dca98ae4316"
+  },
+  "evidence.state.aging.meaning": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "d8610a36f49c182ea28d829e8c1313d1fc50da5a508c2c6df8ac2b4b8dbf814b"
+  },
+  "evidence.state.conflicting.label": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "d4674ab0467a8f02a7f4706084c80ceb5d908962d2aca8196b94d9131decc4e8"
+  },
+  "evidence.state.conflicting.meaning": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "e8918389e7d9c1c6c7463841622dc81bb960ab88d1cacc4920e42a1778c58b05"
+  },
+  "evidence.state.expired.label": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "424a2551d356754c882d04ac16c63e6b50b80b159549d23231001f629455756e"
+  },
+  "evidence.state.expired.meaning": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "fb8a6694fc59ddf57287484f02d4374e288dac085d326c5b0466e42b56e1dbd8"
+  },
+  "evidence.state.failed.label": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "031a8f0f659df890dfd53c92e45295b0f14c997185bae46e168831e403b273f7"
+  },
+  "evidence.state.failed.meaning": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "a6f047462ae2a7eb251b04f433cd7db75364f663b7dd53100e57b5e1ad478853"
+  },
+  "evidence.state.missing.label": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "6be36ca49ee85210c5d1ad9c377d90a9859c66d889110a2a5b0dccd390d12e20"
+  },
+  "evidence.state.missing.meaning": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "82769e1505511a248f406df24547b50031c23aefff3f902203b9792575ef5fcd"
+  },
+  "evidence.state.stale.label": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "40c9e59c5e152b0ae9affc84d8461c29b75a7709e4506307eeedf246b526014e"
+  },
+  "evidence.state.stale.meaning": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "56e05ccd88bd94ac96d583666b89e9df5638f6449c67b65b6da39072dd32505d"
+  },
+  "evidence.state.unverified-source.label": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "994dabb7702f5d677a8d424923e0b736432ad3626fd28a4349cbbf9e3c6fc92b"
+  },
+  "evidence.state.unverified-source.meaning": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "c64891d0ea03cb0ad4d91bded158df237c7e27c01ed303cb5be2eade9a0dcfd5"
+  },
+  "evidence.state.valid.label": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "f5162206318ee96491108354ae7361db244d6a013aa32185216b5f15ac544f4c"
+  },
+  "evidence.state.valid.meaning": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "9a1ceecba9b2df22f09e87b85f9bfc2f50993be869a87a56790d3f3bbcc4d52b"
+  },
+  "ui.action.back_to_history": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "c6e5da97f657275ca904ac6397735bbae0fb53a4f48fbf5ce1815b1a35542538"
+  },
+  "ui.action.check_device": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "6fb106461ee57e47d52f76109e75835e1d369a1bd369c52fed8d2cb1f70c41d1"
+  },
+  "ui.action.repeat_test": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "8b6e36c0cfff276b668d56641563129aea914f68fa3c1482bfc6e72a41fc9937"
+  },
+  "ui.action.review_evidence": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "6d21d6327acd2b4f0846ad5ca781393612f232b17d544d51c3441c2782261f2e"
+  },
+  "ui.app.tagline": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "eceb4088e55bc95e918f5a705dd5b785baad83a09526658a8ce42e0caa38ac03"
+  },
+  "ui.catalog.version": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "da6f12f7e3756a696a499b258343fa03aa9b78a69444c2a75e04fe2956ee4ee1"
+  },
+  "ui.common.not_recorded": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "b37c7879f6c359f633ed1c478dc9ffac47ad7aac648653bb4a4d509a25fdb3b0"
+  },
+  "ui.driver.suggested_action": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "96662cd1ccdd5c73667380a79dd25f6355b590e5ec09d65c92ca077804b4b03a"
+  },
+  "ui.hero.do_not_rely": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "e8cd0b072d146a83256871207c0788bb721f4d6387f98f3144da6267be0f3d1b"
+  },
+  "ui.hero.initial_assessment": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "1c5de8fb3c5445c174da6221e61dd3ee1f1aeb77d48856c10da77e76c729b394"
+  },
+  "ui.hero.next_action": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "365987d015f79bfb9698ff14a8b19af6d94c689c6f5b6a5a17c4adf187fbe321"
+  },
+  "ui.hero.result": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "6e7d50e84f4731ef74187cf8cfa2672184eed8866b0b0074a772f4a64e0f4ba2"
+  },
+  "ui.language.label": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "a4fe65264ef7dbb38d104b1e81eb3350f3142f3d16f32bdec39b1d9b42c1b8d1"
+  },
+  "ui.language.selector_aria": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "4ec10f855920fd599f3fe974c2e946b23e8c120494af642e0248e6604d5714fb"
+  },
+  "ui.language.show_english": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "1a7acea2dc21d066b0e8b4b02028c2dea979cb2f9b63586395f3ab9561f5f939"
+  },
+  "ui.language.show_native": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "ef8294357012fc6c239ffdaf052032c89bed80721a89118632e2ee5b64059a06"
+  },
+  "ui.language.supported_note": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "40b33d5875f4be0bb74a3567b130a402db987598d51d46d06d27304b9e0ce3b2"
+  },
+  "ui.nav.assessments": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "761456db6ff5da2ed1f361537eb7ebeb1b2b9f86153f7474c2e0ddb652ac1e9a"
+  },
+  "ui.nav.audit": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "d52b403962aa9a8a75829134cbf02418a99af8f5400871067014cc40162d0cff"
+  },
+  "ui.nav.devices": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "4ba5121d4d1be174a80a063a823df8b496c83ed05ee60af962a9f65d686533bc"
+  },
+  "ui.nav.new": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "12ea37d86ab58e9ade5adc58cfd32fc355266409d0e406ecca0c922e37a62db3"
+  },
+  "ui.nav.operators": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "2cd413f0fb4733864b8877dc5ddb99147973fe2581c3d473f8366042fd47a562"
+  },
+  "ui.nav.overview": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "d4b1ea5708dd532930a85188b45aff6f0a3ed458500c7577e0127a538eb0d100"
+  },
+  "ui.nav.qc": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "2efc70fe4063c94550683cc0686777c2cc434c7535b80e5ddf2c22705279ab85"
+  },
+  "ui.nav.settings": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "74a883a037bc227f91891ab654a753d3a99f31ab06ae5b5d2b6e594a692b41f8"
+  },
+  "ui.preview.banner": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "404868bf4a0acd9883f93127c61ad5620b01e86bbc035e0ecf9253e6f5971de0"
+  },
+  "ui.preview.note": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "e093a2191c86d8edd52a2f6e5a7e392226185f6f468fa00e36ffa789b0a403df"
+  },
+  "ui.support.preview": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "e276f39f8d0e61cc6645a9b3b80335b17e45747287714a201940a81cd6fb39f3"
+  },
+  "ui.support.reviewed": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "fad6057bb5403e59709e79e0679965bd362af5fc0841b06c08f48efa21fc588b"
+  },
+  "ui.support.reviewed_count": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "cc046f43773dc96ba8474baf1574eb2985c256edb44be53281ecff49024b2507"
+  },
+  "version": 1
+}
