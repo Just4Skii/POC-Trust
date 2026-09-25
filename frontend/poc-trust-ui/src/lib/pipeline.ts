@@ -7,7 +7,7 @@ import { evidenceItems } from "./evidence.ts";
  * Step outcomes are derived from the SAME deterministic evidence that produced the decision, so
  * the rail can never settle all-green for a REVIEW or VERIFY outcome: a failed quality-control
  * check paints the quality step with a fail mark, calibration trouble paints the device step,
- * and so on. Nothing here evaluates reliability — the backend engine remains authoritative;
+ * and so on. Nothing here evaluates reliability, the backend engine remains authoritative;
  * this only reflects its results in the UI.
  */
 
@@ -45,7 +45,7 @@ export function stepDomainStates(input: EvidenceInput, ruleIds: string[]): Recor
     device: worst(state("device"), state("reagent"), state("cal")),
     quality: worst(state("qc")),
     operator: worst(state("op"), state("prov")),
-    // Connectivity is synchronisation metadata only — it deliberately does NOT tint any step.
+    // Connectivity is synchronisation metadata only, it deliberately does NOT tint any step.
     environment: worst(state("env")),
     evaluate: "ok",
     record: "ok",

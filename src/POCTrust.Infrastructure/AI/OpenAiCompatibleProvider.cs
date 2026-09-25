@@ -53,12 +53,17 @@ public sealed class OpenAiCompatibleProvider(HttpClient http, IConfiguration con
             if (root.TryGetProperty("choices", out var choices) && choices.GetArrayLength() > 0)
             {
                 var first = choices[0];
-                if (first.TryGetProperty("message", out var msg) && msg.TryGetProperty("content", out var content))
+                // A choice without usable content (e.g. finish_reason=length with no
+                // message content) is malformed, never serialize the raw choice
+                // object as a summary; the orchestrator falls back deterministically.
+                if (first.TryGetProperty("message", out var msg)
+                    && msg.TryGetProperty("content", out var content)
+                    && content.ValueKind == JsonValueKind.String)
                     text = content.GetString() ?? "";
-                else if (first.TryGetProperty("text", out var t))
+                else if (first.TryGetProperty("text", out var t) && t.ValueKind == JsonValueKind.String)
                     text = t.GetString() ?? "";
                 else
-                    text = first.ToString();
+                    throw new InvalidOperationException("AI provider returned no message content.");
             }
             else if (root.TryGetProperty("candidates", out var cands) && cands.GetArrayLength() > 0)
             {

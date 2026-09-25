@@ -28,13 +28,13 @@ public sealed class AssessmentsController(AssessmentOrchestrator orchestrator, P
     [HttpPost("evaluate")]
     public async Task<ActionResult<ReliabilityDecision>> Evaluate([FromBody] DiagnosticContext context, CancellationToken ct)
     {
-        // Invalid evidence is a client error — answered as 400, never as a server fault with internals.
+        // Invalid evidence is a client error, answered as 400, never as a server fault with internals.
         if (string.IsNullOrWhiteSpace(context.Result))
             return BadRequest(ApiError.Message("Result is required."));
 
         // Offline sync idempotency: a client that retries a queued submission with the same
         // Idempotency-Key gets the ORIGINAL response replayed, so a retried sync can never create
-        // a duplicate assessment. Keys are optional — submissions without one behave as before.
+        // a duplicate assessment. Keys are optional, submissions without one behave as before.
         var key = HttpContext?.Request.Headers.TryGetValue("Idempotency-Key", out var value) == true
             ? value.ToString().Trim()
             : "";

@@ -4,7 +4,7 @@ using POCTrust.Core.Enums;
 namespace POCTrust.Core.Integrity;
 
 /// <summary>
-/// The Result Integrity Record — the central artefact of POC Trust.
+/// The Result Integrity Record, the central artefact of POC Trust.
 ///
 /// A portable, auditable, evidence-linked projection derived from an existing persisted
 /// assessment (spec: "existing assessment + derived integrity projection rather than duplicate
@@ -36,7 +36,7 @@ public sealed record ResultIntegrityRecord(
     /// <summary>Structured decision causality: primary drivers, secondary considerations and
     /// informational context, derived from the engine's recorded findings (never invented).</summary>
     DecisionCausality? Causality = null,
-    /// <summary>Evidence inconsistencies the record detected — conflicts between two recorded
+    /// <summary>Evidence inconsistencies the record detected, conflicts between two recorded
     /// sources. Detection of inconsistency, never a clinical truth claim.</summary>
     IReadOnlyList<EvidenceConflict>? Conflicts = null,
     /// <summary>Compact integrity timeline: the decision and the evidence boundaries around it.</summary>
@@ -89,7 +89,7 @@ public sealed record IntegrityDomainEvidence(
     /// Never a fabricated handle: null when nothing was recorded.</summary>
     string? SourceIdentifier = null,
     /// <summary>What the record can and cannot claim about this item's verification. Deliberately
-    /// preserves wording such as "Operator ID as claimed" — identity is NOT authenticated here.</summary>
+    /// preserves wording such as "Operator ID as claimed", identity is NOT authenticated here.</summary>
     string Verification = "",
     /// <summary>Where this row's detail can be checked inside the record itself.</summary>
     string? RecordReference = null,
@@ -101,7 +101,7 @@ public sealed record IntegrityDomainEvidence(
 /// Lightweight policy context. The thresholds mirror the deterministic engine's existing
 /// configuration exactly (7-day calibration review boundary, 14-day reagent near-expiry
 /// boundary, 15–30 °C / 10–85 % environment ranges) and are explicitly labelled as a
-/// demonstration policy — a configured prototype policy, not a clinically validated requirement.
+/// demonstration policy, a configured prototype policy, not a clinically validated requirement.
 /// The policy states WHAT evidence is expected; the deterministic rules decide how evidence maps
 /// to the disposition. A policy can never override a rule outcome, and it gives the AI no authority.
 /// </summary>
@@ -118,7 +118,7 @@ public sealed record IntegrityPolicy(
     /// <summary>Domains the policy monitors as context: recorded when available, excluded from
     /// the coverage denominator, but still rule-relevant when the engine evaluates them.</summary>
     IReadOnlyList<string>? ContextualDomains = null,
-    /// <summary>How this assessment came to be assessed under this policy — deterministic and disclosed.</summary>
+    /// <summary>How this assessment came to be assessed under this policy, deterministic and disclosed.</summary>
     string SelectionNote = ""
 );
 
@@ -146,7 +146,7 @@ public sealed record IntegrityAuditReference(
 // ── Decision causality (spec section 12) ───────────────────────────────────────
 
 /// <summary>One causal element of the disposition. Roles use the vocabulary
-/// primary / secondary / informational — never numeric weights, which do not exist.</summary>
+/// primary / secondary / informational, never numeric weights, which do not exist.</summary>
 public sealed record DecisionDriver(
     string RuleId,
     string Statement,
@@ -159,7 +159,7 @@ public sealed record DecisionDriver(
 /// <summary>
 /// One simple deterministic counterfactual ("rule-based counterfactual" / "deterministic decision
 /// comparison"): the same stored evidence re-run through the SAME deterministic rules with a
-/// single, obvious evidence change. Only produced when the dependency is derivable — never by an
+/// single, obvious evidence change. Only produced when the dependency is derivable, never by an
 /// LLM, never with a probability, never framed as clinical prediction.
 /// </summary>
 public sealed record CounterfactualComparison(
@@ -173,7 +173,7 @@ public sealed record CounterfactualComparison(
     string BasisNote
 );
 
-/// <summary>WHY did the disposition occur — derived from the engine's recorded findings.</summary>
+/// <summary>WHY did the disposition occur, derived from the engine's recorded findings.</summary>
 public sealed record DecisionCausality(
     IReadOnlyList<DecisionDriver> PrimaryDrivers,
     IReadOnlyList<DecisionDriver> SecondaryConsiderations,
@@ -190,7 +190,7 @@ public sealed record DecisionCausality(
 
 /// <summary>
 /// A detected inconsistency between two recorded evidence sources. The application has detected
-/// an EVIDENCE INCONSISTENCY — it has not discovered a clinical truth.
+/// an EVIDENCE INCONSISTENCY, it has not discovered a clinical truth.
 /// </summary>
 public sealed record EvidenceConflict(
     string SourceA,
@@ -220,7 +220,7 @@ public sealed record IntegrityTimelineEntry(
 );
 
 /// <summary>Compact decision-evolution view. When the store holds a demonstration decision
-/// sequence for this record, the label says so — history is never passed off as production data.</summary>
+/// sequence for this record, the label says so, history is never passed off as production data.</summary>
 public sealed record IntegrityTimeline(
     string Label,
     string Note,
@@ -256,6 +256,6 @@ public sealed record IntegrityDecisionSnapshot(
     DateTimeOffset DecidedAtUtc,
     IntegrityAuditReference Audit,
     /// <summary>Sibling decisions from a demonstration decision sequence, when the record belongs
-    /// to one. Null for ordinary records — the timeline then shows the decision-time view only.</summary>
+    /// to one. Null for ordinary records, the timeline then shows the decision-time view only.</summary>
     IReadOnlyList<IntegrityHistoryPoint>? History = null
 );

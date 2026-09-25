@@ -16,7 +16,7 @@ namespace POCTrust.Core.Integrity;
 ///    supplied, the SAME deterministic rules are re-run on the SAME stored input at the SAME
 ///    decision instant. That re-run must reproduce the stored decision exactly (status AND rule
 ///    IDs) before any of its classifications (primary/secondary roles, the single rule-based
-///    counterfactual) are shown. It therefore can never quietly replace the stored decision —
+///    counterfactual) are shown. It therefore can never quietly replace the stored decision,
 ///    and the counterfactual is always labelled, never a probability, never clinical.
 ///  - Evidence-quality states are classifications of the recorded evidence under the selected
 ///    demonstration policy. They are not medical rules, and they never override the engine.
@@ -130,10 +130,10 @@ public static class ResultIntegrityProjector
                 s.AiConsulted,
                 string.IsNullOrWhiteSpace(s.AiSummary) ? null : s.AiSummary,
                 "advisory",
-                "Advisory only — recorded for context. It never produces or changes the disposition."),
+                "Advisory only, recorded for context. It never produces or changes the disposition."),
             s.Audit,
             "Operational integrity assessment generated from the evidence recorded at decision time. " +
-            "It states whether operational reliance is supported under the configured demonstration policy — " +
+            "It states whether operational reliance is supported under the configured demonstration policy, " +
             "it is not a measure of clinical validity.",
             now,
             causality,
@@ -151,7 +151,7 @@ public static class ResultIntegrityProjector
 
     /// <summary>
     /// Decision drivers (sentence form) = the persisted deterministic reason sentences, with the
-    /// "[RULE_ID] " prefix stripped and pipeline notes (AI consulted / AI unavailable) excluded —
+    /// "[RULE_ID] " prefix stripped and pipeline notes (AI consulted / AI unavailable) excluded,
     /// pipeline notes are not reasons the disposition rested on. The structured, role-classified
     /// form lives in <see cref="DecisionCausality"/>.
     /// </summary>
@@ -201,7 +201,7 @@ public static class ResultIntegrityProjector
             RelatedRuleIds: DomainRules[Device].Where(rules.Contains).ToArray()));
 
         // Rule-first classification: every quality state below comes from the rule IDs the engine
-        // actually recorded at decision time — never re-derived from the raw input, so the
+        // actually recorded at decision time, never re-derived from the raw input, so the
         // projection can never quietly re-decide a stored assessment.
         list.Add(new IntegrityDomainEvidence(
             QualityControl, "Quality control", required.Contains(QualityControl), Available: true,
@@ -209,8 +209,8 @@ public static class ResultIntegrityProjector
             "Device quality-control record", Recorded(input.TimestampUtc, now),
             rules.Contains("QC_FAILED"),
             rules.Contains("QC_FAILED")
-                ? "A control explicitly failed — the engine applies a hard stop."
-                : "A hard control — recorded as passed at event time.",
+                ? "A control explicitly failed. The engine applies a hard stop."
+                : "A hard control, recorded as passed at event time.",
             SourceIdentifier: input.DeviceId,
             Verification: "Recorded QC outcome as captured with the event; QC records are taken at face value in this prototype.",
             RecordReference: eventRef,
@@ -250,7 +250,7 @@ public static class ResultIntegrityProjector
             },
             SourceIdentifier: operatorAvailable ? input.OperatorId : null,
             Verification: operatorAvailable
-                ? "Operator ID as claimed — competency is taken from the operator record; identity authentication is not part of this prototype."
+                ? "Operator ID as claimed, competency is taken from the operator record; identity authentication is not part of this prototype."
                 : "No operator was recorded, so there is nothing to verify.",
             RecordReference: eventRef,
             RelatedRuleIds: DomainRules[Operator].Where(rules.Contains).ToArray()));
@@ -282,7 +282,7 @@ public static class ResultIntegrityProjector
             : "Inside the configured demonstration ranges.";
         if (rules.Contains("POWER_INTERRUPTION")) envNote += " Power interruption recorded with the event.";
         if (!required.Contains(Environment))
-            envNote += " Environment is a contextual domain under the selected policy — monitored, but not counted in the coverage denominator.";
+            envNote += " Environment is a contextual domain under the selected policy, monitored, but not counted in the coverage denominator.";
         list.Add(new IntegrityDomainEvidence(
             Environment, "Environment", required.Contains(Environment), Available: true,
             envFailed ? States.Failed : States.Valid,
@@ -312,8 +312,8 @@ public static class ResultIntegrityProjector
             Connectivity, "Connectivity", required.Contains(Connectivity), Available: true, States.Valid,
             "Event synchronisation metadata", Recorded(input.TimestampUtc, now), ContributedToDecision: false,
             offline
-                ? "Event captured offline. Synchronisation metadata only — connectivity is not a reliability rule in this prototype."
-                : "Event captured online. Synchronisation metadata only — connectivity is not a reliability rule in this prototype.",
+                ? "Event captured offline. Synchronisation metadata only, connectivity is not a reliability rule in this prototype."
+                : "Event captured online. Synchronisation metadata only, connectivity is not a reliability rule in this prototype.",
             SourceIdentifier: offline ? "Offline capture" : "Online capture",
             Verification: "Synchronisation metadata as recorded by the capturing client.",
             RecordReference: eventRef,
@@ -336,8 +336,8 @@ public static class ResultIntegrityProjector
             SourceIdentifier: provenanceAvailable ? Truncate(input.Provenance!, 64) : null,
             Verification: provenanceState switch
             {
-                States.Valid => "Operator, reagent and location claims recorded and mutually consistent. Claims are as recorded — identity authentication is not part of this prototype.",
-                States.UnverifiedSource => "Recorded claims could not be fully verified — treated as an unverified source, not as an authenticated identity.",
+                States.Valid => "Operator, reagent and location claims recorded and mutually consistent. Claims are as recorded, identity authentication is not part of this prototype.",
+                States.UnverifiedSource => "Recorded claims could not be fully verified, treated as an unverified source, not as an authenticated identity.",
                 _ => "No provenance chain recorded.",
             },
             RecordReference: eventRef,
@@ -375,7 +375,7 @@ public static class ResultIntegrityProjector
 
     /// <summary>
     /// Detected inconsistencies between two recorded evidence sources. The application has
-    /// detected an EVIDENCE INCONSISTENCY — it has not discovered a clinical truth. Every conflict
+    /// detected an EVIDENCE INCONSISTENCY, it has not discovered a clinical truth. Every conflict
     /// below is derived from the stored rule IDs and recorded values; none is invented.
     /// </summary>
     private static IReadOnlyList<EvidenceConflict> BuildConflicts(
@@ -395,7 +395,7 @@ public static class ResultIntegrityProjector
                 "Site environment snapshot",
                 StateOf(Environment),
                 "Quality control was recorded as passed while the environment snapshot sits outside the policy's supported operating ranges.",
-                "Control validity depends on the operating context. The record treats this as an evidence inconsistency about the operating context — the deterministic engine raises a review-level concern rather than accepting either source alone.",
+                "Control validity depends on the operating context. The record treats this as an evidence inconsistency about the operating context, the deterministic engine raises a review-level concern rather than accepting either source alone.",
                 envRules));
         }
 
@@ -413,7 +413,7 @@ public static class ResultIntegrityProjector
                 a.Item2, StateOf(a.Item1),
                 b.Item2, StateOf(b.Item1),
                 "Multiple recorded evidence sources raise separate concerns about the same operating context.",
-                "Concerns recorded together can share a cause or compound each other. The deterministic engine flags interaction review when two or more contextual concerns are present — an inconsistency of context, not a clinical finding.",
+                "Concerns recorded together can share a cause or compound each other. The deterministic engine flags interaction review when two or more contextual concerns are present, an inconsistency of context, not a clinical finding.",
                 "MULTI_CONTEXT"));
         }
 
@@ -423,9 +423,9 @@ public static class ResultIntegrityProjector
     // ── Decision causality (spec section 12) + counterfactual (section 14) ──────
 
     /// <summary>
-    /// WHY did the disposition occur — derived from the engine's recorded findings. The engine is
+    /// WHY did the disposition occur, derived from the engine's recorded findings. The engine is
     /// re-run ONLY as a gated verification: the re-run must reproduce the stored decision exactly
-    /// before any role classification is shown. Roles are primary / secondary / informational —
+    /// before any role classification is shown. Roles are primary / secondary / informational,
     /// never numeric weights, which do not exist in this system.
     /// </summary>
     private static DecisionCausality BuildCausality(
@@ -555,7 +555,7 @@ public static class ResultIntegrityProjector
             string statement;
             if (remaining.Count == 0)
             {
-                statement = $"If {plan.Value.Phrase}, no concerns would remain under the same rules — the disposition would be {cfName}.";
+                statement = $"If {plan.Value.Phrase}, no concerns would remain under the same rules. The disposition would be {cfName}.";
             }
             else
             {
@@ -573,7 +573,7 @@ public static class ResultIntegrityProjector
                 CurrentDisposition: s.FinalStatus.ToString().ToUpperInvariant(),
                 CounterfactualDisposition: cfName,
                 Statement: statement,
-                BasisNote: "Derived by re-running the same deterministic rules with this single evidence change, at the recorded decision time. A rule-based comparison, not a prediction — no probability is attached, and nothing clinical is claimed.");
+                BasisNote: "Derived by re-running the same deterministic rules with this single evidence change, at the recorded decision time. A rule-based comparison, not a prediction, no probability is attached, and nothing clinical is claimed.");
         }
         catch
         {
@@ -671,7 +671,7 @@ public static class ResultIntegrityProjector
         return isSequence
             ? new IntegrityTimeline(
                 "Demonstration decision history",
-                "A synthetic sequence recorded by the demonstration facility through the REAL assessment pipeline. Timestamps are part of the deterministic demonstration dataset (fixed offsets from the moment the demonstration was loaded) — this is labelled demonstration history, not claimed production history.",
+                "A synthetic sequence recorded by the demonstration facility through the REAL assessment pipeline. Timestamps are part of the deterministic demonstration dataset (fixed offsets from the moment the demonstration was loaded), this is labelled demonstration history, not claimed production history.",
                 ordered)
             : new IntegrityTimeline(
                 "Decision-time integrity view",
@@ -692,7 +692,7 @@ public static class ResultIntegrityProjector
     }
 
     /// <summary>What changed between two sequence decisions: the sentences of rules that appear
-    /// in the later decision but not the earlier one — deterministic, from stored data.</summary>
+    /// in the later decision but not the earlier one, deterministic, from stored data.</summary>
     private static string NewlyAppeared(IntegrityHistoryPoint prev, IntegrityHistoryPoint next)
     {
         var oldRules = new HashSet<string>(prev.RuleIds ?? []);
@@ -718,7 +718,7 @@ public static class ResultIntegrityProjector
     /// Public, reusable description of what changed between two recorded sequence decisions
     /// ("TRUST → REVIEW": the newly appeared stored finding). Used by the dashboard's
     /// demonstration sequence (spec section 30) so the "why did it change" copy is ALWAYS derived
-    /// from stored data — the same derivation the integrity timeline uses, never re-written.
+    /// from stored data, the same derivation the integrity timeline uses, never re-written.
     /// </summary>
     public static string DescribeTransition(IntegrityHistoryPoint previous, IntegrityHistoryPoint next) =>
         NewlyAppeared(previous, next);

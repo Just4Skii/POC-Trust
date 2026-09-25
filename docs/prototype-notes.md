@@ -1,17 +1,17 @@
-# Prototype Notes — VALIDATED
+# Prototype Notes, VALIDATED
 
-- `dotnet build` — pass (0 warnings; NU1903 cleared by pinning Microsoft.OpenApi 2.7.5);
-  `dotnet test` — 51/51 pass; `npm run build` — pass; `npm run lint` — 0 warnings/0 errors;
-  `npm run check:contract` — 11/11 pass.
+- `dotnet build`, pass (0 warnings; NU1903 cleared by pinning Microsoft.OpenApi 2.7.5);
+  `dotnet test`, 51/51 pass; `npm run build`, pass; `npm run lint`, 0 warnings/0 errors;
+  `npm run check:contract`, 11/11 pass.
 - Live API: trust→TRUST/no-AI; review→REVIEW/AI-advisory; verify→VERIFY/no-AI, downgrade-proof;
   missing→REVIEW; offline→local ID retained, connectivity is not a reliability input.
 - New: `GET /api/dashboard/summary`, `/api/assessments`, `/api/assessments/{id}`,
-  `/api/devices`, `/api/operators`, `/api/quality-controls` — all from real SQLite rows.
+  `/api/devices`, `/api/operators`, `/api/quality-controls`, all from real SQLite rows.
 - UI: collapsible sidebar, decision-first result screen, evidence progressive disclosure,
   teal Contextual Analysis only when consulted, audit timeline, offline queue in localStorage,
   demo banner. No Vite branding remains.
 - Offline = `connectivity: offline` + `localEventId` retained + `syncTimestamp` null until sync.
-  No production sync engine (documented limitation), and no connectivity reliability rule exists —
+  No production sync engine (documented limitation), and no connectivity reliability rule exists,
   the UI states this so "offline" is not read as a reliability verdict.
 
 ## Independent QA pass (defects found, fixed, regression-tested)

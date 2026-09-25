@@ -20,7 +20,7 @@ namespace POCTrust.Tests;
 ///    match the assessment evidence, nothing fabricated);
 ///  - evidence taxonomy coverage;
 ///  - decision causality (primary/secondary from real rules, no invented percentages);
-///  - policy (displayed, never changes the deterministic safety hierarchy — hard VERIFY stays VERIFY);
+///  - policy (displayed, never changes the deterministic safety hierarchy, hard VERIFY stays VERIFY);
 ///  - historical (reopening reproduces the same RIR, evidence states and provenance consistent);
 ///  - AI (RIR independent of AI, REVIEW may show advisory context, VERIFY never, AI has no authority);
 ///  - dashboard integrity overview, list-row integrity and the demonstration sequence.
@@ -49,7 +49,7 @@ public sealed class IntegrityUpgradeTests
     }
 
     /// <summary>The exact reopen path: re-load the stored row + audit from the database and
-    /// project again — the projection must be a function of stored data only.</summary>
+    /// project again, the projection must be a function of stored data only.</summary>
     private static async Task<ResultIntegrityRecord> ReopenAndProject(PocTrustDbContext db, Guid id)
     {
         var stored = await db.Assessments.AsNoTracking().SingleAsync(a => a.Id == id);
@@ -123,7 +123,7 @@ public sealed class IntegrityUpgradeTests
 
         Assert.Equal(10, record.Domains.Count); // full canonical domain model, nothing invented
         Assert.All(record.Domains, d => Assert.Contains(d.State, Taxonomy));
-        // Unrecorded evidence stays unrecorded — no invented identifiers or sources.
+        // Unrecorded evidence stays unrecorded, no invented identifiers or sources.
         Assert.Null(record.Domains.Single(d => d.Domain == "operator").SourceIdentifier);
         Assert.Null(record.Domains.Single(d => d.Domain == "reagent").SourceIdentifier);
         Assert.Null(record.Domains.Single(d => d.Domain == "provenance").SourceIdentifier);
@@ -155,7 +155,7 @@ public sealed class IntegrityUpgradeTests
             var record = await ReopenAndProject(db, (await db.Assessments.AsNoTracking().SingleAsync()).Id);
             Assert.Equal(expected, record.Domains.Single(d => d.Domain == domain).State);
         }
-        // STALE is part of the vocabulary but honestly reserved — no current engine rule produces it.
+        // STALE is part of the vocabulary but honestly reserved, no current engine rule produces it.
         Assert.Equal("stale", ResultIntegrityProjector.States.Stale);
     }
 
@@ -254,7 +254,7 @@ public sealed class IntegrityUpgradeTests
     [Fact]
     public async Task Ai_RirIsDerivedEvenWhenTheAdvisoryServiceFails()
     {
-        // REVIEW would normally consult the advisory — with the provider down, the deterministic
+        // REVIEW would normally consult the advisory, with the provider down, the deterministic
         // result continues and the RIR is still derived from the stored record.
         var (db, decision) = await Evaluate(ReviewScenario(), new ThrowingAiProvider());
         Assert.False(decision.AiConsulted);
@@ -286,7 +286,7 @@ public sealed class IntegrityUpgradeTests
     [Fact]
     public async Task Ai_HasNoAuthorityOverTheDisposition()
     {
-        // A rogue advisory claims "release without review" — the deterministic status must not move.
+        // A rogue advisory claims "release without review", the deterministic status must not move.
         var (dbReview, reviewDecision) = await Evaluate(ReviewScenario(), new RogueAiProvider());
         Assert.Equal(ReliabilityStatus.Review, reviewDecision.FinalStatus);
         var reviewRecord = await ReopenAndProject(dbReview, reviewDecision.Id);

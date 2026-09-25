@@ -2,12 +2,12 @@ import { presentationLocale } from "./presentationLocale.ts";
 import type { Status } from "../types";
 
 /**
- * Central humanization layer — the ONLY place machine vocabulary becomes human language.
+ * Central humanization layer, the ONLY place machine vocabulary becomes human language.
  *
  * Rules:
  * - Backend rule IDs (QC_FAILED, CAL_NEAR_DUE, …), exception names and raw identifiers never
  *   appear in primary UI text. They are mapped here to plain-language labels and sentences.
- * - Raw values remain available — only inside the "Technical details" disclosure, never primary.
+ * - Raw values remain available, only inside the "Technical details" disclosure, never primary.
  * - Every lookup has a humanized fallback, so a future/unknown rule ID can never leak
  *   machine tokens to the screen. The copy guard (scripts/copy-guard.mjs) enforces this.
  */
@@ -33,7 +33,7 @@ export const RULE_COPY: Record<string, RuleCopy> = {
   ENV_TEMP: { label: "Temperature outside range", sentence: "The ambient temperature was outside the supported range at the time of the test.", pushes: "Review" },
   ENV_HUMIDITY: { label: "Humidity outside range", sentence: "The ambient humidity was outside the supported range at the time of the test.", pushes: "Review" },
   POWER_INTERRUPTION: { label: "Power interruption recorded", sentence: "A power interruption was recorded around the time of the test.", pushes: "Review" },
-  PROVENANCE_INCOMPLETE: { label: "Provenance incomplete", sentence: "One or more provenance fields — operator, reagent lot or location — were not recorded.", pushes: "Review" },
+  PROVENANCE_INCOMPLETE: { label: "Provenance incomplete", sentence: "One or more provenance fields, operator, reagent lot or location, were not recorded.", pushes: "Review" },
   MULTI_CONTEXT: { label: "Multiple contextual concerns", sentence: "Several contextual concerns apply to this result at the same time.", pushes: "Review" },
   ALL_CHECKS_PASS: { label: "All checks passed", sentence: "All deterministic quality checks passed.", pushes: "Trust" },
 };
@@ -104,7 +104,7 @@ export function humanizeReason(reason: string): HumanReason {
 //
 // Evidence is no longer only pass/fail. These classifications describe the QUALITY of recorded
 // evidence under the selected demonstration policy; the relationship between a state and the
-// TRUST/REVIEW/VERIFY disposition stays governed by the deterministic engine — these strings
+// TRUST/REVIEW/VERIFY disposition stays governed by the deterministic engine, these strings
 // never decide anything. Every lookup has a humanized fallback (copy guard enforces it).
 
 export const EVIDENCE_STATE_COPY: Record<string, { label: string; meaning: string }> = {
@@ -137,15 +137,15 @@ export const STATUS_COPY: Record<Status, { meaning: string; strip: string }> = {
     strip: "Concerns need review",
   },
   Verify: {
-    meaning: "A hard-stop quality failure was detected. Do not rely on this result alone — repeat or confirm by another method.",
+    meaning: "A hard-stop quality failure was detected. Do not rely on this result alone, repeat or confirm by another method.",
     strip: "Reliance blocked",
   },
 };
 
-// ── Time (Africa/Johannesburg — the deployment context of this prototype) ────
+// ── Time (Africa/Johannesburg, the deployment context of this prototype) ────
 //
 // Spec section 11: dates and times are formatted through Intl with the ACTIVE locale, and
-// fall back to en-ZA when the runtime lacks that locale's formatting data — verified, never
+// fall back to en-ZA when the runtime lacks that locale's formatting data, verified, never
 // assumed. Verification rule: a locale formatter is trusted only when the runtime resolves
 // it to the same language; anything else (or a thrown RangeError) falls back to en-ZA.
 // The internal day arithmetic always uses the fixed en-ZA numeric format so "days ago"
@@ -161,7 +161,7 @@ const PART_OPTIONS: Record<TimePart, Intl.DateTimeFormatOptions> = {
   weekday: { weekday: "long" },
 };
 
-/** Per-locale verified formatter cache — entries are always real formatters, never null. */
+/** Per-locale verified formatter cache, entries are always real formatters, never null. */
 const fmtCache = new Map<string, Intl.DateTimeFormat>();
 function fmtFor(part: TimePart, locale: string): Intl.DateTimeFormat {
   const cacheKey = `${part}|${locale}`;
@@ -179,7 +179,7 @@ function fmtFor(part: TimePart, locale: string): Intl.DateTimeFormat {
       return null; // invalid tag or formatter construction failure → fallback
     }
   };
-  // Step-wise fallback chain — the returned formatter can NEVER be null:
+  // Step-wise fallback chain, the returned formatter can NEVER be null:
   // verified active locale → en-ZA → generic English → runtime default.
   let fmt = build(locale);
   if (!fmt) fmt = build("en-ZA");
@@ -228,7 +228,7 @@ export function eventTimeParts(iso?: string | null, now: Date = new Date(), lng?
 /**
  * "Today, 14:05" · "Yesterday, 09:30" · "Tuesday, 14:05" (within a week) · "12 Mar 2026, 14:05".
  * Date/time parts follow the presentation locale (verified, en-ZA fallback); the relative
- * words are English here — decision surfaces compose them from the catalog via
+ * words are English here, decision surfaces compose them from the catalog via
  * formatEventTimeLocal (src/i18n/strings.ts). Timezone stays Africa/Johannesburg.
  */
 export function formatEventTime(iso?: string | null, now: Date = new Date()): string {

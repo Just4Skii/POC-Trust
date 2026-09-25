@@ -1,4 +1,4 @@
-# Productization Notes — FINAL DEMO
+# Productization Notes, FINAL DEMO
 
 This document records what the productization pass added to the validated prototype, the
 invariants it deliberately preserves, and the honest boundaries that remain. Nothing here
@@ -9,7 +9,7 @@ are exactly as validated in the evidence pack.
 ## 1. One-command appliance
 
 `docker compose up --build` produces a single container: the ASP.NET Core API serves the built
-React UI from `wwwroot` on port 8080. The SPA fallback keeps the API's JSON 404 contract — an
+React UI from `wwwroot` on port 8080. The SPA fallback keeps the API's JSON 404 contract, an
 unknown `/api/*` route returns `404 {"error":"Unknown API endpoint."}`, never HTML. `GET /health`
 backs the compose healthcheck. SQLite lives on the `poctrust-data` volume, so demonstration data
 survives restarts.
@@ -24,7 +24,7 @@ serve everything from 5183), `make test` / `make ui-test` / `make compose-up`.
 
 ## 2. Idempotent offline sync
 
-Gap closed from the limitations list: "no server-side idempotency key — a replayed sync can
+Gap closed from the limitations list: "no server-side idempotency key, a replayed sync can
 create a duplicate assessment."
 
 - `POST /api/assessments/evaluate` accepts an optional `Idempotency-Key` (≤128 chars).
@@ -38,7 +38,7 @@ create a duplicate assessment."
   that timed out after reaching the server cannot be double-counted.
 - Keys are optional: programmatic clients without the header behave exactly as before.
 
-Replay honesty: the stored response is the ORIGINAL response the first submission produced —
+Replay honesty: the stored response is the ORIGINAL response the first submission produced,
 including the AI advisory summary that decision actually received. Nothing is re-fabricated.
 
 ## 3. Tamper-evident audit sealing
@@ -51,9 +51,9 @@ Gap closed: "no cryptographic audit sealing."
 - Chain order is the product's canonical audit order: `TimestampUtc`, then `Id` (the same
   deterministic tie-break used by every read path).
 - `GET /api/audit/verify` recomputes the chain and reports `{valid, sealedEntries,
-  legacyUnsealedEntries, totalEntries, brokenAt}` — the first broken entry is identified.
+  legacyUnsealedEntries, totalEntries, brokenAt}`, the first broken entry is identified.
 - Rows written before sealing existed are an unsealed legacy prefix: reported, never a failure.
-- SQLite cannot ORDER BY DateTimeOffset server-side, so the chain head is found in memory —
+- SQLite cannot ORDER BY DateTimeOffset server-side, so the chain head is found in memory,
   consistent with the repo-wide convention (a scale item, not a correctness item).
 - Boundary stated in the response itself: sealing proves the sealed trail has not been altered;
   it does not attest that the underlying event occurred. Single-writer SQLite serialises writes;
@@ -64,7 +64,7 @@ Gap closed: "no cryptographic audit sealing."
 - **Rate limiting**: per-IP fixed window, default 100 requests / 10 s, over every endpoint.
   429 answers use the same safe envelope: `{"error":"Too many requests. Please retry shortly."}`.
   Configured via `RateLimit:PermitsPerWindow` / `RateLimit:WindowSeconds`. In-memory per
-  instance — single-container scale, honestly documented.
+  instance, single-container scale, honestly documented.
 - **API-key stub** (`Auth:Mode=apikey`, `Auth:ApiKey`): mutating `/api` requests require
   `X-Api-Key`; reads and `/health` stay open. Comparison is constant-time over SHA-256 digests
   (no timing or length leakage). Rejection is a safe 401 envelope. This is appliance
@@ -75,7 +75,7 @@ Gap closed: "no cryptographic audit sealing."
 
 - `GET /health` → `{"status":"healthy"}` (compose healthcheck).
 - `GET /api/system/status` → environment, database reachability, AI provider state
-  (`configured` boolean, model, endpoint HOST only — never the key or full URL path), audit
+  (`configured` boolean, model, endpoint HOST only, never the key or full URL path), audit
   sealing algorithm, demo auto-seed flag, rate-limit window, auth mode. "Real AI required" for
   a live demo becomes checkable in one request before judges arrive.
 
@@ -84,14 +84,14 @@ Gap closed: "no cryptographic audit sealing."
 `Demo:AutoSeed` (env `Demo__AutoSeed`, on in Development and the appliance, off otherwise):
 - only when the assessment store is EMPTY;
 - through the real orchestrator (engine-computed statuses, seeded advisory via the offline-safe
-  stub — no external AI calls needed to load a demonstration);
+  stub, no external AI calls needed to load a demonstration);
 - idempotent on the persisted demo markers; a second run is a no-op;
 - failure-tolerant: a failed demonstration load logs a warning and never blocks startup;
 - every record is synthetic and clearly labelled by the existing UI banner.
 
 ## 7. Presentation restyle
 
-Self-hosted variable fonts (Sora display, Inter body, JetBrains Mono) bundled at build time —
+Self-hosted variable fonts (Sora display, Inter body, JetBrains Mono) bundled at build time,
 the demo remains fully offline-safe. Display typography applied to every heading via the token
 layer; refined radii/shadows/page wash; sidebar field with a faint teal crown glow; brand mark
 gradient; primary CTA treatment; quiet scrollbars and selection colour. All status colours,
@@ -101,7 +101,7 @@ copy-guard + contract checks still pass.
 ## 8. Remaining honest limitations
 
 1. SQLite remains single-writer local storage; no LIS/NHLS integration.
-2. The offline queue is still transport metadata — no local decision engine, connectivity is
+2. The offline queue is still transport metadata, no local decision engine, connectivity is
    not a reliability rule.
 3. No full authN/Z (roles, per-user identity); the API-key gate is transport-level only.
 4. Rate limiting is per-instance (a multi-replica deployment needs a shared limiter).

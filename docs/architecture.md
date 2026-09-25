@@ -1,4 +1,4 @@
-# Architecture — IMPLEMENTED
+# Architecture, IMPLEMENTED
 
 ```
 Diagnostic Event → Evidence → ReliabilityEngine → Initial status

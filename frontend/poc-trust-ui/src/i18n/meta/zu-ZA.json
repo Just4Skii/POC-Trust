@@ -42,7 +42,7 @@
   "decision.review.can_rely": {
     "status": "draft",
     "source": "machine_draft",
-    "source_hash": "25872ce72f90955dbd7ca5dbf517d8026a541215900767c5e8464e9ff0b03c42"
+    "source_hash": "6496725a2cb23db78088b80406c3c01eb85083b1a93c611393c210351c2e9acb"
   },
   "decision.review.description": {
     "status": "draft",
@@ -67,7 +67,7 @@
   "decision.trust.can_rely": {
     "status": "draft",
     "source": "machine_draft",
-    "source_hash": "c40349c1472f0f7f4ddf38fa74419ccc360912e1ba39857387ac0763e0b92f03"
+    "source_hash": "feab8ef53185dc7ea0ac45f38bed29027507f160896625ae3e949b82a359a530"
   },
   "decision.trust.description": {
     "status": "draft",
@@ -92,12 +92,12 @@
   "decision.verify.can_rely": {
     "status": "draft",
     "source": "machine_draft",
-    "source_hash": "7cffb805e884351ec669c3637ef2515b6ba60b9282d8adb0050f8ce6d3b3cfe4"
+    "source_hash": "e3ed9447bfecd099cb2f81c679646d2016003b6c72c545467fe5c00ce2a45d03"
   },
   "decision.verify.description": {
     "status": "draft",
     "source": "machine_draft",
-    "source_hash": "a5afe7e9ae3eaa867071dac4a7e503e3ca4fd065edf46fa130b5d365d62c81fb"
+    "source_hash": "57bbe0f534194c101d6b093fb2a4b955d7a200b1709efd6943ea0744ad00218a"
   },
   "decision.verify.label": {
     "status": "draft",
@@ -107,7 +107,7 @@
   "decision.verify.next_action": {
     "status": "draft",
     "source": "machine_draft",
-    "source_hash": "0f9997008f12f7745f4485a459504f718cb5b32c7a444200f14a40dbfc9019d8"
+    "source_hash": "db29e164d1e10fbe25b209f681fabf497df39bd84566a031ae57ce531aaf8cc3"
   },
   "decision.verify.strip": {
     "status": "draft",
@@ -117,7 +117,7 @@
   "driver.all_checks_pass.action": {
     "status": "draft",
     "source": "machine_draft",
-    "source_hash": "18eafceed6abad50af5076a9cf2dd679f110f3fd871dfeb791909b83091f3c2e"
+    "source_hash": "5d54e1ce45a9e10fda667cebb53bfa0e6132a6fc157fa648506bf311b0706d5b"
   },
   "driver.all_checks_pass.explanation": {
     "status": "draft",
@@ -242,7 +242,7 @@
   "driver.provenance_incomplete.explanation": {
     "status": "draft",
     "source": "machine_draft",
-    "source_hash": "ead6b0d6008255a9b31c1f7f174d19f73e1097ed7d3688cfc5314d84932760ae"
+    "source_hash": "90c158a583bb6ef9756dda1cc4b1cfc86b90fb41a4ae8f0054404fd2caeae7e9"
   },
   "driver.provenance_incomplete.title": {
     "status": "draft",
@@ -467,12 +467,12 @@
   "ui.ai.review_authoritative": {
     "status": "draft",
     "source": "machine_draft",
-    "source_hash": "82f6b5dc3d030b73d31fbe148845b0b5f2f34513d8b792dac2f2a41a391014f5"
+    "source_hash": "9fdd46999438f444875bbf098523b117831a1616e57931d2d959d511e63e7bc7"
   },
   "ui.ai.subtitle": {
     "status": "draft",
     "source": "machine_draft",
-    "source_hash": "7b41fcf4cb2fefea102c6fa52afb01f8a9e47dc897540b7bd012a20434922739"
+    "source_hash": "050cb443cd94f17e0b6fddefd28772e09c3bbb9b77640fb51241b518ffa762f8"
   },
   "ui.ai.suggested_review": {
     "status": "draft",
@@ -482,12 +482,12 @@
   "ui.ai.summary_only": {
     "status": "draft",
     "source": "machine_draft",
-    "source_hash": "6c0f099e5a67d5d6db2843b4d8656096f9e2739cb4c13d2c091a043bc37d5bf1"
+    "source_hash": "decc3b562a1131a634db81b736a467a2f39d1fde33f5bc6d3f66a946853990ef"
   },
   "ui.ai.unavailable": {
     "status": "draft",
     "source": "machine_draft",
-    "source_hash": "41588f1a485158df0762725d44444cea9149042414780d72c3a59ed05c3728de"
+    "source_hash": "a26a23587e1228efd13fa352017025603aee0089348a4fbb65f3b47d929437a8"
   },
   "ui.app.tagline": {
     "status": "draft",
@@ -602,7 +602,7 @@
   "ui.preview.banner": {
     "status": "draft",
     "source": "machine_draft",
-    "source_hash": "404868bf4a0acd9883f93127c61ad5620b01e86bbc035e0ecf9253e6f5971de0"
+    "source_hash": "f7c36b8cd3df3c00cf6868f0d4991cf5d7927c7724604af616fa15c154b5942c"
   },
   "ui.preview.note": {
     "status": "draft",
@@ -612,7 +612,7 @@
   "ui.support.preview": {
     "status": "draft",
     "source": "machine_draft",
-    "source_hash": "e276f39f8d0e61cc6645a9b3b80335b17e45747287714a201940a81cd6fb39f3"
+    "source_hash": "5ab85eea08dab664342bfef2a4efbec0e263e2cbfc85b224c8596454cd0dbc53"
   },
   "ui.support.reviewed": {
     "status": "draft",

@@ -4,7 +4,7 @@ import type { DemonstrationSequence, DemonstrationStep, IntegrityOverview, RowIn
  * Result Integrity Record (RIR) client types + pure presentation helpers.
  *
  * The record is DERIVED on the backend from the stored assessment and its sealed audit entries
- * (GET /api/assessments/{id}/integrity-record) — the UI never fabricates one and never keeps a
+ * (GET /api/assessments/{id}/integrity-record), the UI never fabricates one and never keeps a
  * second copy of the derivation logic. These types mirror that canonical JSON exactly.
  *
  * Framing rule: a record is an operational integrity assessment under the configured
@@ -214,7 +214,7 @@ export function stateTone(state: EvidenceQualityState): { chip: string; dot: str
 
 /**
  * Coverage glyph for a required domain: ✓ when its evidence was available, ? when it was not.
- * Availability is about EXISTENCE of evidence — a failed control is still evidence the engine had.
+ * Availability is about EXISTENCE of evidence, a failed control is still evidence the engine had.
  */
 export function coverageGlyph(item: RirCoverageItem): string {
   return item.available ? "✓" : "?";
@@ -242,7 +242,7 @@ export const CONCERN_STATES: EvidenceQualityState[] = [
 /**
  * The summary card's quality line: how many evidence domains are in a concerning state, with a
  * deterministic breakdown phrase ("1 aging · 1 expired"). Derived ONLY from the record's own
- * domain rows — never invented client-side.
+ * domain rows, never invented client-side.
  */
 export function qualityConcerns(record: RirRecord): { count: number; breakdown: string } {
   const counts = new Map<EvidenceQualityState, number>();
@@ -256,7 +256,7 @@ export function qualityConcerns(record: RirRecord): { count: number; breakdown: 
   return { count, breakdown };
 }
 
-/** Role vocabulary for decision drivers — qualitative only, never numeric weights. */
+/** Role vocabulary for decision drivers, qualitative only, never numeric weights. */
 export const DRIVER_ROLES = ["primary", "secondary", "informational"] as const;
 
 /** Short uppercase evidence-state word for chips and signal-map nodes. */
@@ -264,7 +264,7 @@ export function stateWord(state: EvidenceQualityState): string {
   return state.replace("-", " ").toUpperCase();
 }
 
-/** Defensive parse of the endpoint payload — unknown shapes never reach the document view. */
+/** Defensive parse of the endpoint payload, unknown shapes never reach the document view. */
 export function parseRir(raw: unknown): RirRecord | null {
   if (typeof raw !== "object" || raw === null) return null;
   const r = raw as Record<string, unknown>;
@@ -478,7 +478,7 @@ export function driverPhrase(row: RowIntegrity): string | null {
   return row.primaryDriverStatement ?? null;
 }
 
-/** Defensive parse of one history row's compact integrity fields — garbage never crashes a row. */
+/** Defensive parse of one history row's compact integrity fields, garbage never crashes a row. */
 export function parseRowIntegrity(raw: unknown): RowIntegrity | null {
   if (typeof raw !== "object" || raw === null) return null;
   const r = raw as Record<string, unknown>;

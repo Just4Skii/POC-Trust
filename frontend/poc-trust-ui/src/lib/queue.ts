@@ -2,7 +2,7 @@
  * Pending-assessment queue (prototype offline boundary).
  *
  * IMPLEMENTED: queue survives reload; entries are removed only after the backend accepted them.
- * FUTURE: a real sync engine. This is storage/transport metadata — it is NOT a clinical
+ * FUTURE: a real sync engine. This is storage/transport metadata, it is NOT a clinical
  * reliability rule and does not evaluate reliability locally.
  *
  * Removal is identity-based (`_queueId`) rather than index-based, so an entry queued while a sync

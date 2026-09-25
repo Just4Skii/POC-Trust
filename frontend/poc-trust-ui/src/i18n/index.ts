@@ -8,8 +8,8 @@ import {
 } from "./locales.ts";
 
 /**
- * i18n runtime (spec section 4) — static, reviewed message catalogs keyed by stable message
- * keys. Library choice: react-i18next + i18next — smallest mainstream React option with
+ * i18n runtime (spec section 4), static, reviewed message catalogs keyed by stable message
+ * keys. Library choice: react-i18next + i18next, smallest mainstream React option with
  * built-in lazy per-locale bundles, Intl.PluralRules-based plurals (ICU-equivalent) and
  * interpolation; FormatJS ships a heavier ICU parser and Lingui couples to a compile step.
  * Justification is recorded in docs/localisation.md.
@@ -18,7 +18,7 @@ import {
  * - English (en-ZA) is loaded eagerly: it is the source of truth and the mandatory fallback.
  * - Other locales lazy-load as separate bundles (offline-friendly: shipped with the app,
  *   no runtime translation API is ever called for safety-critical text).
- * - A missing or empty string ALWAYS falls back to English — never a raw key, never an
+ * - A missing or empty string ALWAYS falls back to English, never a raw key, never an
  *   empty string, never unreviewed machine output standing in for the canonical wording.
  * - Driver/decision/evidence key FAMILIES resolve as a unit: if the active locale lacks any
  *   member of a family, the whole family falls back to English so the operator never sees a
@@ -36,7 +36,7 @@ function toBundle(raw: unknown): CatalogBundle {
   ) as CatalogBundle;
 }
 
-/** The bundled English catalog (strings only) — the universal fallback of last resort. */
+/** The bundled English catalog (strings only), the universal fallback of last resort. */
 export const EN_BUNDLE: CatalogBundle = toBundle(enCatalog);
 
 /** Interpolation values passed to i18next; dates/counts are DATA, never baked into strings. */
@@ -49,7 +49,7 @@ export interface TextOptions {
 const catalogCache = new Map<LocaleCode, Promise<CatalogBundle>>();
 
 /**
- * Lazy catalog load (spec section 4). English resolves synchronously — it is bundled.
+ * Lazy catalog load (spec section 4). English resolves synchronously, it is bundled.
  * A failed load (e.g. cold offline start where the chunk was never fetched) is NOT cached,
  * so the fetch retries automatically once connectivity returns (spec section 10).
  */
@@ -71,8 +71,8 @@ export function loadCatalog(locale: LocaleCode): Promise<CatalogBundle> {
 /**
  * Offline operation (spec section 10): warm every locale bundle (and the review metadata
  * that drives the support states) into the module cache right after first paint. The
- * bundles are static, same-origin app assets — no translation service, no API keys, no
- * runtime translation call — so once warmed, switching language works fully offline.
+ * bundles are static, same-origin app assets, no translation service, no API keys, no
+ * runtime translation call, so once warmed, switching language works fully offline.
  * A cold-start offline failure is silent: English stays authoritative and the switch
  * simply remains unavailable until the asset has been fetched once.
  */
@@ -80,7 +80,7 @@ export function prefetchLocaleAssets(): void {
   const warm = () => {
     for (const l of SUPPORTED_LOCALES) {
       if (l.code === FALLBACK_LOCALE) continue;
-      void loadCatalog(l.code).catch(() => { /* offline cold start — English fallback stays authoritative */ });
+      void loadCatalog(l.code).catch(() => { /* offline cold start, English fallback stays authoritative */ });
     }
     void import("./support.ts")
       .then((s) => s.loadAllSupport())
@@ -135,9 +135,9 @@ export async function initI18n(): Promise<I18nInstance> {
 
 /**
  * Switch the display language: lazily load the catalog, register it, apply it, and persist
- * the device-level preference. Instant — no page reload, no form-state loss (spec section 8).
+ * the device-level preference. Instant, no page reload, no form-state loss (spec section 8).
  * If the catalog cannot be loaded (offline before the first warm-up) the switch is refused
- * WITHOUT changing language or persisting anything: the current — fully fallback-backed —
+ * WITHOUT changing language or persisting anything: the current, fully fallback-backed ,
  * view stays intact, and the canonical English wording is never replaced by a raw key.
  */
 export async function changeLocale(locale: LocaleCode): Promise<void> {
@@ -147,12 +147,12 @@ export async function changeLocale(locale: LocaleCode): Promise<void> {
       i18next.addResourceBundle(locale, "translation", bundle, true, true);
     }
   } catch {
-    return; // bundle unavailable offline — keep the current language, change nothing
+    return; // bundle unavailable offline, keep the current language, change nothing
   }
   await i18next.changeLanguage(locale);
   try {
     localStorage.setItem(LANGUAGE_STORAGE_KEY, locale);
-  } catch { /* storage unavailable — preference simply not persisted */ }
+  } catch { /* storage unavailable, preference simply not persisted */ }
 }
 
 export { i18next };

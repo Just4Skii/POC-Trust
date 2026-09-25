@@ -3,7 +3,7 @@ export type StatusCode = Status | number;
 
 export interface AiAssessment {
   summary: string;
-  /** Only populated when the provider/decision actually supplied them — never fabricated for history. */
+  /** Only populated when the provider/decision actually supplied them, never fabricated for history. */
   anomalies?: string[];
   recommendedAction?: string;
   confidence?: number;
@@ -41,7 +41,7 @@ export interface AssessmentSummary {
   integrity?: RowIntegrity | null;
 }
 
-/** Compact per-row integrity fields — the list-row mirror of the full Result Integrity Record. */
+/** Compact per-row integrity fields, the list-row mirror of the full Result Integrity Record. */
 export interface RowIntegrity {
   coverageAvailable: number;
   coverageRequired: number;
@@ -59,7 +59,7 @@ export interface RowIntegrity {
   auditAvailable: boolean;
 }
 
-/** Dashboard Integrity Overview aggregates (spec 26) — calculated from the stored records. */
+/** Dashboard Integrity Overview aggregates (spec 26), calculated from the stored records. */
 export interface IntegrityOverview {
   assessments: number;
   coveragePercent: number;
@@ -167,8 +167,8 @@ export const statusIcon = (s: StatusCode): string => {
 export const canRelyText = (s: StatusCode): string => {
   const n = statusName(s);
   return n === "Trust"
-    ? "Yes — may proceed subject to routine controls."
+    ? "Yes, may proceed subject to routine controls."
     : n === "Review"
-      ? "Not yet — trained-operator review required."
-      : "No — do not rely on this result alone.";
+      ? "Not yet, trained-operator review required."
+      : "No, do not rely on this result alone.";
 };

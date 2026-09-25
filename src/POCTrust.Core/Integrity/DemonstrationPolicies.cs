@@ -38,7 +38,7 @@ public static class DemonstrationPolicies
         Note: "A synthetic demonstration policy for a rural primary-care point-of-care programme. " +
               "It states which evidence the assessment expects; the deterministic engine alone maps " +
               "that evidence to the disposition. Environment, power and connectivity are monitored as " +
-              "contextual evidence — when the recorded environment snapshot sits outside the supported " +
+              "contextual evidence, when the recorded environment snapshot sits outside the supported " +
               "ranges, the deterministic engine still raises a review-level concern. Configured, " +
               "explicit and deterministic; not a clinically validated requirement.",
         RequiredDomains: RuralRequired,
@@ -87,7 +87,7 @@ public static class DemonstrationPolicies
     /// Deterministic policy selection. The demonstration site registry recognises rural PHC sites
     /// by the site marker recorded in the event's provenance chain ("rural", or the demonstration
     /// rural site name). Every other recorded site falls under the general demonstration policy.
-    /// The rule is fixed configuration — disclosed in the policy's SelectionNote, never inferred
+    /// The rule is fixed configuration, disclosed in the policy's SelectionNote, never inferred
     /// by an AI and never used to alter any rule outcome.
     /// </summary>
     public static IntegrityPolicy SelectFor(DiagnosticContext input)

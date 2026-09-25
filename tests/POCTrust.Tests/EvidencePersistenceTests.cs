@@ -13,7 +13,7 @@ namespace POCTrust.Tests;
 /// <summary>
 /// Regression tests for the evidence persistence defect found in the independent QA pass: persisted
 /// evidence was written as PascalCase while the UI reads camelCase, so a reopened assessment showed
-/// wrong evidence (operator competency wrong, calibration and temperature rendered as "—").
+/// wrong evidence (operator competency wrong, calibration and temperature rendered as "-").
 /// </summary>
 public sealed class EvidencePersistenceTests
 {

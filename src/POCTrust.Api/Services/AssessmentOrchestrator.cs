@@ -10,7 +10,7 @@ public sealed class AssessmentOrchestrator(IReliabilityEngine engine, IAIProvide
 
     /// <param name="aiOverride">Optional advisory provider override (e.g. the built-in stub so
     /// demonstration seeding is offline-safe and reproducible). The deterministic engine and every
-    /// safety invariant are unchanged — only the advisory summary source differs.</param>
+    /// safety invariant are unchanged, only the advisory summary source differs.</param>
     /// <param name="decidedAtUtc">Optional fixed decision instant for the demonstration decision
     /// history: the seeded sequence is recorded through this same real pipeline with historical
     /// timestamps, so the integrity timeline shows genuinely recorded evaluations. Ignored when it
@@ -22,7 +22,7 @@ public sealed class AssessmentOrchestrator(IReliabilityEngine engine, IAIProvide
         if (string.IsNullOrWhiteSpace(context.Result)) throw new ArgumentException("Result is required.");
         var now = decidedAtUtc is { } fixedAt && fixedAt <= DateTimeOffset.UtcNow ? fixedAt : DateTimeOffset.UtcNow;
 
-        // 3. evidence completeness is itself a rule (PROVENANCE_INCOMPLETE) — evaluated in engine
+        // 3. evidence completeness is itself a rule (PROVENANCE_INCOMPLETE), evaluated in engine
         // 4-5. deterministic engine + initial status
         var (initial, findings) = engine.EvaluateInitial(context, now);
         var reasons = findings.Select(f => $"[{f.RuleId}] {f.Reason}").ToList();

@@ -1,4 +1,4 @@
-# POC Trust — Competition Evidence Pack
+# POC Trust, Competition Evidence Pack
 
 Prepared 24 September 2026 for submission before 25 September 2026 23:59 SAST.
 Companion commit contains 13 release-capture screenshots in `docs/evidence/`.
@@ -10,10 +10,10 @@ Companion commit contains 13 release-capture screenshots in `docs/evidence/`.
 Point-of-care diagnostic results are trusted or discarded **without a recorded, inspectable
 reason**. Environmental excursions, operator competency lapses, near-expiry reagents and QC
 failures are usually invisible at the moment of reliance. POC Trust inserts a deterministic
-integrity decision — **TRUST / REVIEW / VERIFY** — between the result and the workflow, with
+integrity decision, **TRUST / REVIEW / VERIFY**, between the result and the workflow, with
 evidence, reasons, an operational action, and an append-only audit for every decision.
 
-The core safety property: **VERIFY can never be downgraded** — not by AI, not by configuration.
+The core safety property: **VERIFY can never be downgraded**, not by AI, not by configuration.
 AI (when present) is advisory explanation only; deterministic rules are authoritative.
 
 ## Architecture
@@ -32,7 +32,7 @@ Evidence (result, device, QC, calibration, operator, reagent, environment, prove
 
 - Backend: ASP.NET Core (.NET 10), EF Core/SQLite, `AssessmentOrchestrator` pipeline.
 - AI: `OpenAiCompatibleProvider` (OpenAI-compatible chat completions → Gemini), `StubAiProvider`
-  fallback when no key — the deterministic result never depends on the AI call.
+  fallback when no key, the deterministic result never depends on the AI call.
 - Frontend: React 19 + Vite, locked navy/teal system, relative `/api` calls (Vite dev proxy → :5183).
 - Solution layout: `src/POCTrust.{Core,Infrastructure,Api}`, `tests/POCTrust.Tests`,
   `frontend/poc-trust-ui`.
@@ -57,7 +57,7 @@ cd frontend/poc-trust-ui; npm install; npm run dev # http://localhost:5173
 | `npm run check:contract` | **11 / 11 passed** |
 | Live API acceptance checks | **24 / 24 passed** (prior QA pass) |
 | **Browser release smoke test (this pack)** | **41 / 41 passed**, 0 page JS errors, 13 screenshots |
-| Secret scan (source + docs) | clean — no keys in repo |
+| Secret scan (source + docs) | clean, no keys in repo |
 
 The browser smoke test drove the real UI (headless Chrome → Vite → API → SQLite) on a **fresh
 database**: New Assessment → evaluate → save (auto-persist) → reopen → audit, for all three
@@ -67,13 +67,13 @@ scenarios, plus the full offline queue/reload/reconnect/sync cycle.
 
 Clean evidence (all controls passing) → deterministic TRUST, **AI is not consulted**.
 
-- Decision: "Yes — may proceed subject to routine controls."
+- Decision: "Yes, may proceed subject to routine controls."
 - Reason: `[ALL_CHECKS_PASS] All deterministic checks passed.`
 - Action: "Result may enter clinical workflow under routine controls."
 - Reopen shows **identical evidence rows** (8/8 compared byte-for-byte) and the same audit id.
 
 ![TRUST decision](evidence/01-trust-decision.png)
-![TRUST reopened — evidence identical](evidence/02-trust-reopened-evidence-identical.png)
+![TRUST reopened, evidence identical](evidence/02-trust-reopened-evidence-identical.png)
 ![Audit after TRUST](evidence/03-audit-after-trust.png)
 
 ## REVIEW + Contextual Analysis
@@ -81,7 +81,7 @@ Clean evidence (all controls passing) → deterministic TRUST, **AI is not consu
 Interacting concerns (calibration near due, reagent near expiry, operator not competent, power
 interruption → `MULTI_CONTEXT`) → deterministic REVIEW **and** the AI gate opens.
 
-**Live Gemini path verified (24 Sep 2026)** — not the stub:
+**Live Gemini path verified (24 Sep 2026)**, not the stub:
 
 - `POST /api/assessments/evaluate` → **HTTP 200 in 4.05 s**, `aiConsulted=true`,
   `model=gemini-3.5-flash`, 114-char summary returned;
@@ -103,16 +103,16 @@ with the honest note *"no confidence score or model name was persisted"*; audit 
 `AI consulted`.
 
 ![REVIEW + Contextual Analysis](evidence/04-review-decision-contextual-analysis.png)
-![REVIEW reopened — persisted AI summary](evidence/05-review-reopened-persisted-ai.png)
-![Audit — AI consulted](evidence/06-audit-after-review-ai-consulted.png)
+![REVIEW reopened, persisted AI summary](evidence/05-review-reopened-persisted-ai.png)
+![Audit, AI consulted](evidence/06-audit-after-review-ai-consulted.png)
 ## VERIFY safety behaviour
 
 Hard failures (failed QC + calibration overdue + reagent expired + temp 31.5 °C + humidity 90 %)
 → deterministic VERIFY with **no AI consultation at all** (the gate is closed for VERIFY by
 design, so no downgrade path can even be exercised).
 
-- Headline: "No — do not rely on this result alone." + "Do not rely on this result alone."
-- Action: "Do not rely — verify/repeat/confirm per applicable workflow."
+- Headline: "No, do not rely on this result alone." + "Do not rely on this result alone."
+- Action: "Do not rely, verify/repeat/confirm per applicable workflow."
 - No Contextual Analysis panel is rendered; reasons are purely deterministic
   (`QC_FAILED, CAL_EXPIRED, REAGENT_EXPIRED, ENV_TEMP, ENV_HUMIDITY`).
 - Reopen keeps VERIFY and still no AI; audit row reads `AI not consulted`.
@@ -121,12 +121,12 @@ Verified invariant (unit + live): `EnforceFinalStatus(Verify, _) == Verify` for 
 including an AI response that claims TRUST.
 
 ![VERIFY hard stop](evidence/07-verify-decision-ai-hard-stop.png)
-![VERIFY reopened — still no AI](evidence/08-verify-reopened-no-ai.png)
+![VERIFY reopened, still no AI](evidence/08-verify-reopened-no-ai.png)
 
 ## Evidence / provenance
 
-Every decision page renders the evidence panel the backend actually evaluated — device, QC,
-calibration, operator, reagent, environment, power, connectivity, provenance — each row
+Every decision page renders the evidence panel the backend actually evaluated, device, QC,
+calibration, operator, reagent, environment, power, connectivity, provenance, each row
 expandable to source/rule/severity, plus the trace line
 `evidence → rule (…) → status → action → audit <id>`. Provenance is treated as a rule
 (`PROVENANCE_INCOMPLETE`), not decoration. The UI never claims identity verification
@@ -144,7 +144,7 @@ scenarios: TRUST (`AI not consulted`), REVIEW (`AI consulted` + summary), VERIFY
 
 ## Offline / low-bandwidth boundary
 
-Honest prototype boundary: the offline path **still requires the real engine** — there is no
+Honest prototype boundary: the offline path **still requires the real engine**, there is no
 local decision-making. With the backend disconnected, a submitted event is **queued in
 localStorage** (`Pending 1`), survives a browser reload, is not persisted, and after reconnect
 `Sync now` posts it (`Pending 0`) where it persists with `connectivity=offline` metadata.
@@ -152,13 +152,13 @@ Connectivity itself is **not** a reliability rule (documented in-product).
 
 Caveat recorded honestly: the queue triggers on *network-level* failures. Behind an HTTP proxy
 that converts a dead backend into `502` (e.g. the Vite dev proxy), the app surfaces the server
-error instead of queueing — by design it never queues requests the backend actually answered.
+error instead of queueing, by design it never queues requests the backend actually answered.
 A true network failure (browser/API origin unreachable), which is what the deployed static
 front-end experiences, queues correctly. This was exercised both ways in the smoke test.
 
-![Offline — queued](evidence/10-offline-queued.png)
-![Offline — pending survives reload](evidence/11-offline-pending-after-reload.png)
-![Offline — synced after reconnect](evidence/12-offline-synced.png)
+![Offline, queued](evidence/10-offline-queued.png)
+![Offline, pending survives reload](evidence/11-offline-pending-after-reload.png)
+![Offline, synced after reconnect](evidence/12-offline-synced.png)
 
 ## Security / AI architecture
 
@@ -168,20 +168,20 @@ front-end experiences, queues correctly. This was exercised both ways in the smo
   output TRUST/REVIEW/VERIFY as its decision; responses under 40 chars are rejected as fragments.
 - **AI keys never reach the client**: backend `dotnet user-secrets` / env only; the Settings page
   explicitly refuses key entry; repo `appsettings.json` ships an empty key and a default endpoint.
-- **Safe error contract**: `400 {"error","fields"}` / generic envelopes — no stack traces, paths
+- **Safe error contract**: `400 {"error","fields"}` / generic envelopes, no stack traces, paths
   or binder internals; malformed JSON handled explicitly.
 - **No secrets in git** (scan clean); SQLite file is local-only; CORS limited to the dev origin.
 - Known security debt: no authentication/authorization, no cryptographic audit sealing,
-  no rate limiting — recorded below, not hidden.
+  no rate limiting, recorded below, not hidden.
 
 ## Current limitations / TRL honesty
 
 Prototype ≈ **TRL 5–6** (lab-validated, integrated, not field-deployed). Deliberately unhidden:
 
-1. No server-side idempotency key — a replayed sync can create a duplicate assessment.
-2. No offline deterministic engine — queued events are stored, never decided locally.
-3. In-memory list ordering — history/audit pages sort after fetching (fine at prototype scale).
-4. No HTTP integration-test suite — API covered by unit tests + live acceptance scripts (24/24),
+1. No server-side idempotency key, a replayed sync can create a duplicate assessment.
+2. No offline deterministic engine, queued events are stored, never decided locally.
+3. In-memory list ordering, history/audit pages sort after fetching (fine at prototype scale).
+4. No HTTP integration-test suite, API covered by unit tests + live acceptance scripts (24/24),
    frontend by contract checks + the 41-check browser smoke run; no Testcontainers/end-to-end
    suite in CI.
 5. Proxy-translated backend failure surfaces as HTTP error rather than queue (see offline caveat).
@@ -190,13 +190,13 @@ Prototype ≈ **TRL 5–6** (lab-validated, integrated, not field-deployed). Del
 8. Synthetic inputs only; **no clinical validation, regulatory approval or real patient outcomes
    are claimed anywhere in the product or this pack.**
 
-## Suggested demo narrative — "Can this result be trusted?"
+## Suggested demo narrative, "Can this result be trusted?"
 
-1. **TRUST** — clean evidence passes; nothing is hidden: reasons, evidence, audit id.
-2. **REVIEW** — context turns against the result; deterministic reasons first, then Gemini's
+1. **TRUST**, clean evidence passes; nothing is hidden: reasons, evidence, audit id.
+2. **REVIEW**, context turns against the result; deterministic reasons first, then Gemini's
    Contextual Analysis as *explanation*, and the status **stays** REVIEW (advisory AI).
-3. **VERIFY** — hard stop; the AI is not even consulted; the result cannot re-enter the workflow.
+3. **VERIFY**, hard stop; the AI is not even consulted; the result cannot re-enter the workflow.
 4. Finish on Audit Trail: evidence → rules → decision → action → audit, for all three.
 
-![Final dashboard — 4 assessments, 2/1/1, AI=1, offline=1](evidence/13-overview-final-counts.png)
+![Final dashboard, 4 assessments, 2/1/1, AI=1, offline=1](evidence/13-overview-final-counts.png)
 

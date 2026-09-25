@@ -58,7 +58,7 @@ public sealed class EfAuditStore(PocTrustDbContext db) : IAuditStore
             TimestampUtc = DateTimeOffset.UtcNow
         };
         // SQLite cannot ORDER BY DateTimeOffset server-side (repo-wide convention: order in
-        // memory — a scale item, not a correctness item), so the chain head is found client-side.
+        // memory, a scale item, not a correctness item), so the chain head is found client-side.
         var rows = await db.Audit.AsNoTracking().ToListAsync(ct);
         var head = rows.OrderByDescending(a => a.TimestampUtc).ThenByDescending(a => a.Id).FirstOrDefault();
         (auditEntry.PrevHash, auditEntry.Hash) = AuditChain.Seal(auditEntry, head is null ? [] : [head]);

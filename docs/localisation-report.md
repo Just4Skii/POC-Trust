@@ -1,4 +1,4 @@
-# Localised Clinical Interaction Layer — Final Implementation Report
+# Localised Clinical Interaction Layer, Final Implementation Report
 
 **Scope delivered:** spec chunks 1–6 of 6 (sections 1–16), implemented in two passes:
 sections 1–8 (foundation, decision-screen pattern, language selector) and sections 9–16
@@ -16,7 +16,7 @@ explanation around it is localised.*
 Rationale, briefly: the smallest mainstream React option with lazy per-locale bundles,
 `Intl.PluralRules`-based plurals (ICU MessageFormat-equivalent for this catalog's needs)
 and interpolation; FormatJS ships a heavier ICU parser, Lingui couples to a compile step.
-Interpolation is used for all dates/counts — no translated fragment is ever concatenated.
+Interpolation is used for all dates/counts, no translated fragment is ever concatenated.
 
 Key architectural properties (all verified by the gates below):
 
@@ -29,7 +29,7 @@ Key architectural properties (all verified by the gates below):
 - **Family-unit fallback:** a driver/decision/evidence-state key family renders in a
   locale only when *every* member resolves there; otherwise the whole family falls back
   to English as a unit. Tested live against the real i18next instance (check-i18n §7).
-- **A missing key can never surface as raw key text or an empty string** — enforced by
+- **A missing key can never surface as raw key text or an empty string**, enforced by
   `parseMissingKeyHandler`, `returnNull:false`, `returnEmptyString:false`, the English
   fallback layer, and a live behavioural test.
 
@@ -47,7 +47,7 @@ Key families: `driver.<rule>.{title,explanation,action}` for all 12 engine rule 
 `evidence.<item>.label`/`.last_verified`, `evidence.state.*.{label,meaning}` (8 states),
 `audit.stage.*` (8 pipeline stages), and `ui.*` chrome (including the section-9 advisory
 framing `ui.ai.*`, localised time words `ui.time.*`, and the announcement key
-`ui.language.changed`). Dates and counts are DATA interpolated at render time — never
+`ui.language.changed`). Dates and counts are DATA interpolated at render time, never
 baked into translated strings (`evidence.cal.last_verified = "Due {{date}}"` is asserted).
 
 Per-locale status counts are reported on every `check:i18n` run (spec section 14), and
@@ -55,18 +55,18 @@ the meta source-hashes are verified against the live English source each run.
 
 ## 3. Locales: "preview" vs "supported" (honest claims)
 
-- **en-ZA — supported.** Fully reviewed source of truth.
-- **zu-ZA, xh-ZA, af-ZA — preview.** Every string is a machine draft (`machine_draft`),
+- **en-ZA, supported.** Fully reviewed source of truth.
+- **zu-ZA, xh-ZA, af-ZA, preview.** Every string is a machine draft (`machine_draft`),
   awaiting clinical-linguistic review. The UI derives this state from the real review
-  metadata: the language menu marks each entry "(Preview — draft)" in the active
+  metadata: the language menu marks each entry "(Preview, draft)" in the active
   language, the decision screen carries
-  **"Language preview — draft translations / Not yet reviewed by clinical linguists"**,
-  and Settings shows "Reviewed 128/128" for English versus "Preview — draft 0/128" for
-  the others — computed from meta, never hard-coded.
+  **"Language preview, draft translations / Not yet reviewed by clinical linguists"**,
+  and Settings shows "Reviewed 128/128" for English versus "Preview, draft 0/128" for
+  the others, computed from meta, never hard-coded.
 - No "supported" claim is made for any non-English locale anywhere in the product.
 - Review workflow ready for Phase 2: a qualified reviewer promotes keys in
   `src/i18n/meta/<locale>.json` (`source: human`, `reviewed_at`); a locale becomes
-  "supported" in the UI automatically — and only — when every key is `reviewed`.
+  "supported" in the UI automatically, and only, when every key is `reviewed`.
 
 ## 4. Translation sources used for drafts (none auto-promoted)
 
@@ -79,7 +79,7 @@ and `i18n-meta.mjs` preserves hand-set reviewed states only while the English so
 unchanged. The functional drift test (`scripts/test-i18n-drift.mjs`) proves end-to-end
 that editing an English string reverts affected translations to draft.
 
-## 5. Persisted data is language-independent — confirmed
+## 5. Persisted data is language-independent, confirmed
 
 - **Backend: zero changes** in both localisation passes (`git diff` contains no `.cs`
   files; 131/131 backend tests untouched and green). Dispositions, rule IDs, reason
@@ -90,10 +90,10 @@ that editing an English string reverts affected translations to draft.
 - Offline-created assessments continue to enqueue canonical values only; display strings
   depend solely on the active locale at render time.
 
-## 6. VERIFY never shows Contextual Analysis — confirmed
+## 6. VERIFY never shows Contextual Analysis, confirmed
 
 The advisory panel returns null for VERIFY *before any rendering*, so the block (and its
-localised framing, including the "available in English" note) is absent — not hidden —
+localised framing, including the "available in English" note) is absent, not hidden,
 in every language. Browser-verified for isiZulu and isiXhosa views
 (`PASS absent: Contextual Analysis`), enforced statically by the copy/i18n gates, and
 unchanged from the deterministic-engine guarantee (VERIFY renders no advisory content
@@ -101,7 +101,7 @@ in any language).
 
 ## 7. Contextual Analysis language policy (section 9, default)
 
-- AI-generated text remains **English in every locale** — it is advisory content, never
+- AI-generated text remains **English in every locale**, it is advisory content, never
   machine-translated at runtime; the English original is the persisted record.
 - The framing around it is localised from the catalog (subtitle, authoritative-decision
   line, metadata labels, unavailable note).
@@ -113,7 +113,7 @@ in any language).
 - The optional later phase (on-demand machine translation of advisory text, labelled
   "Machine-translated. Not clinically reviewed.") was **not** built.
 
-## 8. Offline behaviour — verified
+## 8. Offline behaviour, verified
 
 - All locale catalogs and review metadata ship with the app (static, same-origin,
   hashed assets); after first paint an idle prefetch warms every locale into the module
@@ -125,7 +125,7 @@ in any language).
   load retries when connectivity returns. No runtime dependency on any translation
   service exists at all.
 - Limitation, honestly stated: a *cold* offline start of the whole app (no cache at all)
-  is outside localisation's scope — the app is a network-delivered SPA; the localisation
+  is outside localisation's scope, the app is a network-delivered SPA; the localisation
   layer adds no new cold-start dependency because catalogs are ordinary app assets.
 
 ## 9. Formatting, layout and accessibility (section 11)
@@ -158,18 +158,18 @@ in any language).
   and isiXhosa decision screens; Show-in-English round trip (hero + reason chain);
   payload-identity check; announcement live region present. Screenshots in
   `docs/assets/i18n-*.png`.
-- **390×844 (isiZulu):** overview, list and record — 0 px horizontal overflow.
+- **390×844 (isiZulu):** overview, list and record, 0 px horizontal overflow.
 - Suites: `browser-qa4.sh` (33 checks, localisation) PASS; legacy `browser-qa3.sh`
-  (integrity upgrade) PASS; `live-verify2.sh` (API E2E) PASS; `check:contract` chain —
+  (integrity upgrade) PASS; `live-verify2.sh` (API E2E) PASS; `check:contract` chain,
   contract checks, copy guard, meta drift gate, i18n completeness/behaviour checks and
-  the functional drift test — all PASS; `dotnet build` 0 warnings, `dotnet test`
+  the functional drift test, all PASS; `dotnet build` 0 warnings, `dotnet test`
   131/131; `npm run build` and `oxlint` 0 warnings/errors.
 
 ## 11. Backend / API impact (section 12)
 
 **Preferred path taken: zero backend change.** The optional, additive,
 approval-required recording of `uiLocale` and `catalogVersion` in assessment/audit
-metadata (so the displayed language becomes traceable — "what instruction did the
+metadata (so the displayed language becomes traceable, "what instruction did the
 operator actually see?") is **specified but NOT implemented**, pending explicit
 approval. It remains a small, additive design: two optional fields, no decision-logic
 change, no contract break, covered by tests when approved.
@@ -178,15 +178,15 @@ change, no contract break, covered by tests when approved.
 
 | Phase | Status |
 |-------|--------|
-| 0 — Foundation (library, keyed catalogs, humanization integration, fallback, `lang` attr, English unchanged) | **Done** |
-| 1 — Preview set (pilot strings incl. the three demo scenarios, drafts, compact menu + preview label, demo moment) | **Done** |
-| 2 — Review pipeline (glossary ready, review workflow + promotion, source-hash drift detection) | **Tooling done; human review outstanding** (external native speakers) |
-| 3 — Operator experience (device preference, Show in English) | **Done** (side-by-side supervisor view: optional, not built) |
-| 4 — Localised clinical interaction (voice, more languages, local workflow guidance) | **Not attempted**, per spec |
+| 0, Foundation (library, keyed catalogs, humanization integration, fallback, `lang` attr, English unchanged) | **Done** |
+| 1, Preview set (pilot strings incl. the three demo scenarios, drafts, compact menu + preview label, demo moment) | **Done** |
+| 2, Review pipeline (glossary ready, review workflow + promotion, source-hash drift detection) | **Tooling done; human review outstanding** (external native speakers) |
+| 3, Operator experience (device preference, Show in English) | **Done** (side-by-side supervisor view: optional, not built) |
+| 4, Localised clinical interaction (voice, more languages, local workflow guidance) | **Not attempted**, per spec |
 
 ## 13. Limitations and what still requires clinical-linguistic review
 
-1. All zu/xh/af strings are unreviewed machine drafts — terminology (especially
+1. All zu/xh/af strings are unreviewed machine drafts, terminology (especially
    clinical/safety phrasing) must be reviewed by qualified native speakers before any
    non-preview claim.
 2. Where no accepted equivalent exists, drafts keep the English technical term; the
@@ -195,7 +195,7 @@ change, no contract break, covered by tests when approved.
    for example); the verified en-ZA fallback handles this, but real-device checks with
    full-ICU browsers are advisable before wide preview use.
 4. Chrome text beyond the decision screens (sync chip, some settings/operational pages)
-   is still English-only — the next preview-set expansion, deliberately deferred to keep
+   is still English-only, the next preview-set expansion, deliberately deferred to keep
    this pass auditable.
 5. Catalog versioning is present (`version` marker + per-key hashes); bumping the
    version per reviewed release is part of the Phase-2 reviewer workflow.
@@ -203,7 +203,7 @@ change, no contract break, covered by tests when approved.
    verified against official documentation on the day any MT-assisted drafting is used
    again.
 
-## 14. Acceptance criteria (section 15) — mapping
+## 14. Acceptance criteria (section 15), mapping
 
 | Criterion | Evidence |
 |-----------|----------|

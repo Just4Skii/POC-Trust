@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * Shared motion utilities — one place governs reduced-motion behaviour consistently (Section 33).
+ * Shared motion utilities, one place governs reduced-motion behaviour consistently (Section 33).
  * All decorative effects must consult these; data-driven effects must additionally be paused when
  * their element leaves the viewport or the tab is hidden (Section 31).
  */

@@ -35,7 +35,7 @@ public sealed class AuditEntry
     public DateTimeOffset TimestampUtc { get; set; }
 
     /// <summary>Hash of the previous entry in the append-only chain ("GENESIS" at a chain start).
-    /// Empty for rows written before audit sealing was introduced — verification treats them as
+    /// Empty for rows written before audit sealing was introduced, verification treats them as
     /// an unsealed legacy prefix.</summary>
     public string PrevHash { get; set; } = "";
 
@@ -69,7 +69,7 @@ public sealed class PocTrustDbContext(DbContextOptions<PocTrustDbContext> option
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Idempotency keys are looked up on every sync replay — the PK index covers it.
+        // Idempotency keys are looked up on every sync replay, the PK index covers it.
         modelBuilder.Entity<SyncReceipt>().HasKey(r => r.Key);
 
         // Audit chain verification walks canonical order (timestamp, then id tie-break).

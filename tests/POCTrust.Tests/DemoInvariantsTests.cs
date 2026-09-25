@@ -155,7 +155,7 @@ public sealed class DemoInvariantsTests
         {
             foreach (var reason in decision.Reasons)
             {
-                // The engine persists reasons as "[RULE_ID] Sentence." — the frontend humanizer
+                // The engine persists reasons as "[RULE_ID] Sentence.", the frontend humanizer
                 // strips the bracketed machine prefix before display. The invariant asserts the
                 // sentence part is clean, uppercase-opening and period-terminated.
                 var idx = reason.IndexOf("] ", StringComparison.Ordinal);
@@ -195,7 +195,7 @@ public sealed class DemoInvariantsTests
         {
             var context = seed.Build(FixedNow);
             Assert.True(devices.Contains(context.DeviceId), $"{seed.Key}: unknown device '{context.DeviceId}'.");
-            // The provenance-incomplete scenario intentionally omits operator/reagent records —
+            // The provenance-incomplete scenario intentionally omits operator/reagent records,
             // that omission IS the scenario. An operator that IS recorded must be curated.
             if (!string.IsNullOrWhiteSpace(context.OperatorId))
                 Assert.True(operators.Contains(context.OperatorId), $"{seed.Key}: unknown operator '{context.OperatorId}'.");

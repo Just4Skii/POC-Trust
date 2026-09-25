@@ -8,7 +8,7 @@ namespace POCTrust.Infrastructure.Services;
 /// <summary>Result of walking the append-only audit hash chain.</summary>
 /// <param name="Valid">True when every sealed entry commits to its predecessor correctly.</param>
 /// <param name="SealedCount">Number of sealed (hashed) entries verified.</param>
-/// <param name="LegacyCount">Entries written before sealing existed — unsealed prefix, not verified.</param>
+/// <param name="LegacyCount">Entries written before sealing existed, unsealed prefix, not verified.</param>
 /// <param name="BrokenAt">Id of the first entry whose stored hash/prev-hash did not match, if any.</param>
 public sealed record AuditChainReport(bool Valid, int SealedCount, int LegacyCount, Guid? BrokenAt)
 {
@@ -22,7 +22,7 @@ public sealed record AuditChainReport(bool Valid, int SealedCount, int LegacyCou
 ///
 /// Chain order is the canonical audit order used everywhere else in the product:
 /// TimestampUtc, then Id as the deterministic tie-break. Entries written before sealing was
-/// introduced carry an empty hash and are treated as an unsealed legacy prefix — the chain starts
+/// introduced carry an empty hash and are treated as an unsealed legacy prefix, the chain starts
 /// at the first sealed entry. Verification is intentionally strict in the safe direction: a
 /// chain it cannot reproduce is reported broken, never silently accepted.
 /// </summary>
@@ -47,7 +47,7 @@ public static class AuditChain
     }
 
     /// <summary>Hash the entry against the chain's current head ("GENESIS" when the trail is empty
-    /// or its last entry predates sealing). The entry is not modified — the caller assigns the
+    /// or its last entry predates sealing). The entry is not modified, the caller assigns the
     /// returned <c>PrevHash</c>/<c>Hash</c> pair before saving.</summary>
     public static (string PrevHash, string Hash) Seal(AuditEntry entry, IReadOnlyList<AuditEntry> existingOrdered)
     {

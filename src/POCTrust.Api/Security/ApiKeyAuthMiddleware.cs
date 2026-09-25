@@ -9,11 +9,11 @@ namespace POCTrust.Api.Security;
 /// system). With <c>Auth:Mode</c> set to <c>apikey</c>, every mutating (/api POST/PUT/PATCH/DELETE)
 /// request must carry <c>X-Api-Key</c> matching the configured value; reads stay open so the
 /// decision-first UI and audit review remain observable. The default mode is <c>none</c>, which
-/// changes nothing — the product honestly records that operator identifiers are claimed, not
+/// changes nothing, the product honestly records that operator identifiers are claimed, not
 /// authenticated.
 ///
 /// Comparison is constant-time over SHA-256 digests so key comparison does not leak timing or
-/// length. Rejections use the product's safe error envelope — never middleware internals.
+/// length. Rejections use the product's safe error envelope, never middleware internals.
 /// </summary>
 public sealed class ApiKeyAuthMiddleware(RequestDelegate next, IConfiguration config, ILogger<ApiKeyAuthMiddleware> logger)
 {

@@ -2,8 +2,8 @@
  * Deterministic, seeded sample generation for presentation telemetry (Section 9, 29).
  *
  * TRUTHFULNESS CONTRACT: everything in this module is PRESENTATION MOTION over already-true
- * data. Sample arrays are cosmetic trace shapes seeded from stable record identifiers — the
- * same scenario always produces the same trace — and the *recorded* value is always the one
+ * data. Sample arrays are cosmetic trace shapes seeded from stable record identifiers, the
+ * same scenario always produces the same trace, and the *recorded* value is always the one
  * shown to the user in text. No drifting or scanning effect may ever alter a displayed value.
  */
 
@@ -17,7 +17,7 @@ export function hashSeed(text: string): number {
   return h >>> 0;
 }
 
-/** mulberry32 PRNG — small, fast, fully deterministic from a seed. */
+/** mulberry32 PRNG, small, fast, fully deterministic from a seed. */
 export function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
   return () => {
@@ -56,7 +56,7 @@ export function normalise(samples: number[]): number[] {
 
 /**
  * SVG polyline `d` for a trace, drawn into `width × height` with `padding` on both ends.
- * Uses pathLength-friendly straight segments — hairline accuracy, no smoothing surprises.
+ * Uses pathLength-friendly straight segments, hairline accuracy, no smoothing surprises.
  */
 export function tracePathD(samples: number[], width: number, height: number, padding = 3): string {
   const norm = normalise(samples);
@@ -71,7 +71,7 @@ export function tracePathD(samples: number[], width: number, height: number, pad
     .join(" ");
 }
 
-/** x/y pixel coordinates of the last sample — where the marker dot sits. */
+/** x/y pixel coordinates of the last sample, where the marker dot sits. */
 export function traceLatest(samples: number[], width: number, height: number, padding = 3): { x: number; y: number } {
   const norm = normalise(samples);
   const v = norm[norm.length - 1] ?? 0.5;

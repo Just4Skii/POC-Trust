@@ -1,10 +1,10 @@
 /**
- * Supported locales (spec section 3) — BCP 47 codes.
+ * Supported locales (spec section 3), BCP 47 codes.
  *
  * en-ZA is the canonical SOURCE language and the mandatory fallback: every key in every
  * catalog must exist in en-ZA (enforced by scripts/check-i18n.mjs). The set intentionally
  * covers the most widely spoken home languages for this deployment context; the registry is
- * the only place a new official language is added (catalog + meta file + one entry here —
+ * the only place a new official language is added (catalog + meta file + one entry here ,
  * no redesign). Home-language rationale is documented in docs/localisation.md, citing the
  * primary Stats SA Census 2022 source rather than repeating figures from memory.
  */
@@ -58,7 +58,7 @@ export function initialLocale(storage: Pick<Storage, "getItem"> | null = typeof 
   try {
     const stored = storage?.getItem(LANGUAGE_STORAGE_KEY) ?? null;
     if (isSupportedLocale(stored)) return stored;
-  } catch { /* storage unavailable — fall through */ }
+  } catch { /* storage unavailable, fall through */ }
   if (typeof navigator !== "undefined") {
     const fromBrowser = browserLocale([...(navigator.languages ?? []), navigator.language].filter(Boolean) as string[]);
     if (fromBrowser) return fromBrowser;

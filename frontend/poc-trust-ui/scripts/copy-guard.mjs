@@ -62,7 +62,7 @@ for (const id of KNOWN_RULE_IDS) {
 // ── 2. Persisted-reason fixtures (exact formats the frozen backend writes) ───
 console.log("Humanized reasons:");
 const REASON_FIXTURES = [
-  "[QC_FAILED] QC failed — result must not be relied upon without verification.",
+  "[QC_FAILED] QC failed: result must not be relied upon without verification.",
   "[CAL_EXPIRED] Calibration overdue since 2026-03-15.",
   "[CAL_NEAR_DUE] Calibration due within 7 days.",
   "[REAGENT_EXPIRED] Reagent lot LOT-2071 expired 2026-03-10.",
@@ -72,7 +72,7 @@ const REASON_FIXTURES = [
   "[ENV_HUMIDITY] Humidity 92% outside 10–85% range.",
   "[POWER_INTERRUPTION] Power interruption associated with event.",
   "[PROVENANCE_INCOMPLETE] Missing required provenance (who/device/reagent/where).",
-  "[MULTI_CONTEXT] Multiple contextual concerns (3) — interaction review warranted.",
+  "[MULTI_CONTEXT] Multiple contextual concerns (3): interaction review warranted.",
   "[ALL_CHECKS_PASS] All deterministic checks passed.",
   "AI unavailable (HttpRequestException); deterministic result retained.",
   "AI unavailable (TimeoutException); deterministic result retained.",
@@ -230,7 +230,7 @@ console.log("Required wording (integrity upgrade, chunk 4):");
 const overviewSrc = readFileSync(join(root, "src", "pages", "Overview.tsx"), "utf8");
 const listsSrc = readFileSync(join(root, "src", "pages", "Lists.tsx"), "utf8");
 const auditTimelineSrc = readFileSync(join(root, "src", "components", "AuditTimeline.tsx"), "utf8");
-check("integrity overview card labels the demonstration environment", overviewSrc.includes("Demonstration mode — synthetic data only"));
+check("integrity overview card labels the demonstration environment", overviewSrc.includes("Demonstration mode, synthetic data only"));
 check("integrity overview carries the four section-26 metrics", ["Evidence coverage", "Evidence concerns", "Conflicts", "Aging evidence"].every((t) => overviewSrc.includes(t)));
 check("demonstration moment shows the progression and the why panel", overviewSrc.includes("Demonstration moment") && overviewSrc.includes("Why did it change?"));
 check("history rows expose evidence coverage, primary driver and policy", ["Evidence:", "Primary driver:", "Policy:", "Audit: Available", "AI: Not consulted"].every((t) => listsSrc.includes(t)));

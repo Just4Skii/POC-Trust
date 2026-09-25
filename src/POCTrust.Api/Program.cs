@@ -85,10 +85,10 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<PocTrustDbContext>();
     db.Database.EnsureCreated();
 
-    // Optional first-run demonstration load. Default: ON in Development, OFF elsewhere —
+    // Optional first-run demonstration load. Default: ON in Development, OFF elsewhere,
     // explicitly overridable in every environment via Demo:AutoSeed (env: Demo__AutoSeed).
     // Only an EMPTY store is seeded, only through the real pipeline, and a failed load never
-    // blocks startup — the deterministic engine works with an empty store.
+    // blocks startup, the deterministic engine works with an empty store.
     var autoSeed = builder.Configuration.GetValue("Demo:AutoSeed", builder.Environment.IsDevelopment());
     if (autoSeed)
     {
@@ -100,7 +100,7 @@ using (var scope = app.Services.CreateScope())
     var aiConfigured = !string.IsNullOrWhiteSpace(builder.Configuration["AI:ApiKey"]);
     var aiModel = builder.Configuration["AI:Model"] ?? "gpt-4o-mini";
     app.Logger.LogInformation(
-        "POC Trust starting — environment {Env}; advisory AI {AiMode} (model {Model}); deterministic rules authoritative; VERIFY downgrade-proof.",
+        "POC Trust starting, environment {Env}; advisory AI {AiMode} (model {Model}); deterministic rules authoritative; VERIFY downgrade-proof.",
         app.Environment.EnvironmentName, aiConfigured ? "configured" : "stub/offline fallback", aiModel);
 }
 
@@ -127,7 +127,7 @@ app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
 app.UseMiddleware<ApiKeyAuthMiddleware>();
 app.UseRateLimiter();
 
-// Packaged single-container mode: when a built UI is present in wwwroot, the API serves it —
+// Packaged single-container mode: when a built UI is present in wwwroot, the API serves it,
 // one origin, one port, one command. In development wwwroot does not exist and this is a no-op,
 // leaving the Vite dev server (5173 → proxy 5183) untouched.
 var indexFile = Path.Combine(app.Environment.ContentRootPath, "wwwroot", "index.html");

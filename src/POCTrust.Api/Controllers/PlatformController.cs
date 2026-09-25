@@ -49,7 +49,7 @@ public sealed class PlatformController(PocTrustDbContext db, IReliabilityEngine 
 
     /// <summary>
     /// Compact integrity fields for one history-list row (spec section 27), derived by the SAME
-    /// projector the full record endpoint uses — never a parallel derivation, so a row can never
+    /// projector the full record endpoint uses, never a parallel derivation, so a row can never
     /// disagree with the record it links to. The engine is used only for the gated causality
     /// re-derivation; the stored decision itself is never re-decided.
     /// </summary>
@@ -87,7 +87,7 @@ public sealed class PlatformController(PocTrustDbContext db, IReliabilityEngine 
         catch
         {
             // A row whose stored payload cannot be projected keeps rendering WITHOUT integrity
-            // fields — it never renders invented ones.
+            // fields, it never renders invented ones.
             return null;
         }
     }
@@ -138,7 +138,7 @@ public sealed class PlatformController(PocTrustDbContext db, IReliabilityEngine 
 
     /// <summary>
     /// The Result Integrity Record for one assessment: a portable, auditable, evidence-linked
-    /// projection derived from the persisted assessment and its sealed audit entries — never a
+    /// projection derived from the persisted assessment and its sealed audit entries, never a
     /// re-evaluation and never a second copy of the data. The record states what evidence the
     /// engine had, its classified quality under the demonstration policy, why the disposition
     /// occurred, and what action follows. It is an operational integrity assessment, not a
@@ -175,7 +175,7 @@ public sealed class PlatformController(PocTrustDbContext db, IReliabilityEngine 
             "Counts reference the append-only audit trail for this assessment; sealing makes the trail tamper-evident.");
 
         // Demonstration decision history: when this record belongs to the seeded sequence, load the
-        // sibling decisions (already stored — never re-computed) so the integrity timeline can show
+        // sibling decisions (already stored, never re-computed) so the integrity timeline can show
         // genuinely recorded evolution. Non-demo records never take this path.
         List<IntegrityHistoryPoint>? history = null;
         if (input.DemoKey is { } demoKey && demoKey.StartsWith("demo-history-", StringComparison.Ordinal))
@@ -229,7 +229,7 @@ public sealed class PlatformController(PocTrustDbContext db, IReliabilityEngine 
         var ordered = assessments.OrderByDescending(a => a.DecidedAtUtc).ToList();
 
         // Integrity overview (spec section 26): aggregates over the SAME projection the detail
-        // records use, computed from the stored records at request time — never preset, never
+        // records use, computed from the stored records at request time, never preset, never
         // sampled. No engine is needed here: coverage/concern/aging/conflict counts are pure
         // projections of stored data, and causality roles are intentionally not asserted here.
         var auditCounts = audits.GroupBy(x => x.AssessmentId)
@@ -271,15 +271,15 @@ public sealed class PlatformController(PocTrustDbContext db, IReliabilityEngine 
                 assessmentsWithConcerns = projected.Count(IntegrityMetrics.HasConcerns),
                 conflicts = projected.Sum(r => r.EvidenceQuality.ConflictCount),
                 assessmentsWithAging = projected.Count(r => r.EvidenceQuality.AgingCount > 0),
-                note = "Calculated from the stored assessment records at request time — never preset. Under demonstration mode these records are synthetic.",
+                note = "Calculated from the stored assessment records at request time, never preset. Under demonstration mode these records are synthetic.",
             },
-            source = "real persisted assessments; empty on fresh install — use Demonstration Mode",
+            source = "real persisted assessments; empty on fresh install, use Demonstration Mode",
         });
     }
 
     /// <summary>
-    /// The demonstration moment (spec section 30): the stored demonstration decision sequence —
-    /// one result becoming TRUST, then REVIEW, then VERIFY as the evidence quality changes — with
+    /// The demonstration moment (spec section 30): the stored demonstration decision sequence ,
+    /// one result becoming TRUST, then REVIEW, then VERIFY as the evidence quality changes, with
     /// the reason for each change derived from the STORED findings (the same derivation the
     /// integrity timeline uses). Entirely deterministic; the advisory AI plays no part.
     /// </summary>
@@ -323,7 +323,7 @@ public sealed class PlatformController(PocTrustDbContext db, IReliabilityEngine 
         {
             available = steps.Count >= 2,
             label = "Watch one result become trustworthy, then watch its integrity context change.",
-            note = "A synthetic three-step sequence recorded through the REAL deterministic pipeline at fixed historical instants: same device and operator, only the evidence quality changes. Clearly labelled demonstration data — never presented as production history.",
+            note = "A synthetic three-step sequence recorded through the REAL deterministic pipeline at fixed historical instants: same device and operator, only the evidence quality changes. Clearly labelled demonstration data, never presented as production history.",
             aiInvolved = ordered.Any(x => x.AiConsulted),
             steps,
             source = "Stored demonstration records; every disposition comes from the deterministic engine only.",

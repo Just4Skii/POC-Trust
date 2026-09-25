@@ -17,17 +17,17 @@ public sealed class ReliabilityEngine : IReliabilityEngine
             if (severity > status) status = severity;
         }
 
-        // 1. QC — hard VERIFY
+        // 1. QC, hard VERIFY
         if (!c.QcPassed)
-            Add("QC_FAILED", ReliabilityStatus.Verify, "QC failed — result must not be relied upon without verification.");
+            Add("QC_FAILED", ReliabilityStatus.Verify, "QC failed: result must not be relied upon without verification.");
 
-        // 2. Calibration — expired → VERIFY
+        // 2. Calibration, expired → VERIFY
         if (c.CalibrationDueUtc < nowUtc)
             Add("CAL_EXPIRED", ReliabilityStatus.Verify, $"Calibration overdue since {c.CalibrationDueUtc:yyyy-MM-dd}.");
         else if (c.CalibrationDueUtc < nowUtc.AddDays(7))
             Add("CAL_NEAR_DUE", ReliabilityStatus.Review, "Calibration due within 7 days.");
 
-        // 3. Reagent — expired → VERIFY
+        // 3. Reagent, expired → VERIFY
         if (c.ReagentExpiryUtc < nowUtc)
             Add("REAGENT_EXPIRED", ReliabilityStatus.Verify, $"Reagent lot {c.ReagentLot} expired {c.ReagentExpiryUtc:yyyy-MM-dd}.");
         else if (c.ReagentExpiryUtc < nowUtc.AddDays(14))
@@ -54,7 +54,7 @@ public sealed class ReliabilityEngine : IReliabilityEngine
         // 8. Multiple contextual concerns → REVIEW (explicit marker when >=2 review-level findings)
         var reviewCount = findings.Count(f => f.Severity == ReliabilityStatus.Review);
         if (reviewCount >= 2 && status == ReliabilityStatus.Review)
-            Add("MULTI_CONTEXT", ReliabilityStatus.Review, $"Multiple contextual concerns ({reviewCount}) — interaction review warranted.");
+            Add("MULTI_CONTEXT", ReliabilityStatus.Review, $"Multiple contextual concerns ({reviewCount}): interaction review warranted.");
 
         if (status == ReliabilityStatus.Trust && findings.Count == 0)
             findings.Add(new RuleFinding("ALL_CHECKS_PASS", ReliabilityStatus.Trust, "All deterministic checks passed."));
@@ -91,7 +91,7 @@ public sealed class ReliabilityEngine : IReliabilityEngine
     {
         ReliabilityStatus.Trust => "Result may enter clinical workflow under routine controls.",
         ReliabilityStatus.Review => "Hold for trained-operator review; check flagged context before reliance.",
-        ReliabilityStatus.Verify => "Do not rely — verify/repeat/confirm per applicable workflow.",
+        ReliabilityStatus.Verify => "Do not rely, verify/repeat/confirm per applicable workflow.",
         _ => "Hold for review."
     };
 }

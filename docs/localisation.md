@@ -12,7 +12,7 @@ machine-readable record, the deterministic reliability engine, the TRUST/REVIEW/
 semantics, the AI safety boundaries and the API contracts are untouched by localisation.
 Language changes only how reasons, instructions and context are presented to the operator.
 
-## Scope — what is and is not translated
+## Scope, what is and is not translated
 
 | Localised (operator-facing presentation) | Canonical / language-neutral (data) |
 | --- | --- |
@@ -24,11 +24,11 @@ Language changes only how reasons, instructions and context are presented to the
 | Offline/sync explanations, onboarding guidance | The English source strings on decision screens |
 
 **Status display pattern (spec section 2):** decision screens always show the canonical code
-*and* the localised label together — `REVIEW · <localised label>` — plus a **Show in English**
+*and* the localised label together, `REVIEW · <localised label>`, plus a **Show in English**
 toggle so the canonical wording is one click away without changing the operator's stored
 preference.
 
-## Architecture — static, reviewed message catalogs
+## Architecture, static, reviewed message catalogs
 
 Runtime machine translation of safety-critical text is **forbidden**. Catalogs are
 pre-authored, keyed by stable message keys, shipped with the app (offline-capable), and
@@ -43,7 +43,7 @@ non-English catalog is a separate ~2.5 kB gzip lazy chunk, loaded only when sele
 Key layout (`frontend/poc-trust-ui/src/i18n/`):
 
 ```
-catalogs/en-ZA.json   source of truth (bundled eagerly — it is the mandatory fallback)
+catalogs/en-ZA.json   source of truth (bundled eagerly, it is the mandatory fallback)
 catalogs/zu-ZA.json   lazy chunk
 catalogs/xh-ZA.json   lazy chunk
 catalogs/af-ZA.json   lazy chunk
@@ -53,7 +53,7 @@ strings.ts            localised accessors with family-unit fallback (extends lib
 support.ts            support-state derivation from real metadata (never hard-coded)
 ```
 
-### Key taxonomy — the whole explanation chain
+### Key taxonomy, the whole explanation chain
 
 Every driver of a decision gets a consistent key family, so the reason, the evidence card,
 the next action and the audit label always tell the same story in the same language:
@@ -72,17 +72,17 @@ Rules enforced by `scripts/check-i18n.mjs` (wired into `npm run check:i18n` and
 
 - one rule ID maps to a FIXED key family; every rule ID the engine emits must have its full
   family defined in English (completeness check against the engine rule vocabulary);
-- dates, times and counts are DATA — interpolated via i18next at render time, never baked
+- dates, times and counts are DATA, interpolated via i18next at render time, never baked
   into translated strings;
 - **family-unit fallback**: a driver is shown in a locale only when its whole family resolves
   there (`src/i18n/strings.ts`); otherwise the family falls back to English AS A UNIT, so the
   operator never sees a half-translated explanation chain;
-- missing or empty strings always fall back to English — never a raw key, never an empty
+- missing or empty strings always fall back to English, never a raw key, never an empty
   string, never unreviewed machine output standing in for canonical wording;
 - every catalog value in every locale passes the same machine-text detector the copy guard
   uses (scanned as rendered text, interpolation placeholders excluded).
 
-## Translation tooling — machine translation is a drafting aid
+## Translation tooling, machine translation is a drafting aid
 
 Machine output was used (and is used at development time only) to produce FIRST DRAFTS for
 isiZulu and isiXhosa, stored with `status: "draft"`, `source: "machine_draft"`. Machine output
@@ -90,7 +90,7 @@ is never promoted to "reviewed" automatically; no translation API is called at r
 safety-critical text; no API keys exist in the frontend or repository. Quality of
 medical/technical terminology for isiZulu and isiXhosa is treated with extra scepticism for
 exactly this reason. Where no accepted equivalent exists, the glossary keeps the English term
-— a mistranslated safety instruction is worse than an English technical term.
+- a mistranslated safety instruction is worse than an English technical term.
 
 Provider language coverage must always be verified against the provider's official
 documentation on the day it is used; no provider's coverage is hard-coded as fact anywhere in
@@ -109,7 +109,7 @@ Every catalog entry carries metadata in `src/i18n/meta/<locale>.json`:
 ```
 
 If the English source text changes, `npm run i18n:sync` recomputes `source_hash`; any
-translation whose hash no longer matches reverts to `draft` automatically — a translation can
+translation whose hash no longer matches reverts to `draft` automatically, a translation can
 never silently drift from its source. `--check` mode fails CI on drift.
 
 **Review standard:** safety-critical strings must be reviewed by appropriately qualified
@@ -118,12 +118,12 @@ marked `reviewed`.
 
 **Release gate:** a locale is presented as *supported* only when ALL its safety-critical
 strings are `reviewed`; until then the UI derives its state from the real metadata and labels
-it `Preview — draft`. The language menu, the Settings language card and the decision-screen
-preview label all read this state — nothing is hard-coded.
+it `Preview, draft`. The language menu, the Settings language card and the decision-screen
+preview label all read this state, nothing is hard-coded.
 
 ## Terminology glossary (review FIRST, before sentences)
 
-Machine drafts below — pending native-speaker clinical-linguistic review; reviewers may keep
+Machine drafts below, pending native-speaker clinical-linguistic review; reviewers may keep
 the English term where no accepted equivalent exists.
 
 | English | Afrikaans (draft) | isiZulu (draft) | isiXhosa (draft) |
@@ -155,12 +155,12 @@ Never claim, until reviewed translations genuinely exist for the claimed scope:
 Permitted, as applicable:
 
 - "Localisation architecture in place; language preview available."
-- "Draft translations — pending clinical linguistic review."
-- "English, isiZulu, isiXhosa and Afrikaans supported for the reviewed instruction set" —
+- "Draft translations, pending clinical linguistic review."
+- "English, isiZulu, isiXhosa and Afrikaans supported for the reviewed instruction set",
   only once true, and stating the scope.
 
 Wherever draft translations are displayed, the preview label is visible:
-**LANGUAGE PREVIEW — DRAFT TRANSLATIONS · Not yet reviewed by clinical linguists.**
+**LANGUAGE PREVIEW, DRAFT TRANSLATIONS · Not yet reviewed by clinical linguists.**
 
 ## Language selector and preference
 
@@ -170,10 +170,10 @@ Wherever draft translations are displayed, the preview label is visible:
   lives in Settings. Entries render language names in their own language with their support
   state from real catalog metadata. A native `<select>` keeps it keyboard- and
   screen-reader-accessible.
-- Preference is a device/browser setting (`poctrust.language` in local storage) — the
+- Preference is a device/browser setting (`poctrust.language` in local storage), the
   prototype has no authentication, so nothing implies a verified operator identity. Default:
   browser language when it matches a supported locale, else English; always overridable.
-- Switching is instant — no page reload, no form-state loss; `<html lang>` follows the active
+- Switching is instant, no page reload, no form-state loss; `<html lang>` follows the active
   locale so screen readers and hyphenation behave correctly.
 
 ## Languages
@@ -183,7 +183,7 @@ registry (`src/i18n/locales.ts`) is the only place a further official language (
 Sepedi, Setswana, Xitsonga) is added: one catalog, one meta file, one entry.
 
 Rationale for the initial set: these are among the most widely spoken home languages in South
-Africa per **Statistics South Africa, Census 2022** — consult the primary release at
+Africa per **Statistics South Africa, Census 2022**, consult the primary release at
 <https://census.statssa.gov.za/> (Census 2022 products, "Main place of residence and language"
 tables) rather than relying on repeated figures.
 
@@ -191,7 +191,7 @@ tables) rather than relying on repeated figures.
 
 - The audit trail records decision data language-neutrally. Recording WHICH language and
   catalog version was displayed for an assessment requires a small, additive backend change
-  (optional `uiLocale`/`catalogVersion` fields — no decision-logic change, no contract
+  (optional `uiLocale`/`catalogVersion` fields, no decision-logic change, no contract
   break) and remains **deferred pending explicit approval** (spec section 12).
 - Sub-lines of the audit pipeline embed persisted record statements (language-neutral data)
   and stay canonical; the stage labels themselves are localised.
@@ -201,7 +201,7 @@ tables) rather than relying on repeated figures.
   On-demand machine translation of advisory text (the optional later phase) was not built.
 - Dates/times render via Intl with the active locale and a **verified** en-ZA fallback:
   a formatter is trusted only when the runtime resolves it to the same language (some
-  runtimes lack zu/xh ICU data — verified, never assumed). Timezone stays
+  runtimes lack zu/xh ICU data, verified, never assumed). Timezone stays
   Africa/Johannesburg. Recorded clinical values are never re-formatted.
 - Catalogs, review metadata and the language selector's support states ship with the app
   and are warmed right after first paint, so switching language works without a network;

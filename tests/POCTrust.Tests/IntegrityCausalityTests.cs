@@ -244,7 +244,7 @@ public sealed class IntegrityCausalityTests
     [Fact]
     public async Task Conflict_ConsistentlyBadEvidence_ProducesNoConflict()
     {
-        // QC failed AND environment out of range: nothing disagrees — the sources are consistent.
+        // QC failed AND environment out of range: nothing disagrees, the sources are consistent.
         var context = new DiagnosticContext(
             "Hb 8.4 g/dL", "DEV-25", false, Now.AddDays(30), "OP-15", true,
             "LOT-35", Now.AddDays(60), 35.0, Now, "site-V/DEV-25/OP-15", TestType: "Hb");
@@ -395,7 +395,7 @@ public sealed class IntegrityCausalityTests
         var db = InMemory();
         var orchestrator = new AssessmentOrchestrator(new ReliabilityEngine(), new StubAiProvider(), new EfAuditStore(db));
 
-        // A pre-existing record from "earlier" — the mixed-store case a real demo can hit when
+        // A pre-existing record from "earlier", the mixed-store case a real demo can hit when
         // demonstration data is loaded after the store already holds assessments.
         var existing = new DiagnosticContext(
             "Hb 14.2 g/dL", "DEV-01", true, Now.AddDays(30), "OP-07", true,
@@ -410,7 +410,7 @@ public sealed class IntegrityCausalityTests
         Assert.Equal(DemoSeedData.All.Count, report.Loaded);
 
         // The assessment rows keep the back-dated decision instants (the timeline story), while
-        // the audit entries were stamped at recording time — so the chain must stay intact.
+        // the audit entries were stamped at recording time, so the chain must stay intact.
         var historyAssessments = await db.Assessments.AsNoTracking().ToListAsync();
         var historyDecisions = historyAssessments
             .Where(a => a.InputJson.Contains("\"demoKey\":\"demo-history-"))

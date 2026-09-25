@@ -11,12 +11,12 @@ namespace POCTrust.Api.Controllers;
 ///
 /// Guarantees (implemented by <see cref="DemoSeeder"/>):
 /// - seeding is idempotent (keyed on a demo marker persisted inside the evidence JSON);
-/// - every seed is submitted through the real assessment pipeline — the deterministic engine
+/// - every seed is submitted through the real assessment pipeline, the deterministic engine
 ///   computes status, reasons, action and audit, and the seed self-check compares the result
 ///   against the expected status (a mismatch flags the seed definition, never the engine);
 /// - advisory summaries during seeding come from the built-in stub provider: offline-safe,
 ///   reproducible, and no external AI calls are made to load a demonstration;
-/// - reset removes ONLY demo-marked assessments and their audit trail rows — any other
+/// - reset removes ONLY demo-marked assessments and their audit trail rows, any other
 ///   (real / demo-scenario / user-created) record is never touched.
 ///
 /// Ordinary server startup seeds nothing by default; the optional <c>Demo:AutoSeed</c> setting

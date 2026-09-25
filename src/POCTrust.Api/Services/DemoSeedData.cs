@@ -4,7 +4,7 @@ using POCTrust.Core.Enums;
 namespace POCTrust.Api.Services;
 
 /// <summary>A curated demonstration scenario. Seeding submits the <b>inputs</b> through the real
-/// assessment pipeline — the deterministic engine computes status, reasons, action and audit.
+/// assessment pipeline, the deterministic engine computes status, reasons, action and audit.
 /// <see cref="Expected"/> is the seed self-check: after seeding, the engine-computed status is
 /// compared against it, and a mismatch means this definition's inputs are wrong (never the engine).</summary>
 public sealed record DemoSeed(
@@ -13,7 +13,7 @@ public sealed record DemoSeed(
     ReliabilityStatus Expected,
     Func<DateTimeOffset, DiagnosticContext> Build,
     /// <summary>Optional fixed decision instant (relative to the seed instant) for the
-    /// demonstration decision history — the sequence is recorded through the REAL pipeline at
+    /// demonstration decision history, the sequence is recorded through the REAL pipeline at
     /// historical timestamps so the integrity timeline shows genuinely recorded evolution.</summary>
     Func<DateTimeOffset, DateTimeOffset>? DecisionAt = null);
 
@@ -21,16 +21,16 @@ public sealed record DemoSeed(
 /// The curated synthetic demonstration dataset. Deterministic and idempotent:
 ///
 /// - stable, human-meaningful demo keys ("demo-assess-001"…) persisted inside the evidence JSON;
-/// - no randomness — every input is fixed relative to the moment of seeding;
+/// - no randomness, every input is fixed relative to the moment of seeding;
 /// - timestamps are FIXED OFFSETS from the seed/reset instant, so "today" and "yesterday" stay
 ///   true whenever the demonstration is loaded (offsets deterministic, absolute time anchored);
-/// - seeding never happens on ordinary server startup — only via the explicit, guarded endpoint.
+/// - seeding never happens on ordinary server startup, only via the explicit, guarded endpoint.
 ///
 /// Distribution (engine-confirmed): TRUST 5 · REVIEW 5 · VERIFY 3, one offline-marked record,
 /// plus a three-step demonstration decision history (TRUST → REVIEW → VERIFY) recorded through
 /// the real pipeline at historical instants as calibration evidence ages.
 /// Note: incomplete provenance is a REVIEW-level finding in this engine build (not VERIFY), so
-/// scenario 10 is seeded as REVIEW — the engine defines truth and the demo adapts to it.
+/// scenario 10 is seeded as REVIEW, the engine defines truth and the demo adapts to it.
 /// </summary>
 public static class DemoSeedData
 {
@@ -39,7 +39,7 @@ public static class DemoSeedData
         // ── Demonstration decision history: one synthetic sequence recorded through the REAL
         // pipeline at three historical instants, so the Integrity Timeline shows genuine decision
         // evolution as calibration evidence ages (current → AGING → EXPIRED). Timestamps are fixed
-        // offsets from the seed instant; the UI labels this "Demonstration decision history" —
+        // offsets from the seed instant; the UI labels this "Demonstration decision history",
         // it is never presented as production history. (Listed first so the seeded-keys listing
         // reads chronologically; audit sealing is recording-ordered and unaffected.)
         new DemoSeed("demo-history-1", "Decision history · calibration current", ReliabilityStatus.Trust, now => new DiagnosticContext(
@@ -119,7 +119,7 @@ public static class DemoSeedData
             TemperatureC: 23.5, TimestampUtc: now.AddDays(-1).AddHours(-6), Provenance: "District PHC Node 04 (Synthetic)/POC-DXB-02/Operator B",
             TestType: "Glucose", HumidityPct: 48, DemoKey: "demo-assess-007")),
 
-        // ── VERIFY: hard-stop evidence failures — deterministic only, AI is never consulted ──
+        // ── VERIFY: hard-stop evidence failures, deterministic only, AI is never consulted ──
         new DemoSeed("demo-assess-008", "Quality control failed + calibration expired", ReliabilityStatus.Verify, now => new DiagnosticContext(
             Result: "Hb 8.4 g/dL", DeviceId: "POC-DXB-02", QcPassed: false,
             CalibrationDueUtc: now.AddDays(-9), OperatorId: "Operator B", OperatorCompetent: true,

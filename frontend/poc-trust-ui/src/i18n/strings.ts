@@ -10,7 +10,7 @@ import type { Status } from "../types.ts";
 /**
  * Localised presentation strings over the central humanization module (spec sections 2 & 4).
  *
- * This EXTENDS src/lib/labels.ts — rule ID → message key → localised string — it does not
+ * This EXTENDS src/lib/labels.ts, rule ID → message key → localised string, it does not
  * replace or duplicate it. labels.ts remains the pure-English core that the copy guard
  * validates in Node; this module overlays reviewed catalog lookups at render time.
  *
@@ -36,7 +36,7 @@ function bundleFor(lng: LocaleCode): Record<string, unknown> {
   try {
     return (i18next.getResourceBundle(lng, "translation") ?? {}) as Record<string, unknown>;
   } catch {
-    return {}; // i18n not initialised (Node-side checks) — callers fall back to English.
+    return {}; // i18n not initialised (Node-side checks), callers fall back to English.
   }
 }
 
@@ -60,7 +60,7 @@ function tFor(lng: LocaleCode): TFunction {
     try {
       return i18next.t(key, { lng, ...values }) as string;
     } catch {
-      return ""; // i18n not initialised (Node-side checks) — English fallback applies.
+      return ""; // i18n not initialised (Node-side checks), English fallback applies.
     }
   }) as TFunction;
 }
@@ -106,7 +106,7 @@ export interface LocalisedRuleCopy extends RuleCopy {
   action: string;
 }
 
-/** Rule ID → driver.<rule>.title/.explanation/.action — one rule, one fixed key family. */
+/** Rule ID → driver.<rule>.title/.explanation/.action, one rule, one fixed key family. */
 export function driverCopy(ruleId: string, opts?: TextOptions): LocalisedRuleCopy {
   const english = ruleCopy(ruleId);
   const base = `driver.${ruleId.toLowerCase()}`;
@@ -135,7 +135,7 @@ export function evidenceStateLocal(state: string, opts?: TextOptions): { label: 
 /**
  * Humanized reason with the driver family overlaid from the active catalog, plus the
  * family's presented next action. Unknown/future rule IDs keep the pure-English
- * humanized fallback from labels.ts — they can never leak machine text.
+ * humanized fallback from labels.ts, they can never leak machine text.
  */
 export function humanizeReasonLocal(reason: string, opts?: TextOptions): HumanReason & { action?: string } {
   const base = humanizeReason(reason);
@@ -157,7 +157,7 @@ export function evidenceItemLabel(itemKey: string, opts?: TextOptions): string {
 
 /**
  * Date-bearing templates (evidence.<item>.last_verified): the date is DATA interpolated at
- * render time — never baked into the translated string (spec section 4). Single-key lookup:
+ * render time, never baked into the translated string (spec section 4). Single-key lookup:
  * i18next's built-in English fallback covers missing translations.
  */
 export function evidenceTemplate(itemKey: string, date: string, opts?: TextOptions): string {
@@ -172,7 +172,7 @@ export { STATUS_COPY };
 
 /**
  * Localised event time (spec section 11): date/time parts come from Intl in the active
- * locale — VERIFIED against the runtime's formatting data with an en-ZA fallback — while
+ * locale, VERIFIED against the runtime's formatting data with an en-ZA fallback, while
  * the relative words ("Today"/"Yesterday") come from the catalog like any other copy.
  * The timezone stays Africa/Johannesburg in every language. No runtime translation call.
  */

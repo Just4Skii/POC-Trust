@@ -52,7 +52,7 @@ public sealed class IdempotencyTests
         var firstDecision = Assert.IsType<ReliabilityDecision>(Assert.IsType<OkObjectResult>(first.Result).Value);
 
         // A retry (e.g. the offline queue re-posting after a lost connection) with the SAME key
-        // must return the original decision — even if the payload differs.
+        // must return the original decision, even if the payload differs.
         var second = await controller.Evaluate(
             Context(DateTimeOffset.UtcNow, "Glucose 11.2 mmol/L"), default);
 

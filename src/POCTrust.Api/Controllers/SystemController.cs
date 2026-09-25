@@ -4,7 +4,7 @@ using POCTrust.Infrastructure.Data;
 namespace POCTrust.Api.Controllers;
 
 /// <summary>
-/// Operational visibility for the demonstration. Reports how the system is configured — never
+/// Operational visibility for the demonstration. Reports how the system is configured, never
 /// any secret material: the AI endpoint is reduced to its host, and the API key is only ever a
 /// boolean. "Real AI required" for a live demo means the key is set through environment
 /// configuration before startup; with no key the honest stub provider answers and the
@@ -22,10 +22,10 @@ public sealed class SystemController(IConfiguration config, PocTrustDbContext db
         var model = config["AI:Model"] ?? "gpt-4o-mini";
         var configured = !string.IsNullOrWhiteSpace(apiKey);
 
-        // Host only — the path may embed provider-specific segments we never surface.
+        // Host only, the path may embed provider-specific segments we never surface.
         string endpointHost = "unknown";
         try { endpointHost = new Uri(endpoint).Host; }
-        catch (UriFormatException) { /* misconfigured endpoint — reported honestly below */ }
+        catch (UriFormatException) { /* misconfigured endpoint, reported honestly below */ }
 
         return Ok(new
         {
@@ -40,7 +40,7 @@ public sealed class SystemController(IConfiguration config, PocTrustDbContext db
                 advisoryOnly = true,
                 note = configured
                     ? "Live advisory provider configured. AI never sets, changes or upgrades any status; VERIFY stays locked."
-                    : "No AI key configured — the stub provider answers advisory calls. The deterministic result is unaffected either way.",
+                    : "No AI key configured, the stub provider answers advisory calls. The deterministic result is unaffected either way.",
             },
             auditSealing = "sha256-chain",
             demoAutoSeed = config.GetValue("Demo:AutoSeed", env.IsDevelopment()),

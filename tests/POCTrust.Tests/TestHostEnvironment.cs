@@ -3,7 +3,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace POCTrust.Tests;
 
-/// <summary>Shared test double for the hosting environment — lets controller tests choose the
+/// <summary>Shared test double for the hosting environment, lets controller tests choose the
 /// environment (Development guards, demo endpoints, seeding) without an ASP.NET host.</summary>
 public sealed class TestHostEnvironment(string environmentName = "Development") : IHostEnvironment
 {

@@ -16,7 +16,7 @@ namespace POCTrust.Tests;
 
 /// <summary>
 /// Result Integrity Record tests: the projection must be a pure, deterministic, rule-first
-/// derivation of the STORED assessment — never a re-evaluation, never a second source of truth.
+/// derivation of the STORED assessment, never a re-evaluation, never a second source of truth.
 /// Scenario contexts mirror the demonstration scenarios in AssessmentsController.
 /// </summary>
 public sealed class ResultIntegrityRecordTests
@@ -27,7 +27,7 @@ public sealed class ResultIntegrityRecordTests
         .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
 
     /// <summary>Evaluates a context through the REAL pipeline and returns the stored record plus
-    /// its projection — exactly the path the API endpoint uses.</summary>
+    /// its projection, exactly the path the API endpoint uses.</summary>
     private static async Task<(AssessmentRecord Stored, ResultIntegrityRecord Record, PocTrustDbContext Db)>
         EvaluateAndProject(DiagnosticContext context, IAIProvider? ai = null)
     {
@@ -111,7 +111,7 @@ public sealed class ResultIntegrityRecordTests
         Assert.Equal("expired", Domain(record, "operator").State);
         Assert.Equal("failed", Domain(record, "power").State);
         Assert.Equal("2 aging, 1 expired", record.EvidenceQuality.Freshness);
-        // One interaction conflict (MULTI_CONTEXT) — the honest conflict model replaces the
+        // One interaction conflict (MULTI_CONTEXT), the honest conflict model replaces the
         // old inflated estimate: conflicts are detected inconsistencies between two sources.
         Assert.Equal(1, record.EvidenceQuality.ConflictCount);
         Assert.Equal("1 conflict", record.EvidenceQuality.Consistency);
@@ -130,7 +130,7 @@ public sealed class ResultIntegrityRecordTests
         Assert.Equal("expired", Domain(record, "calibration").State);
         Assert.Equal("expired", Domain(record, "reagent").State);
         Assert.Equal("failed", Domain(record, "environment").State);
-        // A failed control is still evidence the engine HAD — it must count as available.
+        // A failed control is still evidence the engine HAD, it must count as available.
         Assert.Equal("7 / 7 required domains available", record.EvidenceQuality.Coverage.Statement);
         Assert.Equal(2, record.EvidenceQuality.ExpiredCount);
         Assert.Contains("A control explicitly failed", Domain(record, "quality-control").Note);
@@ -146,7 +146,7 @@ public sealed class ResultIntegrityRecordTests
         Assert.Equal("missing", Domain(record, "provenance").State);
         Assert.Equal("4 / 7 required domains available", record.EvidenceQuality.Coverage.Statement);
         Assert.Equal("Incomplete", record.EvidenceQuality.Traceability);
-        // Missing evidence never invents a value — the consequence is stated instead.
+        // Missing evidence never invents a value, the consequence is stated instead.
         Assert.Contains("No operator was recorded with the event.", Domain(record, "operator").Note);
     }
 
@@ -168,7 +168,7 @@ public sealed class ResultIntegrityRecordTests
 
         var a = ResultIntegrityProjector.Project(Snapshot());
         var b = ResultIntegrityProjector.Project(Snapshot());
-        // Byte-identical canonical JSON — the strongest form of the determinism guarantee.
+        // Byte-identical canonical JSON, the strongest form of the determinism guarantee.
         var jsonOpts = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web);
         Assert.Equal(System.Text.Json.JsonSerializer.Serialize(a, jsonOpts),
                      System.Text.Json.JsonSerializer.Serialize(b, jsonOpts));
@@ -179,7 +179,7 @@ public sealed class ResultIntegrityRecordTests
     public async Task Projection_NeverReEvaluates_MirrorsStoredDispositionEvenIfInputDisagrees()
     {
         // A hand-built snapshot whose stored decision says TRUST/ALL_CHECKS_PASS while the raw
-        // input would fail QC. The projector must mirror the STORED decision — re-deciding is
+        // input would fail QC. The projector must mirror the STORED decision, re-deciding is
         // the engine's job, and detecting tampering is the audit chain's job.
         var input = TrustScenario() with { QcPassed = false };
         var snapshot = new IntegrityDecisionSnapshot(
@@ -226,7 +226,7 @@ public sealed class ResultIntegrityRecordTests
     [Fact]
     public async Task Projection_DecisionDrivers_ExcludePipelineNotes_AndMachinePrefixes()
     {
-        // Review scenario consults the (stub) advisory provider — that pipeline note must not
+        // Review scenario consults the (stub) advisory provider, that pipeline note must not
         // appear as a decision driver.
         var (_, record, _) = await EvaluateAndProject(ReviewScenario());
 

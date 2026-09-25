@@ -2,18 +2,18 @@ import type { EvidenceInput } from "../types";
 import { formatEventTime } from "./labels.ts";
 
 /**
- * Evidence telemetry rails (Section 8) — an EVIDENCE SIGNALS visualisation, not patient vitals.
+ * Evidence telemetry rails (Section 8), an EVIDENCE SIGNALS visualisation, not patient vitals.
  *
  * TRUTHFULNESS: every marker position is computed from the real recorded value against the
  * deterministic engine's own supported ranges (temperature 15–30 °C, humidity 10–85 %,
- * calibration ≥ 7 days — the thresholds the rules fire at). Nothing is randomised; a missing
+ * calibration ≥ 7 days, the thresholds the rules fire at). Nothing is randomised; a missing
  * value renders "Not recorded" with no rail rather than an invented position.
  */
 
 export interface SignalRail {
   min: number;
   max: number;
-  /** Acceptable band — the subtly tinted region behind the rail. */
+  /** Acceptable band, the subtly tinted region behind the rail. */
   bandLo: number;
   bandHi: number;
   /** Current value clamped into [min, max]. */
@@ -83,10 +83,10 @@ function calibrationSignal(input: EvidenceInput, has: (rule: string) => boolean)
   const state: Signal["state"] = has("CAL_EXPIRED") || days < 0 ? "fail" : has("CAL_NEAR_DUE") || days < 7 ? "warn" : "ok";
   const note =
     state === "fail"
-      ? `Overdue — due ${formatEventTime(input.calibrationDueUtc)}.`
+      ? `Overdue, due ${formatEventTime(input.calibrationDueUtc)}.`
       : state === "warn"
         ? "Due within the next 7 days."
-        : `Due ${formatEventTime(input.calibrationDueUtc)} — at least 7 days of margin.`;
+        : `Due ${formatEventTime(input.calibrationDueUtc)}, at least 7 days of margin.`;
   return {
     key: "cal",
     label: "Calibration",
