@@ -3,7 +3,8 @@ import { evidenceItems } from "../lib/evidence";
 import { evidenceSignals } from "../lib/signals";
 import { seededSamples, tracePathD, traceLatest } from "../lib/telemetry";
 import { useOnScreen, useReducedMotion } from "../lib/hooks";
-import { formatEventTime, isDemoRecord } from "../lib/labels";
+import { isDemoRecord } from "../lib/labels";
+import { formatEventTimeLocal } from "../i18n/strings";
 import type { EvidenceInput } from "../types";
 
 /**
@@ -71,7 +72,7 @@ export function EvidenceMonitor({ input, ruleIds }: { input: EvidenceInput; rule
   const seed = [input.localEventId, input.timestampUtc, input.deviceId, input.testType].filter(Boolean).join("|") || "record";
   const sweep = onScreen && tabVisible && !reduced;
   const demo = isDemoRecord(input.demoKey);
-  const recordTime = formatEventTime(input.timestampUtc);
+  const recordTime = formatEventTimeLocal(input.timestampUtc);
 
   return (
     <section
@@ -123,7 +124,7 @@ export function EvidenceMonitor({ input, ruleIds }: { input: EvidenceInput; rule
               aria-describedby={open ? `pt-mon-tip-${r.key}` : undefined}
             >
               <span className="pt-label w-[7.5rem] shrink-0 text-slate-400">{r.label}</span>
-              <span className="mono min-w-0 flex-1 truncate text-[12px] text-slate-100">{r.valueText}</span>
+              <span className="mono min-w-0 flex-1 break-words text-[12px] text-slate-100">{r.valueText}</span>
               <span className="order-last w-full sm:order-none sm:w-auto">
                 <svg viewBox="0 0 128 26" width="128" height="26" aria-hidden="true">
                   <line x1="4" y1="22" x2="124" y2="22" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />

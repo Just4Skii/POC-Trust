@@ -1,8 +1,9 @@
+
 import { useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "../api/client";
 import { StatusBadge } from "./StatusBadge";
-import { formatEventTime } from "../lib/labels";
-import { evidenceStateLocal } from "../i18n/strings";
+
+import { evidenceStateLocal, formatEventTimeLocal } from "../i18n/strings";
 import {
   coverageGlyph, evidenceSources, parseRir, qualityConcerns, rirDispositionStatus, stateTone,
   type RirCausality, type RirDomain, type RirRecord,
@@ -449,7 +450,7 @@ export function IntegrityTimelinePanel({ load }: { load: RirLoad }) {
               />
               <div className="min-w-0 flex-1">
                 <p className="mono text-[10px] text-[#8A97A8]">
-                  {formatEventTime(e.timeUtc)}
+                  {formatEventTimeLocal(e.timeUtc)}
                   <span className="ml-2 rounded bg-[#F0F3F8] px-1.5 py-0.5 text-[9px] uppercase tracking-wide">
                     {e.basis === "demo-history" ? "demo sequence" : e.basis}
                   </span>
@@ -575,7 +576,7 @@ export function IntegrityRecordDocument({
         </div>
         <div>
           <p className="pt-label text-[#607087]">Event</p>
-          <p className="mt-1 font-semibold text-[#132238]">{formatEventTime(r.eventTimeUtc)}</p>
+          <p className="mt-1 font-semibold text-[#132238]">{formatEventTimeLocal(r.eventTimeUtc)}</p>
         </div>
       </div>
 

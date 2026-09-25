@@ -1,7 +1,9 @@
+
 import { StatusBadge } from "./StatusBadge";
 import { TechnicalDetails } from "./TechnicalDetails";
 import { useTranslation } from "react-i18next";
-import { formatEventTime } from "../lib/labels";
+import { formatEventTimeLocal } from "../i18n/strings";
+
 import { statusName, type AuditRow, type StatusCode } from "../types";
 import type { RirLoad } from "./IntegrityRecord";
 
@@ -41,7 +43,7 @@ export function AuditTimeline({ rows }: { rows: AuditRow[] }) {
             <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
               <span className="mono text-[11px] text-[#8A97A8]">{String(i + 1).padStart(2, "0")}</span>
               <StatusBadge value={a.finalStatus} size="sm" />
-              <span className="mono text-xs text-[#607087]">{formatEventTime(a.timestampUtc)}</span>
+              <span className="mono text-xs text-[#607087]">{formatEventTimeLocal(a.timestampUtc)}</span>
               <span className="mono text-[11px] text-[#8A97A8]">Record ID {a.assessmentId}</span>
             </div>
             <p className="mt-1 text-sm text-[#132238]">{a.action}</p>
@@ -151,7 +153,7 @@ export function AuditLifecycle({
               {e.sub && <p className={`mt-0.5 text-xs ${e.secondary ? "text-[#607087]" : "text-[#5B6B80]"}`}>{e.sub}</p>}
               {e.anchor && (
                 <p className="mono mt-1 text-[11px] text-[#607087]">
-                  Record ID {row.assessmentId} · recorded {formatEventTime(row.timestampUtc)}
+                  Record ID {row.assessmentId} · recorded {formatEventTimeLocal(row.timestampUtc)}
                 </p>
               )}
             </div>
@@ -159,7 +161,7 @@ export function AuditLifecycle({
         ))}
       </ol>
       <p className="mono mt-2 text-[10px] text-[#8A97A8]">
-        every step above comes from the same append-only audit entry — {formatEventTime(row.timestampUtc)}
+        every step above comes from the same append-only audit entry — {formatEventTimeLocal(row.timestampUtc)}
       </p>
     </section>
   );

@@ -5,7 +5,8 @@ import { EmptyState } from "../components/EmptyState";
 import { StatusBadge } from "../components/StatusBadge";
 import { SegmentedBar, Sparkline } from "../components/Visuals";
 import { SystemPulse, Ticker } from "../components/SystemPulse";
-import { deviceLabel, formatEventTime } from "../lib/labels";
+import { deviceLabel } from "../lib/labels";
+import { formatEventTimeLocal } from "../i18n/strings";
 import { parseDemonstration } from "../lib/rir";
 import type { AssessmentSummary, DashboardSummary, DemonstrationSequence, DemoStatus, IntegrityOverview } from "../types";
 
@@ -327,7 +328,7 @@ export function Overview({
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium">{r.result} · {deviceLabel(r.deviceId)}</span>
                       <span className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-[#607087]">
-                        <span>{formatEventTime(r.decidedAtUtc)}</span>
+                        <span>{formatEventTimeLocal(r.decidedAtUtc)}</span>
                         {r.connectivity === "offline" && <span className="rounded bg-[#EAF2FB] px-1.5 py-0.5 text-[10px] font-semibold text-[#1E5AA8]">Offline event</span>}
                         {r.aiConsulted && <span className="rounded bg-[#EAF7F7] px-1.5 py-0.5 text-[10px] font-semibold text-[#0F8B8D]">Contextual Analysis</span>}
                         <span className="rounded bg-[#F0F3F8] px-1.5 py-0.5 text-[10px] font-semibold text-[#607087]">Audit available</span>

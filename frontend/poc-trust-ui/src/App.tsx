@@ -5,7 +5,9 @@ import { Brand } from "./components/Brand";
 import { CommandPalette, ShortcutHelp, type RecentItem } from "./components/CommandPalette";
 import { EvidenceFlow } from "./components/Flow";
 import { LanguagePicker } from "./components/LanguagePicker";
+import { LocaleAnnouncer } from "./components/LocaleAnnouncer";
 import { PipelineRail, type RailOutcome } from "./components/PipelineRail";
+import { prefetchLocaleAssets } from "./i18n";
 import { StatusChip, type SyncView } from "./components/SystemPulse";
 import { normaliseEvidenceInput, toDecision, type StoredAssessment } from "./lib/history";
 import { EVAL_STEPS, stepDomainStates } from "./lib/pipeline";
@@ -336,6 +338,10 @@ export default function App() {
   // Clear staged-pipeline timers on unmount.
   useEffect(() => () => runTimers.current.forEach((t) => window.clearTimeout(t)), []);
 
+  // Offline operation (spec section 10): warm every locale catalog + review metadata once
+  // the first paint is done, so switching language never depends on the network.
+  useEffect(() => { prefetchLocaleAssets(); }, []);
+
   const demoActive = (demo?.demoRecords ?? 0) > 0;
   const syncView: SyncView = !online ? "offline" : syncing ? "syncing" : syncedFlash ? "synced" : "online";
   const recent: RecentItem[] = (summary?.recent ?? []).slice(0, 6).map((r) => ({
@@ -344,6 +350,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#F7F9FC] text-[#132238]">
+      <LocaleAnnouncer />
       {demoActive && (
         <div aria-hidden="true" className="pt-demo-topline fixed left-0 right-0 top-0 z-40 h-[2px]" />
       )}

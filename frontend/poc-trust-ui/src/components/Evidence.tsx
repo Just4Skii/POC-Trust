@@ -5,6 +5,7 @@ import type { Decision, EvidenceInput } from "../types";
 import { statusName } from "../types";
 import { TechnicalDetails } from "./TechnicalDetails";
 import { humanizeReasonLocal } from "../i18n/strings";
+import { FALLBACK_LOCALE, type LocaleCode } from "../i18n/locales";
 
 export function EvidencePanel({
   input, decision, highlight, onHighlight,
@@ -63,7 +64,7 @@ export function EvidencePanel({
                     <span className="mono ml-1.5 text-[10px] font-semibold text-[#607087]" title="Contributed to this decision">✓</span>
                   )}
                 </span>
-                <span className="flex-1 truncate text-sm text-[#132238]">{it.value}</span>
+                <span className="flex-1 break-words text-sm text-[#132238]">{it.value}</span>
                 <span
                   aria-hidden="true"
                   className={`text-sm text-[#607087] transition-transform duration-150 ${expanded ? "rotate-90" : ""}`}
@@ -92,12 +93,13 @@ export function EvidencePanel({
   );
 }
 
-export function WhyPanel({ decision }: { decision: Decision }) {
+export function WhyPanel({ decision, lngOverride }: { decision: Decision; /** Supervisor "Show in English" override (spec section 8): when set, the reason chain renders the canonical English wording. */ lngOverride?: boolean }) {
   // Reasons flow through the central humanization module extended with the reviewed catalog
   // (rule ID → message key → localised string). Each reason carries its family's presented
   // next action so the reason, the evidence card and the action tell one consistent story.
   const { t } = useTranslation();
-  const reasons = decision.reasons.map((r) => humanizeReasonLocal(r));
+  const ov = lngOverride ? { lng: FALLBACK_LOCALE as LocaleCode } : undefined;
+  const reasons = decision.reasons.map((r) => humanizeReasonLocal(r, ov));
   return (
     <section aria-label="Why this decision" className="rounded-xl border border-[#DCE3EC] bg-white px-4 py-3">
       <h3 className="font-semibold text-[#132238]">Why this result received this status</h3>

@@ -1,7 +1,8 @@
 import { AuditTimeline } from "../components/AuditTimeline";
 import { EmptyState } from "../components/EmptyState";
 import { StatusBadge } from "../components/StatusBadge";
-import { deviceLabel, formatEventTime } from "../lib/labels";
+import { deviceLabel } from "../lib/labels";
+import { formatEventTimeLocal } from "../i18n/strings";
 import { driverPhrase, parseRowIntegrity } from "../lib/rir";
 import { statusName } from "../types";
 import type { AssessmentSummary, AuditRow } from "../types";
@@ -108,7 +109,7 @@ export function AssessmentsList({
                         {integ.conflictCount > 0 ? ` · ${integ.conflictCount} conflict${integ.conflictCount === 1 ? "" : "s"}` : ""}
                       </span>
                     )}
-                    {driver && <span className="min-w-0 truncate">Primary driver: {driver}</span>}
+                    {driver && <span className="min-w-0 break-words">Primary driver: {driver}</span>}
                     {integ && integ.policy && <span>Policy: {integ.policy}</span>}
                   </span>
                   <span className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px]">
@@ -121,7 +122,7 @@ export function AssessmentsList({
                     </span>
                   </span>
                 </span>
-                <span className="mono text-xs text-[#607087]">{formatEventTime(a.decidedAtUtc)}</span>
+                <span className="mono text-xs text-[#607087]">{formatEventTimeLocal(a.decidedAtUtc)}</span>
               </button>
             </li>
             );

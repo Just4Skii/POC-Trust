@@ -1,4 +1,5 @@
-import { formatEventTime } from "../lib/labels";
+
+import { formatEventTimeLocal } from "../i18n/strings";
 import { useSlowTick } from "../lib/hooks";
 import type { AuditRow } from "../types";
 
@@ -23,7 +24,7 @@ function relative(iso: string, now: number): string {
   if (!Number.isFinite(t)) return "time not recorded";
   const mins = Math.floor((now - t) / 60_000);
   if (mins < 1) return "just now";
-  return formatEventTime(iso, new Date(now));
+  return formatEventTimeLocal(iso);
 }
 
 export function ActivityFeed({
@@ -64,13 +65,13 @@ export function ActivityFeed({
                   className="flex w-full items-start gap-2.5 rounded-md px-1 py-0.5 text-left transition-colors hover:bg-[#F7F9FC]"
                 >
                   <span aria-hidden="true" className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#1E5AA8]" />
-                  <span className="min-w-0 flex-1 truncate text-sm text-[#132238]">{e.text}</span>
+                  <span className="min-w-0 flex-1 break-words text-sm text-[#132238]">{e.text}</span>
                   <span className="mono shrink-0 text-[11px] text-[#607087]">{relative(e.at, now)}</span>
                 </button>
               ) : (
                 <span className="flex items-start gap-2.5 px-1 py-0.5">
                   <span aria-hidden="true" className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#0F8B8D]" />
-                  <span className="min-w-0 flex-1 truncate text-sm text-[#132238]">{e.text}</span>
+                  <span className="min-w-0 flex-1 break-words text-sm text-[#132238]">{e.text}</span>
                   <span className="mono shrink-0 text-[11px] text-[#607087]">{relative(e.at, now)}</span>
                 </span>
               )}

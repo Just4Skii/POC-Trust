@@ -13,11 +13,11 @@ import { StatusBadge } from "../components/StatusBadge";
 import { ReliabilityArc, SignalRailViz } from "../components/Visuals";
 import { evidenceItems } from "../lib/evidence";
 import { usePointerLight } from "../lib/hooks";
-import { formatEventTime, isAiUnavailableReason } from "../lib/labels";
+import { isAiUnavailableReason } from "../lib/labels";
 import { evidenceSignals } from "../lib/signals";
 import { DEMO_SCENARIOS, scenarioFor } from "../lib/scenarios";
 import {
-  canRely, decisionNextAction, statusStrip,
+  canRely, decisionNextAction, formatEventTimeLocal, statusStrip,
   type TextOptions,
 } from "../i18n/strings";
 import { FALLBACK_LOCALE, localeEntry, type LocaleCode } from "../i18n/locales";
@@ -144,6 +144,10 @@ export function AssessmentDetail({
   const isEnglishView = activeLocale === FALLBACK_LOCALE;
   const [englishOverride, setEnglishOverride] = useState(false);
   const ov: TextOptions | undefined = englishOverride && !isEnglishView ? { lng: FALLBACK_LOCALE } : undefined;
+  // Inline language changes are marked with lang so screen readers switch pronunciation
+  // (spec section 11): while the supervisor override renders English wording, those
+  // elements declare en-ZA even though the document language stays the operator's.
+  const ovLang = englishOverride && !isEnglishView ? "en-ZA" : undefined;
   const heroBg = finalName === "Trust" ? "bg-[#EAF7F1]" : finalName === "Review" ? "bg-[#FFF7E6]" : "bg-[#FDEEEE]";
   const heroBorder = finalName === "Trust" ? "border-[#167A5A]" : finalName === "Review" ? "border-[#B7791F]" : "border-[#C43D3D]";
   const aiFailed = decision.reasons.some(isAiUnavailableReason);
@@ -181,7 +185,7 @@ export function AssessmentDetail({
         aria-label="Reliability decision"
         className={`pt-lume-ring pt-light pt-settle rounded-2xl border-2 ${heroBorder} ${heroBg} p-6 text-center shadow-[var(--shadow-2)] md:p-10`}
       >
-        <p className="text-xs font-semibold uppercase tracking-widest text-[#607087]">{statusStrip(finalName, ov)}</p>
+        <p lang={ovLang ?? undefined} className="text-xs font-semibold uppercase tracking-widest text-[#607087]">{statusStrip(finalName, ov)}</p>
         <div className="mt-3 flex flex-col items-center justify-center gap-6 md:flex-row md:text-left">
           <div className="text-center">
             <span className={sigWrap}>
@@ -208,16 +212,16 @@ export function AssessmentDetail({
                 {t("ui.preview.banner")} — {t("ui.preview.note")}
               </p>
             )}
-            <p className="mt-4 text-lg font-semibold text-[#132238]" style={{ animation: "pt-fade 300ms var(--ease-enter) 120ms both" }}>
+            <p lang={ovLang ?? undefined} className="mt-4 text-lg font-semibold text-[#132238]" style={{ animation: "pt-fade 300ms var(--ease-enter) 120ms both" }}>
               {canRely(finalName, ov)}
             </p>
             {finalName === "Verify" && (
-              <p className="mt-1 font-bold text-[#C43D3D]" style={{ animation: "pt-fade 300ms var(--ease-enter) 200ms both" }}>
+              <p lang={ovLang ?? undefined} className="mt-1 font-bold text-[#C43D3D]" style={{ animation: "pt-fade 300ms var(--ease-enter) 200ms both" }}>
                 {t("ui.hero.do_not_rely", ov)}
               </p>
             )}
-            <p className="mt-2 text-sm text-[#607087]">{t("ui.hero.result", ov)}: <b className="text-[#132238]">{input.result ?? "—"}</b> · {t("ui.hero.initial_assessment", ov)}: {statusName(decision.initialStatus)} · <span className="mono">{formatEventTime(decision.decidedAtUtc)}</span></p>
-            <p className="mt-3 rounded-lg bg-white/70 px-4 py-2 text-sm font-medium text-[#132238]">{t("ui.hero.next_action", ov)}: {decisionNextAction(finalName, ov)}</p>
+            <p lang={ovLang ?? undefined} className="mt-2 text-sm text-[#607087]">{t("ui.hero.result", ov)}: <b className="text-[#132238]">{input.result ?? "—"}</b> · {t("ui.hero.initial_assessment", ov)}: {statusName(decision.initialStatus)} · <span className="mono">{formatEventTimeLocal(decision.decidedAtUtc, ov)}</span></p>
+            <p lang={ovLang ?? undefined} className="mt-3 rounded-lg bg-white/70 px-4 py-2 text-sm font-medium text-[#132238]">{t("ui.hero.next_action", ov)}: {decisionNextAction(finalName, ov)}</p>
           </div>
           <ReliabilityArc
             segments={items.map((i) => ({ key: i.key, label: i.label, state: i.state }))}
@@ -269,7 +273,7 @@ export function AssessmentDetail({
         />
       </div>
 
-      <WhyPanel decision={decision} />
+      <WhyPanel decision={decision} lngOverride={englishOverride && !isEnglishView} />
 
       <section aria-label="Evidence signals" className="pt-card p-4">
         <h3 className="pt-label text-[#0B1F3A]">Evidence signals</h3>
