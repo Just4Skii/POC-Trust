@@ -28,9 +28,7 @@ public sealed class OpenAiCompatibleProvider(HttpClient http, IConfiguration con
             Reply in 2-3 sentences, reliability only. Do NOT output TRUST/REVIEW/VERIFY as your decision.
             """;
 
-        using var req = new HttpRequestMessage(HttpMethod.Post, endpoint);
-        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-        req.Content = new StringContent(JsonSerializer.Serialize(new
+        var payload = JsonSerializer.Serialize(new
         {
             model,
             messages = new[]
@@ -40,9 +38,40 @@ public sealed class OpenAiCompatibleProvider(HttpClient http, IConfiguration con
             },
             max_tokens = 500,
             temperature = 0.2
-        }), Encoding.UTF8, "application/json");
+        });
 
-        using var res = await http.SendAsync(req, ct);
+        // One bounded retry for transient provider failures (429/5xx): free-tier
+        // rate limits often clear within seconds. Anything else, or a second
+        // failure, propagates so the orchestrator falls back deterministically.
+        // Total extra wait stays well inside the orchestrator's safety budget.
+        async Task<HttpResponseMessage> SendWithOneRetryAsync()
+        {
+            static HttpRequestMessage Build(string key, string uri, string json)
+            {
+                var message = new HttpRequestMessage(HttpMethod.Post, uri);
+                message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
+                message.Content = new StringContent(json, Encoding.UTF8, "application/json");
+                return message;
+            }
+
+            try
+            {
+                using var first = await http.SendAsync(Build(apiKey, endpoint, payload), ct);
+                if ((int)first.StatusCode is not (429 or >= 500 and <= 599))
+                    return first;
+                first.Dispose();
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode is System.Net.HttpStatusCode.TooManyRequests
+                or >= System.Net.HttpStatusCode.InternalServerError and <= (System.Net.HttpStatusCode)599)
+            {
+                // fall through to the single retry below
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(3), ct);
+            return await http.SendAsync(Build(apiKey, endpoint, payload), ct);
+        }
+
+        using var res = await SendWithOneRetryAsync();
         res.EnsureSuccessStatusCode();
         var json = await res.Content.ReadAsStringAsync(ct);
         string text;
