@@ -1,9 +1,10 @@
 import i18next, { type i18n as I18nInstance } from "i18next";
 import { initReactI18next } from "react-i18next";
 import enCatalog from "./catalogs/en-ZA.json" with { type: "json" };
+import { setPresentationLocale } from "../lib/presentationLocale.ts";
 import {
   FALLBACK_LOCALE, initialLocale, isSupportedLocale, LANGUAGE_STORAGE_KEY,
-  type LocaleCode,
+  SUPPORTED_LOCALES, type LocaleCode,
 } from "./locales.ts";
 
 /**
@@ -47,15 +48,47 @@ export interface TextOptions {
 
 const catalogCache = new Map<LocaleCode, Promise<CatalogBundle>>();
 
-/** Lazy catalog load (spec section 4). English resolves synchronously — it is bundled. */
+/**
+ * Lazy catalog load (spec section 4). English resolves synchronously — it is bundled.
+ * A failed load (e.g. cold offline start where the chunk was never fetched) is NOT cached,
+ * so the fetch retries automatically once connectivity returns (spec section 10).
+ */
 export function loadCatalog(locale: LocaleCode): Promise<CatalogBundle> {
   if (locale === FALLBACK_LOCALE) return Promise.resolve(EN_BUNDLE);
   let pending = catalogCache.get(locale);
   if (!pending) {
-    pending = import(`./catalogs/${locale}.json`).then((m) => toBundle(m.default));
+    pending = import(`./catalogs/${locale}.json`)
+      .then((m) => toBundle(m.default))
+      .catch((err) => {
+        catalogCache.delete(locale);
+        throw err;
+      });
     catalogCache.set(locale, pending);
   }
   return pending;
+}
+
+/**
+ * Offline operation (spec section 10): warm every locale bundle (and the review metadata
+ * that drives the support states) into the module cache right after first paint. The
+ * bundles are static, same-origin app assets — no translation service, no API keys, no
+ * runtime translation call — so once warmed, switching language works fully offline.
+ * A cold-start offline failure is silent: English stays authoritative and the switch
+ * simply remains unavailable until the asset has been fetched once.
+ */
+export function prefetchLocaleAssets(): void {
+  const warm = () => {
+    for (const l of SUPPORTED_LOCALES) {
+      if (l.code === FALLBACK_LOCALE) continue;
+      void loadCatalog(l.code).catch(() => { /* offline cold start — English fallback stays authoritative */ });
+    }
+    void import("./support.ts")
+      .then((s) => s.loadAllSupport())
+      .catch(() => { /* support metadata is presentation-only; preview states remain honest */ });
+  };
+  const idle = (globalThis as { requestIdleCallback?: (cb: () => void) => void }).requestIdleCallback;
+  if (typeof idle === "function") idle(warm);
+  else window.setTimeout(warm, 1200);
 }
 
 /** Last-resort handler: an unknown key must never surface as raw key text. */
@@ -87,9 +120,13 @@ export async function initI18n(): Promise<I18nInstance> {
     returnEmptyString: false,
     parseMissingKeyHandler: (key) => lastResort(key),
   });
-  // Keep <html lang> aligned so screen readers and hyphenation follow the active locale.
+  // Keep <html lang> aligned so screen readers and hyphenation follow the active locale,
+  // and drive Intl date/time formatting from the same signal (spec section 11).
   const syncLang = (lng: string) => {
-    if (isSupportedLocale(lng)) document.documentElement.lang = lng;
+    if (isSupportedLocale(lng)) {
+      document.documentElement.lang = lng;
+      setPresentationLocale(lng);
+    }
   };
   i18next.on("languageChanged", syncLang);
   syncLang(i18next.language);
@@ -99,11 +136,18 @@ export async function initI18n(): Promise<I18nInstance> {
 /**
  * Switch the display language: lazily load the catalog, register it, apply it, and persist
  * the device-level preference. Instant — no page reload, no form-state loss (spec section 8).
+ * If the catalog cannot be loaded (offline before the first warm-up) the switch is refused
+ * WITHOUT changing language or persisting anything: the current — fully fallback-backed —
+ * view stays intact, and the canonical English wording is never replaced by a raw key.
  */
 export async function changeLocale(locale: LocaleCode): Promise<void> {
-  if (locale !== FALLBACK_LOCALE) {
-    const bundle = await loadCatalog(locale);
-    i18next.addResourceBundle(locale, "translation", bundle, true, true);
+  try {
+    if (locale !== FALLBACK_LOCALE) {
+      const bundle = await loadCatalog(locale);
+      i18next.addResourceBundle(locale, "translation", bundle, true, true);
+    }
+  } catch {
+    return; // bundle unavailable offline — keep the current language, change nothing
   }
   await i18next.changeLanguage(locale);
   try {

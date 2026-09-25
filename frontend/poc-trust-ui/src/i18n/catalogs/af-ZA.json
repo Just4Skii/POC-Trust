@@ -115,5 +115,17 @@
   "ui.action.review_evidence": "Hersien bewys",
   "ui.action.check_device": "Kontroleer toestel",
   "ui.action.repeat_test": "Herhaal toets",
-  "ui.action.back_to_history": "Terug na geskiedenis"
+  "ui.action.back_to_history": "Terug na geskiedenis",
+  "ui.ai.subtitle": "KI-gesteunde verduideliking gebaseer op opgeneemde gehaltebewys — slegs raadgewend, onder die deterministiese redenering.",
+  "ui.ai.english_only": "Kontekstuele Ontleding is tans slegs in Engels beskikbaar.",
+  "ui.ai.review_authoritative": "Hersiening bly die gesaghebbende besluit — hierdie nota verander dit nie.",
+  "ui.ai.summary_only": "Die gestoorde rekord hou slegs die raadgewende opsomming vas — geen vertrouenspunt of modelnaam is vir hierdie assessering gestoor nie.",
+  "ui.ai.suggested_review": "Voorgestelde hersiening: {{value}}",
+  "ui.ai.confidence": "vertroue {{value}}",
+  "ui.ai.model": "model {{value}}",
+  "ui.ai.unavailable": "Kontekstuele ontleding nie beskikbaar — deterministiese uitslag behou. Geen veiligheidsimpak nie.",
+  "ui.time.today": "Vandag, {{time}}",
+  "ui.time.yesterday": "Gister, {{time}}",
+  "ui.time.not_recorded": "Tyd nie aangeteken nie",
+  "ui.language.changed": "Taal verander na {{language}}."
 }

@@ -8,8 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "i18n:sync": "node scripts/i18n-meta.mjs",
-    "check:i18n": "node scripts/i18n-meta.mjs --check && node scripts/check-i18n.mjs",
-    "check:contract": "node scripts/contract-check.mjs && node scripts/copy-guard.mjs && node scripts/i18n-meta.mjs --check && node scripts/check-i18n.mjs",
+    "check:i18n": "node scripts/i18n-meta.mjs --check && node scripts/check-i18n.mjs && node scripts/test-i18n-drift.mjs",
+    "check:contract": "node scripts/contract-check.mjs && node scripts/copy-guard.mjs && node scripts/i18n-meta.mjs --check && node scripts/check-i18n.mjs && node scripts/test-i18n-drift.mjs",
     "check:copy": "node scripts/copy-guard.mjs",
     "preview": "vite preview"
   },

@@ -449,6 +449,46 @@
     "source": "machine_draft",
     "source_hash": "6d21d6327acd2b4f0846ad5ca781393612f232b17d544d51c3441c2782261f2e"
   },
+  "ui.ai.confidence": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "9db382e86aa2818a5172016394a45d8b7a2e7462eb745ee5ee8099ffa831954a"
+  },
+  "ui.ai.english_only": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "02504ef906327594b978d2c96f875391746be96be7e7e986186ae3356c64e5de"
+  },
+  "ui.ai.model": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "b79586995dbef268821f45779e0f637b6d73a3857e4fbef6e1e6ed972cfdf091"
+  },
+  "ui.ai.review_authoritative": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "82f6b5dc3d030b73d31fbe148845b0b5f2f34513d8b792dac2f2a41a391014f5"
+  },
+  "ui.ai.subtitle": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "7b41fcf4cb2fefea102c6fa52afb01f8a9e47dc897540b7bd012a20434922739"
+  },
+  "ui.ai.suggested_review": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "7efeed5c342edbf5eb3e8d0def9e8cd452eb6c842a5b53a59ad374c178f47b8b"
+  },
+  "ui.ai.summary_only": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "6c0f099e5a67d5d6db2843b4d8656096f9e2739cb4c13d2c091a043bc37d5bf1"
+  },
+  "ui.ai.unavailable": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "41588f1a485158df0762725d44444cea9149042414780d72c3a59ed05c3728de"
+  },
   "ui.app.tagline": {
     "status": "draft",
     "source": "machine_draft",
@@ -488,6 +528,11 @@
     "status": "draft",
     "source": "machine_draft",
     "source_hash": "6e7d50e84f4731ef74187cf8cfa2672184eed8866b0b0074a772f4a64e0f4ba2"
+  },
+  "ui.language.changed": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "e399662045628211fde3a0d46868cb1baf0888334eb4f426bae69e73e4af393c"
   },
   "ui.language.label": {
     "status": "draft",
@@ -578,6 +623,21 @@
     "status": "draft",
     "source": "machine_draft",
     "source_hash": "cc046f43773dc96ba8474baf1574eb2985c256edb44be53281ecff49024b2507"
+  },
+  "ui.time.not_recorded": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "9bfe7039c4082373f5b815837d4a2ef1e5948b8ff468f41922ea8492250cd0a1"
+  },
+  "ui.time.today": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "acdace378199dd466629804f849995ff6773470c8568227b14bc76ec9d638277"
+  },
+  "ui.time.yesterday": {
+    "status": "draft",
+    "source": "machine_draft",
+    "source_hash": "7eab6f9b76fd84edfac638bdeec3076f89916b53958532c1f98bd7ac282f8ae2"
   },
   "version": 1
 }

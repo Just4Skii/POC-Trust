@@ -115,5 +115,17 @@
   "ui.action.review_evidence": "Review Evidence",
   "ui.action.check_device": "Check Device",
   "ui.action.repeat_test": "Repeat Test",
-  "ui.action.back_to_history": "Back to history"
+  "ui.action.back_to_history": "Back to history",
+  "ui.ai.subtitle": "AI-assisted explanation based on recorded quality evidence — advisory only, below deterministic reasoning.",
+  "ui.ai.english_only": "Contextual Analysis is currently available in English.",
+  "ui.ai.review_authoritative": "Review remains the authoritative decision — this note does not change it.",
+  "ui.ai.summary_only": "Stored record keeps the advisory summary only — no confidence score or model name was persisted for this assessment.",
+  "ui.ai.suggested_review": "Suggested review: {{value}}",
+  "ui.ai.confidence": "confidence {{value}}",
+  "ui.ai.model": "model {{value}}",
+  "ui.ai.unavailable": "Contextual analysis unavailable — deterministic result retained. No safety impact.",
+  "ui.time.today": "Today, {{time}}",
+  "ui.time.yesterday": "Yesterday, {{time}}",
+  "ui.time.not_recorded": "Time not recorded",
+  "ui.language.changed": "Language changed to {{language}}."
 }

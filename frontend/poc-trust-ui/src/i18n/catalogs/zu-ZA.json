@@ -115,5 +115,17 @@
   "ui.action.review_evidence": "Buyeza ubufakazi",
   "ui.action.check_device": "Hlola idivayisi",
   "ui.action.repeat_test": "Phinda uhlolo",
-  "ui.action.back_to_history": "Emuva emkhondweni"
+  "ui.action.back_to_history": "Emuva emkhondweni",
+  "ui.ai.subtitle": "Incazelo esizwa i-AI esisuselwa ebufakazini bekwalikhwalithi oburekhodiwe — iseluleko kuphela, ingaphansi kosinqumo osunqunywa ngendlela eqinile.",
+  "ui.ai.english_only": "Ukuhlaziywa komongo atholakala ngesiNgisi okwamanje.",
+  "ui.ai.review_authoritative": "Ukubuyekezwa kusahlala yisinqumo esigunyaziwe — le noto ayitshintshi lo sinqumo.",
+  "ui.ai.summary_only": "Irekhoodi egciniwe igcina isifingqo seseluleko kuphela — awukho amanani okwethembeka noma igama lemodeli agciniwe kulolu hlelo.",
+  "ui.ai.suggested_review": "Isiphakamiso sokubuyekezwa: {{value}}",
+  "ui.ai.confidence": "ukwethembeka {{value}}",
+  "ui.ai.model": "imodeli {{value}}",
+  "ui.ai.unavailable": "Ukuhlaziywa komongo akutholakali — isiphumo esinqunyiwe sigcinile. Akukho mphumela wokuphepha.",
+  "ui.time.today": "Namuhla, {{time}}",
+  "ui.time.yesterday": "Izolo, {{time}}",
+  "ui.time.not_recorded": "Isikhathi asibhalwanga",
+  "ui.language.changed": "Ulimi lutshintshile ku-{{language}}."
 }

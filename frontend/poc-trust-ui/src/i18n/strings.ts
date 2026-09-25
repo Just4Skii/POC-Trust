@@ -2,7 +2,7 @@ import type { TFunction } from "i18next";
 import { i18next, EN_BUNDLE } from "./index.ts";
 import { FALLBACK_LOCALE, type LocaleCode } from "./locales.ts";
 import {
-  evidenceStateCopy, humanizeReason, ruleCopy, STATUS_COPY,
+  eventTimeParts, evidenceStateCopy, humanizeReason, ruleCopy, STATUS_COPY,
   type HumanReason, type RuleCopy,
 } from "../lib/labels.ts";
 import type { Status } from "../types.ts";
@@ -169,3 +169,19 @@ export function evidenceTemplate(itemKey: string, date: string, opts?: TextOptio
 }
 
 export { STATUS_COPY };
+
+/**
+ * Localised event time (spec section 11): date/time parts come from Intl in the active
+ * locale — VERIFIED against the runtime's formatting data with an en-ZA fallback — while
+ * the relative words ("Today"/"Yesterday") come from the catalog like any other copy.
+ * The timezone stays Africa/Johannesburg in every language. No runtime translation call.
+ */
+export function formatEventTimeLocal(iso?: string | null, opts?: TextOptions): string {
+  const lng = opts?.lng ?? activeLng();
+  const parts = eventTimeParts(iso, new Date(), lng);
+  if (!parts) return tOrEnglish(lng, "ui.time.not_recorded") || "Time not recorded";
+  if (parts.dayDiff <= 0) return tOrEnglish(lng, "ui.time.today", { time: parts.time }) || `Today, ${parts.time}`;
+  if (parts.dayDiff === 1) return tOrEnglish(lng, "ui.time.yesterday", { time: parts.time }) || `Yesterday, ${parts.time}`;
+  if (parts.dayDiff < 7) return `${parts.weekday}, ${parts.time}`;
+  return `${parts.date}, ${parts.time}`;
+}

@@ -115,5 +115,17 @@
   "ui.action.review_evidence": "Buyekela ubungqina",
   "ui.action.check_device": "Jonga isixhobo",
   "ui.action.repeat_test": "Phinda uvavanyo",
-  "ui.action.back_to_history": "Emva komkhondo"
+  "ui.action.back_to_history": "Emva komkhondo",
+  "ui.ai.subtitle": "Inkcazo esizwa i-AI esisuselwa kubungqina bekwaliti oburekhodiweyo — yiluleko kuphela, ingaphantsi kwesigqibo esinqunywa ngendlela ethe tsho.",
+  "ui.ai.english_only": "Ukuhlalutya komongo lukhona ngesiNgesi okwangoku.",
+  "ui.ai.review_authoritative": "Ubuyekezwo busasela esigqibweni esigunyazisiweyo — le mpawu ayitshintshi lo sigqibo.",
+  "ui.ai.summary_only": "Ushicilelo olugciniweyo lugcina isishwankathelo seluleko kuphela — akukho nidodi sokwethenjwa okanye igama lemodeli eligciniweyo kolu vavanyo.",
+  "ui.ai.suggested_review": "Isicebiso sokubuyekezwa: {{value}}",
+  "ui.ai.confidence": "ukwethenjwa {{value}}",
+  "ui.ai.model": "imodeli {{value}}",
+  "ui.ai.unavailable": "Ukuhlalutya komongo alufumaneki — isiphumo esinqunyiweyo sigciniwe. Akukho mphulu wokhuseleko.",
+  "ui.time.today": "Namhlanje, {{time}}",
+  "ui.time.yesterday": "Izolo, {{time}}",
+  "ui.time.not_recorded": "Ixesha alibhalwanga",
+  "ui.language.changed": "Ulwimi lutshintshiwe ku-{{language}}."
 }

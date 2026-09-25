@@ -40,7 +40,12 @@ export function loadMeta(locale: LocaleCode): Promise<CatalogMeta> {
   }
   let pending = metaCache.get(locale);
   if (!pending) {
-    pending = import(`./meta/${locale}.json`).then((m) => m.default as unknown as CatalogMeta);
+    pending = import(`./meta/${locale}.json`)
+      .then((m) => m.default as unknown as CatalogMeta)
+      .catch((err) => {
+        metaCache.delete(locale); // retry when connectivity returns — never cache a failure
+        throw err;
+      });
     metaCache.set(locale, pending);
   }
   return pending;
