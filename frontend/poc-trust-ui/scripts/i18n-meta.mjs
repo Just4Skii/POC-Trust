@@ -17,16 +17,22 @@
  */
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import en from "../src/i18n/catalogs/en-ZA.json" with { type: "json" };
 
-const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const rootArgIndex = process.argv.indexOf("--root");
+const root = rootArgIndex > -1
+  ? resolve(process.argv[rootArgIndex + 1])
+  : join(dirname(fileURLToPath(import.meta.url)), "..");
 const metaDir = join(root, "src", "i18n", "meta");
 const LOCALES = ["en-ZA", "zu-ZA", "xh-ZA", "af-ZA"];
 const check = process.argv.includes("--check");
 
 const sha = (text) => createHash("sha256").update(text).digest("hex");
+
+// The English SOURCE catalog always comes from the selected root (the repo root by
+// default; a sandbox copy when --root is passed, e.g. by the drift test).
+const en = JSON.parse(readFileSync(join(root, "src", "i18n", "catalogs", "en-ZA.json"), "utf8"));
 
 // Keys that carry review metadata (everything except the catalog version marker).
 const contentKeys = Object.keys(en).filter((k) => k !== "version");

@@ -177,17 +177,19 @@ for (const file of tsxFiles) {
 }
 console.log(`  scanned ${tsxFiles.length} presentation files`);
 
-// ── 5b. Localisation spec (chunks 1–3) — claims policy and required pattern ───
+// ── 5b. Localisation spec — claims policy, required pattern, sections 9–11 ────
 console.log("Localisation claims & pattern:");
 const BANNED_CLAIMS = [
   [/\bfully\s+localised\b/i, "forbidden claim: fully localised"],
   [/\bclinically\s+validated\s+translations?\b/i, "forbidden claim: clinically validated translations"],
   [/supports?\s+south\s+africa'?s\s+three\s+major\s+languages/i, "forbidden claim: three major languages"],
+  [/\bfully\s+translated\b/i, "forbidden claim: fully translated"],
 ];
 const localisationFiles = [
   join(root, "src", "components", "LanguagePicker.tsx"),
   join(root, "src", "pages", "Meta.tsx"),
   join(root, "src", "i18n", "strings.ts"),
+  join(root, "src", "components", "ContextualAnalysis.tsx"),
 ];
 for (const file of localisationFiles) {
   const src = readFileSync(file, "utf8");
@@ -202,6 +204,13 @@ const pickerGuardSrc = readFileSync(join(root, "src", "components", "LanguagePic
 check("language menu entries render in their own language", ["isiZulu", "isiXhosa", "Afrikaans"].every((n) => pickerGuardSrc.includes(n)) || pickerGuardSrc.includes("SUPPORTED_LOCALES"));
 check("language support state comes from real catalog metadata", pickerGuardSrc.includes("useLocaleSupport"));
 check("selector stays out of the header (sidebar/settings only)", !readFileSync(join(root, "src", "App.tsx"), "utf8").split("<header")[1]?.includes("LanguagePicker"));
+
+// Spec chunks 4–6 (sections 9–11): the advisory panel is English-content with localised
+// framing; VERIFY has none of it in any language; no runtime machine translation.
+const caGuardSrc = readFileSync(join(root, "src", "components", "ContextualAnalysis.tsx"), "utf8");
+check("contextual analysis content stays English (localised framing only)", caGuardSrc.includes('lang="en"') && caGuardSrc.includes("ui.ai.english_only"));
+check("VERIFY shows no Contextual Analysis in any language", /=== "Verify"\s*\)\s*return null/.test(caGuardSrc));
+check("no machine translation of safety-critical text at runtime", !/\btranslat\w*\s*\(\s*ai\.summary|machineTranslate|autoTranslate/i.test(caGuardSrc));
 
 // ── 6. Required wording (spec chunk 3) — the honesty labels must exist ──────
 console.log("Required wording (integrity upgrade):");

@@ -17,7 +17,8 @@
  * Run: node scripts/check-i18n.mjs   (wired into `npm run check:i18n` and `check:contract`)
  * Meta/source-hash drift is checked separately by `i18n-meta.mjs --check`.
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -63,11 +64,15 @@ const UI_KEYS = [
   "ui.app.tagline",
   ...["overview", "new", "assessments", "audit", "devices", "operators", "qc", "settings"].map((n) => `ui.nav.${n}`),
   "ui.language.label", "ui.language.selector_aria", "ui.language.show_english", "ui.language.show_native",
-  "ui.language.supported_note", "ui.support.preview", "ui.support.reviewed", "ui.support.reviewed_count",
+  "ui.language.supported_note", "ui.language.changed", "ui.support.preview", "ui.support.reviewed", "ui.support.reviewed_count",
   "ui.preview.banner", "ui.preview.note", "ui.catalog.version",
   "ui.hero.next_action", "ui.hero.do_not_rely", "ui.hero.result", "ui.hero.initial_assessment",
   "ui.action.review_evidence", "ui.action.check_device", "ui.action.repeat_test", "ui.action.back_to_history",
   "ui.driver.suggested_action", "ui.common.not_recorded",
+  // Spec chunks 4–6 (sections 9 & 11): Contextual Analysis framing + localised time words.
+  "ui.ai.subtitle", "ui.ai.english_only", "ui.ai.review_authoritative", "ui.ai.summary_only",
+  "ui.ai.suggested_review", "ui.ai.confidence", "ui.ai.model", "ui.ai.unavailable",
+  "ui.time.today", "ui.time.yesterday", "ui.time.not_recorded",
 ];
 const missingUi = UI_KEYS.filter((k) => typeof en[k] !== "string" || en[k].length === 0);
 check("ui.* key set present in en-ZA", missingUi.length === 0, `missing: ${missingUi.join(", ")}`);
@@ -140,6 +145,117 @@ check("language picker derives support state from real metadata", pickerSrc.incl
 const stringsSrc = readFileSync(join(root, "src", "i18n", "strings.ts"), "utf8");
 check("driver families resolve as a unit (English fallback)", stringsSrc.includes("familyLng"));
 check("dates are interpolated as data, never baked into strings", en["evidence.cal.last_verified"] === "Due {{date}}");
+
+// ── 5b. Spec chunks 4–6 (sections 9/10/11) — required wiring ─────────────────
+console.log("Required wiring (sections 9/10/11):");
+const caSrc = readFileSync(join(root, "src", "components", "ContextualAnalysis.tsx"), "utf8");
+check("Contextual Analysis declares English-only availability in non-English locales", caSrc.includes("ui.ai.english_only"));
+check("Contextual Analysis prose is marked lang=en for assistive pronunciation", caSrc.includes('lang="en"'));
+check("VERIFY renders no advisory panel in any language", /statusName\(decision\.finalStatus\) === "Verify"/.test(caSrc) && /=== "Verify"\) return null;/.test(caSrc));
+check("advisory-unavailable note is localised", caSrc.includes("ui.ai.unavailable"));
+const appSrc = readFileSync(join(root, "src", "App.tsx"), "utf8");
+check("locale catalogs are warmed after first paint (offline switching)", appSrc.includes("prefetchLocaleAssets()"));
+check("language changes are announced to assistive technology", appSrc.includes("LocaleAnnouncer"));
+const announcerSrc = readFileSync(join(root, "src", "components", "LocaleAnnouncer.tsx"), "utf8");
+check("announcer is a polite live region using the catalog wording", announcerSrc.includes('aria-live="polite"') && announcerSrc.includes("ui.language.changed"));
+const labelsSrc = readFileSync(join(root, "src", "lib", "labels.ts"), "utf8");
+check("Intl formatters verify locale support before use (never assume)", labelsSrc.includes("resolvedOptions().locale") && labelsSrc.includes("Africa/Johannesburg"));
+check("decision screen marks supervisor-English override with lang", assessmentSrc.includes('ovLang ?? undefined'));
+
+// ── 5c. No runtime translation service (spec sections 7 & 10) ────────────────
+console.log("Runtime translation policy:");
+function walkSrc(dir) {
+  return readdirSync(dir).flatMap((n) => {
+    const p = join(dir, n);
+    return statSync(p).isDirectory() ? walkSrc(p) : [p];
+  });
+}
+const srcFiles = walkSrc(join(root, "src")).filter((f) => /\.(ts|tsx)$/.test(f));
+const TRANSLATION_APIS = [
+  [/translate\.googleapis\.com/i, "Google Cloud Translation"],
+  [/api\.cognitive\.microsoft\.com/i, "Azure Translator"],
+  [/api\.deepl\.com/i, "DeepL"],
+  [/libretranslate/i, "LibreTranslate"],
+];
+const apiHits = [];
+for (const f of srcFiles) {
+  const s = readFileSync(f, "utf8");
+  for (const [pattern, name] of TRANSLATION_APIS) if (pattern.test(s)) apiHits.push(`${f.split(/[\\/]/).pop()}: ${name}`);
+}
+check("no runtime translation API is referenced anywhere in the app source", apiHits.length === 0, apiHits.join(" | "));
+
+// ── 6. Review-state report + source-hash consistency (spec sections 14 & 16) ─
+console.log("Review-state report (per locale, from real meta):");
+const sha = (t) => createHash("sha256").update(t).digest("hex");
+for (const locale of LOCALES) {
+  const meta = JSON.parse(readFileSync(join(root, "src", "i18n", "meta", `${locale}.json`), "utf8"));
+  const counts = { reviewed: 0, in_review: 0, draft: 0, missing: 0 };
+  let hashDrift = [];
+  for (const key of contentKeys) {
+    const entry = meta[key];
+    if (!entry) { counts.missing++; continue; }
+    counts[entry.status] = (counts[entry.status] ?? 0) + 1;
+    // Live drift detection: a meta hash that no longer matches the English source means
+    // an unsynced edit — exactly what i18n-meta.mjs --check catches; assert it here too.
+    if (locale !== "en-ZA" && entry.source_hash !== sha(en[key])) hashDrift.push(key);
+  }
+  const label = Object.entries(counts).map(([k, v]) => `${k}=${v}`).join(" / ");
+  console.log(`  ${locale}: ${label} (total ${contentKeys.length})`);
+  check(`${locale} meta covers every key`, counts.missing === 0, `${counts.missing} missing`);
+  check(`${locale} meta hashes match the current English source`, hashDrift.length === 0, hashDrift.slice(0, 3).join(", "));
+}
+check("en-ZA is fully reviewed (source of truth)", (() => {
+  const meta = JSON.parse(readFileSync(join(root, "src", "i18n", "meta", "en-ZA.json"), "utf8"));
+  return contentKeys.every((k) => meta[k]?.status === "reviewed");
+})());
+
+// ── 7. Runtime fallback behaviour (spec section 14) — the REAL i18n modules ──
+console.log("Fallback behaviour (live i18next instance):");
+const { i18next } = await import("../src/i18n/index.ts");
+const { driverCopy, decisionStatusLabel } = await import("../src/i18n/strings.ts");
+const zuCatalog = readCatalog("zu-ZA");
+const EN_FALLBACK = (key) => (typeof en[key] === "string" && en[key] ? en[key] : "Details not available in the selected language.");
+await i18next.init({
+  lng: "zu-ZA",
+  fallbackLng: "en-ZA",
+  resources: {
+    "en-ZA": { translation: en },
+    "zu-ZA": { translation: zuCatalog },
+  },
+  returnNull: false,
+  returnEmptyString: false,
+  parseMissingKeyHandler: (key) => EN_FALLBACK(key),
+});
+
+// 7a. A complete catalog resolves in the locale (family-intact).
+check("complete catalog resolves isiZulu driver copy", i18next.t("driver.cal_expired.title") === zuCatalog["driver.cal_expired.title"]);
+
+// 7b. A missing/unreviewed key resolves to ENGLISH — never the raw key, never empty.
+const zuPartial = { ...zuCatalog };
+delete zuPartial["driver.cal_expired.title"];
+delete zuPartial["driver.cal_expired.explanation"];
+delete zuPartial["driver.cal_expired.action"];
+i18next.removeResourceBundle("zu-ZA", "translation");
+i18next.addResourceBundle("zu-ZA", "translation", zuPartial, true, true);
+const missingResolution = i18next.t("driver.cal_expired.title");
+check("missing key falls back to English, never a raw key", missingResolution === en["driver.cal_expired.title"], JSON.stringify(missingResolution));
+check("fallback text is never empty", typeof missingResolution === "string" && missingResolution.length > 0);
+
+// 7c. Family-unit fallback: one missing member pulls the WHOLE family back to English.
+const copy = driverCopy("CAL_EXPIRED", { lng: "zu-ZA" });
+check("incomplete family falls back to English as a unit (title)", copy.label === en["driver.cal_expired.title"], JSON.stringify(copy.label));
+check("incomplete family falls back to English as a unit (explanation)", copy.sentence === en["driver.cal_expired.explanation"], JSON.stringify(copy.sentence));
+check("incomplete family falls back to English as a unit (action)", copy.action === en["driver.cal_expired.action"], JSON.stringify(copy.action));
+
+// 7d. A complete family renders in the locale — no half-translated chains in the other direction.
+i18next.removeResourceBundle("zu-ZA", "translation");
+i18next.addResourceBundle("zu-ZA", "translation", zuCatalog, true, true);
+const copyZu = driverCopy("CAL_EXPIRED", { lng: "zu-ZA" });
+check("complete family renders fully in isiZulu", copyZu.label === zuCatalog["driver.cal_expired.title"] && copyZu.sentence === zuCatalog["driver.cal_expired.explanation"]);
+check("decision label resolves per locale (REVIEW)", decisionStatusLabel("Review", { lng: "zu-ZA" }) === zuCatalog["decision.review.label"]);
+
+// 7e. Raw keys can never surface through the singleton either.
+check("unknown key never surfaces as raw key text", !String(i18next.t("driver.unknown_rule.title")).includes("driver.unknown_rule"));
 
 console.log("");
 if (failures > 0) {
