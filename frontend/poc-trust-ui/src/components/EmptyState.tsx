@@ -1,5 +1,5 @@
 /**
- * Designed empty state (spec Section 20) — used wherever a list can be genuinely empty
+ * Designed empty state (spec Section 20), used wherever a list can be genuinely empty
  * (demo data reset, fresh install). Replaces bare one-line sentences and large dead areas.
  * A calm panel: quiet glyph, heading, one line of support, and real actions.
  */

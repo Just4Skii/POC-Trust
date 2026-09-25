@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 
 /**
  * The ONLY place raw machine values (rule IDs, record identifiers, persisted payloads) may
- * appear. Everything here is opt-in, collapsed by default, and visually marked as technical —
+ * appear. Everything here is opt-in, collapsed by default, and visually marked as technical ,
  * primary UI copy always goes through src/lib/labels.ts instead.
  */
 export function TechnicalDetails({ children, title = "Technical details" }: { title?: string; children: ReactNode }) {
@@ -14,7 +14,7 @@ export function TechnicalDetails({ children, title = "Technical details" }: { ti
       await navigator.clipboard.writeText(text);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1300);
-    } catch { /* clipboard unavailable — silently keep the text visible */ }
+    } catch { /* clipboard unavailable, silently keep the text visible */ }
   }
   return (
     <details className="mt-2 rounded-lg border border-dashed border-[#DCE3EC] px-3 py-2">

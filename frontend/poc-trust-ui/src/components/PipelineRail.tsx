@@ -1,11 +1,11 @@
 import type { StepDomainState } from "../lib/pipeline";
 
 /**
- * PipelineRail (Section 10) — a compact vertical rail, never a full-screen loader or modal.
+ * PipelineRail (Section 10), a compact vertical rail, never a full-screen loader or modal.
  *
  * While the evaluation is in flight, steps advance as presentation motion over the real request.
  * When the authoritative decision arrives, every step paints its TRUE outcome: a domain that
- * surfaced a problem shows an attention or fail mark rather than a check — the rail can never
+ * surfaced a problem shows an attention or fail mark rather than a check, the rail can never
  * settle all-green for a REVIEW or VERIFY result. With reduced motion, states update instantly.
  */
 
@@ -62,7 +62,7 @@ function StepIcon({ state }: { state: "pending" | "active" | "ok" | "warn" | "fa
       </span>
     );
   }
-  // complete check — draws in with stroke-dashoffset (~180ms)
+  // complete check, draws in with stroke-dashoffset (~180ms)
   return (
     <span className={ICON_BOX} aria-hidden="true">
       <svg width="18" height="18" viewBox="0 0 18 18">
@@ -86,7 +86,7 @@ export function PipelineRail({
   steps: { key: string; label: string }[];
   /** Highest step reached while running (0-based). */
   index: number;
-  /** Authoritative per-step outcomes — present only once the decision is known. */
+  /** Authoritative per-step outcomes, present only once the decision is known. */
   outcomes?: Record<string, RailOutcome> | null;
   /** Dim for the ~100 ms settle before the decision reveal (Section 11). */
   settling?: boolean;
@@ -99,7 +99,7 @@ export function PipelineRail({
   };
   const reached = (i: number) => Boolean(outcomes) || i < index;
   const liveText = outcomes
-    ? "Evaluation complete — every step shows its recorded outcome."
+    ? "Evaluation complete, every step shows its recorded outcome."
     : index >= 0 && index < steps.length
       ? `Step ${index + 1} of ${steps.length}: ${steps[index].label}`
       : "Preparing evaluation";
@@ -112,8 +112,8 @@ export function PipelineRail({
       <h3 className="pt-label text-[#0B1F3A]">Evaluation pipeline</h3>
       <p className="mt-1 text-xs text-[#607087]">
         {outcomes
-          ? "Each step shows the outcome recorded for this decision — concerns are never hidden behind a green tick."
-          : "Running the deterministic checks — evidence → rules → decision."}
+          ? "Each step shows the outcome recorded for this decision, concerns are never hidden behind a green tick."
+          : "Running the deterministic checks, evidence → rules → decision."}
       </p>
       <ol className="mt-3">
         {steps.map((s, i) => {

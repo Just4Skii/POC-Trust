@@ -14,7 +14,7 @@ const DECISION_COLOR: Record<"Trust" | "Review" | "Verify", string> = {
   Verify: "#C43D3D",
 };
 
-/** Slim segmented distribution bar — TRUST | REVIEW | VERIFY, never a pie or donut. */
+/** Slim segmented distribution bar, TRUST | REVIEW | VERIFY, never a pie or donut. */
 export function SegmentedBar({ counts }: { counts: { trust: number; review: number; verify: number; total: number } }) {
   const total = counts.total || 1;
   const segs = [
@@ -54,7 +54,7 @@ export function SegmentedBar({ counts }: { counts: { trust: number; review: numb
   );
 }
 
-/** Sparkline trend for one metric per day — draws in once, then completely static. */
+/** Sparkline trend for one metric per day, draws in once, then completely static. */
 export function Sparkline({ points, label }: { points: { day: string; value: number }[]; label: string }) {
   const w = 220;
   const h = 44;
@@ -120,7 +120,7 @@ export function SignalRailViz({ signal, delay = 0 }: { signal: Signal; delay?: n
           />
           {/* hairline rail */}
           <span className="absolute left-0 right-0 top-1/2 h-[2px] -translate-y-1/2 rounded bg-[#E3E8EF]" />
-          {/* marker dot — eases in once, then stays still */}
+          {/* marker dot, eases in once, then stays still */}
           <span
             className="pt-marker-in absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-sm"
             style={{ left: `${markerPct(signal.rail)}%`, background: color, animationDelay: `${delay + 350}ms` }}
@@ -140,7 +140,7 @@ export interface ArcSegment {
 
 /**
  * Reliability Arc (Section 13): one segment per evidence category, drawn clockwise with a
- * stagger; the centre shows the authoritative state word — never an invented score.
+ * stagger; the centre shows the authoritative state word, never an invented score.
  */
 export function ReliabilityArc({
   segments, status, highlight, onHighlight,

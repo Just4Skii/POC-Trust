@@ -86,7 +86,7 @@ export function AssessmentsList({
           {filtered.map((a, i) => {
             // Compact integrity fields come from the same backend projector as the full record
             // (spec section 27): each row is understandable before opening it. Missing fields
-            // (older payload, unprojectable record) simply render a plainer row — never invented ones.
+            // (older payload, unprojectable record) simply render a plainer row, never invented ones.
             const integ = parseRowIntegrity(a.integrity ?? null);
             const driver = integ
               ? (integ.primaryDriverLabel && integ.primaryDriverState
@@ -130,7 +130,7 @@ export function AssessmentsList({
         </ul>
       )}
       {filteredByDrilldown && filtered.length > 0 && (
-        <p className="mt-2 text-xs text-[#607087]">Showing drill-down results from the operational pages — clear a chip to widen the view.</p>
+        <p className="mt-2 text-xs text-[#607087]">Showing drill-down results from the operational pages, clear a chip to widen the view.</p>
       )}
     </div>
   );
@@ -142,13 +142,13 @@ export function AuditTrail({ rows }: { rows: AuditRow[] }) {
       <h2 className="text-lg font-bold text-[#0B1F3A]">Audit Trail</h2>
       <p className="text-sm text-[#607087]">
         Evidence → rules → decision → action → audit. Append-only, and every entry is sealed into a
-        SHA-256 hash chain — the verify endpoint proves the trail has not been altered.
+        SHA-256 hash chain, the verify endpoint proves the trail has not been altered.
       </p>
       <div className="mt-4">
         {rows.length === 0 ? (
           <EmptyState
             title="No audit events yet"
-            note="Every assessment writes an append-only audit trail — run a demonstration scenario to see one."
+            note="Every assessment writes an append-only audit trail, run a demonstration scenario to see one."
           />
         ) : (
           <AuditTimeline rows={rows} />

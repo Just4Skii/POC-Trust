@@ -100,7 +100,7 @@ export function NewAssessment({
         <label>Device ID*<input className={inputCls} value={form.deviceId} onChange={(e) => set("deviceId", e.target.value)} /></label>
         <label>Calibration due<input type="datetime-local" className={inputCls} value={form.calibrationDueUtc} onChange={(e) => set("calibrationDueUtc", e.target.value)} /></label>
         <label className="flex min-h-[44px] items-center gap-2"><input type="checkbox" checked={!!form.qcPassed} onChange={(e) => set("qcPassed", e.target.checked)} /> QC passed</label>
-        <p className="text-xs text-[#607087]">Failed QC forces VERIFY — cannot be overridden.</p>
+        <p className="text-xs text-[#607087]">Failed QC forces VERIFY, cannot be overridden.</p>
       </Section>
       <Section title="Operator & reagent">
         <label>Operator ID<input className={inputCls} value={form.operatorId} onChange={(e) => set("operatorId", e.target.value)} /></label>
@@ -161,7 +161,7 @@ export function AssessmentDetail({
   // One fetch feeds the whole integrity story: summary card, drivers, timeline and document.
   const rirLoad = useIntegrityRecord(decision.id);
   const [recordOpen, setRecordOpen] = useState(false);
-  // Motion signature per state (Section 12) — plays once on reveal, then static.
+  // Motion signature per state (Section 12), plays once on reveal, then static.
   const sigWrap =
     finalName === "Trust" ? "pt-sig-trust inline-block"
     : finalName === "Review" ? "pt-sig-review inline-flex rounded-md"
@@ -176,7 +176,7 @@ export function AssessmentDetail({
               SCN-{String(scnIndex + 1).padStart(2, "0")}
             </span>
           )}
-          <b>{scenario ? `Demonstration scenario — ${scenario.story}.` : "Demonstration run — a fresh evaluation of a curated scenario."}</b>{" "}
+          <b>{scenario ? `Demonstration scenario, ${scenario.story}.` : "Demonstration run, a fresh evaluation of a curated scenario."}</b>{" "}
           {scenario ? scenario.summary : "This record was created through the real pipeline by a demonstration scenario card. It is synthetic and demo-marked."} Synthetic record, clearly labelled.
         </p>
       )}
@@ -209,7 +209,7 @@ export function AssessmentDetail({
             )}
             {!isEnglishView && !englishOverride && (
               <p className="mono mt-1 text-[10px] uppercase tracking-[0.08em] text-[#8A97A8]">
-                {t("ui.preview.banner")} — {t("ui.preview.note")}
+                {t("ui.preview.banner")}, {t("ui.preview.note")}
               </p>
             )}
             <p lang={ovLang ?? undefined} className="mt-4 text-lg font-semibold text-[#132238]" style={{ animation: "pt-fade 300ms var(--ease-enter) 120ms both" }}>
@@ -220,7 +220,7 @@ export function AssessmentDetail({
                 {t("ui.hero.do_not_rely", ov)}
               </p>
             )}
-            <p lang={ovLang ?? undefined} className="mt-2 text-sm text-[#607087]">{t("ui.hero.result", ov)}: <b className="text-[#132238]">{input.result ?? "—"}</b> · {t("ui.hero.initial_assessment", ov)}: {statusName(decision.initialStatus)} · <span className="mono">{formatEventTimeLocal(decision.decidedAtUtc, ov)}</span></p>
+            <p lang={ovLang ?? undefined} className="mt-2 text-sm text-[#607087]">{t("ui.hero.result", ov)}: <b className="text-[#132238]">{input.result ?? "·"}</b> · {t("ui.hero.initial_assessment", ov)}: {statusName(decision.initialStatus)} · <span className="mono">{formatEventTimeLocal(decision.decidedAtUtc, ov)}</span></p>
             <p lang={ovLang ?? undefined} className="mt-3 rounded-lg bg-white/70 px-4 py-2 text-sm font-medium text-[#132238]">{t("ui.hero.next_action", ov)}: {decisionNextAction(finalName, ov)}</p>
           </div>
           <ReliabilityArc
@@ -250,7 +250,7 @@ export function AssessmentDetail({
           ))}
         </div>
       </section>
-      {/* Assessment experience hierarchy (spec section 18) — progressive disclosure:
+      {/* Assessment experience hierarchy (spec section 18), progressive disclosure:
           status → can-I-rely → action → result → RIR summary → decision drivers →
           evidence flow/signal map → reasons → evidence cards → monitor → advisory →
           integrity timeline → full provenance → technical details. The five-second rule wins. */}
@@ -278,7 +278,7 @@ export function AssessmentDetail({
       <section aria-label="Evidence signals" className="pt-card p-4">
         <h3 className="pt-label text-[#0B1F3A]">Evidence signals</h3>
         <p className="mt-1 text-xs text-[#607087]">
-          Evidence telemetry from this assessment&apos;s recorded values — not patient vitals. Bands are the
+          Evidence telemetry from this assessment&apos;s recorded values, not patient vitals. Bands are the
           supported ranges the deterministic rules evaluate.
         </p>
         <div className="mt-3 grid gap-5 sm:grid-cols-3">

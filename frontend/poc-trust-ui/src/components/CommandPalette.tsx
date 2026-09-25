@@ -71,7 +71,7 @@ export function CommandPalette({
           list.push({
             id: `s-${s.key}`,
             section: "Scenarios",
-            label: `Run ${s.expected} scenario — ${s.story}`,
+            label: `Run ${s.expected} scenario, ${s.story}`,
             hint: demoActive ? "scenario" : "loads data",
             run: () => onRunScenario(s.key),
           });
@@ -211,7 +211,7 @@ export function CommandPalette({
   );
 }
 
-/** "?" help overlay — discoverable keyboard shortcuts, small accessible implementation. */
+/** "?" help overlay, discoverable keyboard shortcuts, small accessible implementation. */
 export function ShortcutHelp({ open, onClose }: { open: boolean; onClose: () => void }) {
   const ref = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -228,7 +228,7 @@ export function ShortcutHelp({ open, onClose }: { open: boolean; onClose: () => 
     ["↑ ↓", "Move through palette results"],
     ["Enter", "Run the selected result"],
     ["Esc", "Close overlays and dialogs"],
-    ["Tab", "Move focus — every action is reachable"],
+    ["Tab", "Move focus, every action is reachable"],
   ];
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
@@ -252,7 +252,7 @@ export function ShortcutHelp({ open, onClose }: { open: boolean; onClose: () => 
             </div>
           ))}
         </dl>
-        <p className="mt-3 text-xs text-[#607087]">Speed with restraint — every shortcut has a visible control too.</p>
+        <p className="mt-3 text-xs text-[#607087]">Speed with restraint, every shortcut has a visible control too.</p>
       </div>
     </div>
   );

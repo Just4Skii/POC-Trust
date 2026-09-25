@@ -5,7 +5,7 @@ import { useReducedMotion } from "../lib/hooks";
 import type { EvidenceInput, Status } from "../types";
 
 /**
- * Evidence Flow (Section 16) — the causal chain made legible: this evidence → this evaluation →
+ * Evidence Flow (Section 16), the causal chain made legible: this evidence → this evaluation →
  * this state. Presentation is driven by the real evidence items; a node with no recorded value
  * reads "not evaluated" and is never falsely lit. One dark-panel rule: this stays light.
  */
@@ -90,9 +90,9 @@ function Capsule({
 
 /**
  * Evidence Flow (Section 16). Horizontal on desktop, vertical on mobile. During an evaluation
- * a SINGLE 5px signal packet travels node to node (rAF over real layout centers — wrap-safe);
+ * a SINGLE 5px signal packet travels node to node (rAF over real layout centers, wrap-safe);
  * each node gains a soft ring as it is reached. Total travel ≈1.15 s, synced to the pipeline
- * budget. Idle: nodes quiet, lines static — no looping travel. Reduced motion: no packet.
+ * budget. Idle: nodes quiet, lines static, no looping travel. Reduced motion: no packet.
  */
 export function EvidenceFlow({
   input, ruleIds, status, running = false,
@@ -185,7 +185,7 @@ export function EvidenceFlow({
         ) : (
           <Capsule label="Pending" note="awaiting evaluation" noteColor="#8A97A8" />
         )}
-        {/* single signal packet — one dot, not a stream of particles */}
+        {/* single signal packet, one dot, not a stream of particles */}
         <span
           ref={packetRef}
           aria-hidden="true"
@@ -205,7 +205,7 @@ export function EvidenceFlow({
 }
 
 /**
- * Signal Map (spec section 24) — communicates evidence → quality state → POC Trust → disposition
+ * Signal Map (spec section 24), communicates evidence → quality state → POC Trust → disposition
  * on a clean, fixed structure (never a force layout). Each node carries its precise evidence
  * quality state (VALID / AGING / EXPIRED / FAILED…), and links colour along the path so the
  * problematic nodes are visually linked into the decision. Hover/focus cross-links with the
@@ -226,7 +226,7 @@ export function SignalMap({
   const evidenceList = evidenceItems(input, ruleIds);
   const calItem = evidenceList.find((i) => i.key === "cal");
   const calState: NodeState = input.calibrationDueUtc ? (calItem?.state ?? "ok") : "none";
-  // Precise evidence-quality word per node (VALID / AGING / EXPIRED / FAILED / MISSING…) —
+  // Precise evidence-quality word per node (VALID / AGING / EXPIRED / FAILED / MISSING…) ,
   // the SAME rule-first classification the integrity record uses, so map and record agree.
   const qualityWord = (evidenceKey: string | undefined): string | null => {
     if (!evidenceKey) return null;
@@ -272,7 +272,7 @@ export function SignalMap({
       <h3 className="pt-label text-[#0B1F3A]">Evidence health</h3>
       <p className="mt-1 text-xs text-[#607087]">
         Evidence → quality state → POC Trust → disposition. Problem nodes are coloured along the
-        path into the decision — hover or focus a node.
+        path into the decision, hover or focus a node.
       </p>
 
       <div className="relative mx-auto mt-3 hidden h-[470px] w-full max-w-[430px] sm:block" onMouseLeave={() => onHighlight(null)}>
@@ -303,7 +303,7 @@ export function SignalMap({
             ? "POC Trust evaluation"
             : isState
               ? `Resulting state: ${n.label}`
-              : `${n.label}: ${stateWord(n)}${active ? " — highlighted" : ""}`;
+              : `${n.label}: ${stateWord(n)}${active ? ", highlighted" : ""}`;
           return (
             <button
               key={n.id}

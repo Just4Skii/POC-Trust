@@ -12,7 +12,7 @@ export function EvidencePanel({
 }: {
   input: EvidenceInput;
   decision: Decision;
-  /** Shared cross-highlight key — links with the Signal Map and Reliability Arc. */
+  /** Shared cross-highlight key, links with the Signal Map and Reliability Arc. */
   highlight?: string | null;
   onHighlight?: (key: string | null) => void;
 }) {
@@ -31,7 +31,7 @@ export function EvidencePanel({
       <header className="border-b border-[#DCE3EC] px-4 py-3">
         <h3 className="font-semibold text-[#132238]">Evidence</h3>
         <p className="text-sm text-[#607087]">
-          What the decision was based on — items that influenced it are listed first. Expand a row for its source and timestamp.
+          What the decision was based on, items that influenced it are listed first. Expand a row for its source and timestamp.
         </p>
       </header>
       <ul className="divide-y divide-[#DCE3EC]">

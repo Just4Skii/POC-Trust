@@ -4,10 +4,10 @@ import { useSlowTick } from "../lib/hooks";
 import type { AuditRow } from "../types";
 
 /**
- * System Activity feed (Section 19) — generated ONLY from real persisted records: audit rows
+ * System Activity feed (Section 19), generated ONLY from real persisted records: audit rows
  * (a decision was actually recorded) and the real last-synchronisation timestamp. No invented
  * events, no random animation. Relative times refresh on a slow interval, never per second.
- * Dot colours use neutral/brand hues — the reserved TRUST/REVIEW/VERIFY palette stays exclusive
+ * Dot colours use neutral/brand hues, the reserved TRUST/REVIEW/VERIFY palette stays exclusive
  * to decision states.
  */
 
@@ -34,12 +34,12 @@ export function ActivityFeed({
   lastSynced: string | null;
   onOpen: (id: string) => void;
 }) {
-  useSlowTick(45_000); // slow refresh of relative wording — no per-second tick
+  useSlowTick(45_000); // slow refresh of relative wording, no per-second tick
   const now = Date.now();
   const decisions: Entry[] = rows.slice(0, 4).map((a) => ({
     id: `d-${a.id}`,
     kind: "decision",
-    text: `Decision recorded — ${a.action.slice(0, 90)}`,
+    text: `Decision recorded, ${a.action.slice(0, 90)}`,
     at: a.timestampUtc,
     assessmentId: a.assessmentId,
   }));
@@ -54,7 +54,7 @@ export function ActivityFeed({
     <section aria-label="System activity" className="pt-card p-5">
       <h3 className="pt-label text-[#0B1F3A]">System activity</h3>
       {entries.length === 0 ? (
-        <p className="mt-2 text-sm text-[#607087]">No recorded activity yet — run a demonstration scenario.</p>
+        <p className="mt-2 text-sm text-[#607087]">No recorded activity yet, run a demonstration scenario.</p>
       ) : (
         <ul className="mt-3 space-y-2.5 pt-stagger">
           {entries.map((e, i) => (
@@ -79,7 +79,7 @@ export function ActivityFeed({
           ))}
         </ul>
       )}
-      <p className="mt-3 text-[11px] text-[#607087]">Sourced from persisted audit records and the local sync queue — nothing here is simulated.</p>
+      <p className="mt-3 text-[11px] text-[#607087]">Sourced from persisted audit records and the local sync queue, nothing here is simulated.</p>
     </section>
   );
 }

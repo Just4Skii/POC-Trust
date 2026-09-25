@@ -8,11 +8,11 @@ import { statusName, type AuditRow, type StatusCode } from "../types";
 import type { RirLoad } from "./IntegrityRecord";
 
 /**
- * Audit Trail (Section 14) — the lifecycle of an assessment made traceable. A hairline spine
+ * Audit Trail (Section 14), the lifecycle of an assessment made traceable. A hairline spine
  * draws top → bottom once per open; nodes light as it reaches them; event text fades in with a
  * short stagger. Sequence numbers sit in muted mono; timestamps are mono with tabular numerals.
  * "Contextual Analysis" is always visually secondary to the deterministic decision, and any
- * displayed identifier is a real stored value labelled "Record ID" — no invented hashes.
+ * displayed identifier is a real stored value labelled "Record ID", no invented hashes.
  */
 
 const nodeColor = (s: StatusCode) => {
@@ -20,7 +20,7 @@ const nodeColor = (s: StatusCode) => {
   return n === "Trust" ? "#167A5A" : n === "Review" ? "#B7791F" : "#C43D3D";
 };
 
-/** Flat audit list for the Audit Trail page — one entry per recorded decision. */
+/** Flat audit list for the Audit Trail page, one entry per recorded decision. */
 export function AuditTimeline({ rows }: { rows: AuditRow[] }) {
   if (rows.length === 0) {
     return <p className="text-sm text-[#607087]">No audit events yet. Run a demonstration scenario.</p>;
@@ -52,7 +52,7 @@ export function AuditTimeline({ rows }: { rows: AuditRow[] }) {
             </p>
             {a.aiConsulted && (
               <p className="mt-1.5 border-l border-dashed border-[#C7D0DC] pl-2.5 text-xs text-[#607087]">
-                Contextual Analysis consulted — advisory context only; the decision above remains authoritative.
+                Contextual Analysis consulted, advisory context only; the decision above remains authoritative.
                 {a.aiSummary ? ` ${a.aiSummary.slice(0, 140)}` : ""}
               </p>
             )}
@@ -68,12 +68,12 @@ export function AuditTimeline({ rows }: { rows: AuditRow[] }) {
 }
 
 /**
- * Per-assessment lifecycle reveal for the decision page — the audit trail as one connected
+ * Per-assessment lifecycle reveal for the decision page, the audit trail as one connected
  * pipeline (spec section 28): Evidence received → Evidence quality evaluated → Rules evaluated
  * → Decision drivers identified → Disposition recorded → Contextual Analysis consulted (only
  * when it actually was) → Audit saved. Every stage is bound to real stored data: the audit row
  * plus, when loaded, the derived Result Integrity Record. The advisory stage is visually
- * secondary — it must never read as if the AI created the decision.
+ * secondary, it must never read as if the AI created the decision.
  */
 export function AuditLifecycle({
   row, status, action, rir,
@@ -81,7 +81,7 @@ export function AuditLifecycle({
   row: AuditRow | undefined;
   status: StatusCode;
   action: string;
-  /** The derived integrity record (or its loading state) — enriches the quality, driver and
+  /** The derived integrity record (or its loading state), enriches the quality, driver and
    *  audit-saved stages when available; every stage still renders honestly without it. */
   rir?: RirLoad;
 }) {
@@ -100,23 +100,23 @@ export function AuditLifecycle({
       label: t("audit.stage.quality_evaluated"),
       sub: record
         ? `${record.evidenceQuality.coverage.statement} · ${record.evidenceQuality.freshness}.`
-        : "Classified under the configured demonstration policy — see the Result Integrity Record.",
+        : "Classified under the configured demonstration policy, see the Result Integrity Record.",
     },
     { label: t("audit.stage.rules_evaluated"), sub: `${statusName(row.initialStatus)} initial assessment → ${statusName(status)} final state.` },
     {
       label: t("audit.stage.drivers_identified"),
       sub: primaryDriver
         ? `${primaryDriver.statement}${record && record.causality!.secondaryConsiderations.length > 0 ? ` Plus ${record.causality!.secondaryConsiderations.length} secondary consideration${record.causality!.secondaryConsiderations.length === 1 ? "" : "s"}.` : ""}`
-        : "Driver roles derive from the recorded findings — see the Result Integrity Record.",
+        : "Driver roles derive from the recorded findings, see the Result Integrity Record.",
     },
     { label: t("audit.stage.disposition_recorded"), sub: action, anchor: true },
     row.aiConsulted
-      ? { label: t("audit.stage.advisory_consulted"), sub: "Advisory context only — it does not change the deterministic decision.", secondary: true }
-      : { label: t("audit.stage.advisory_not_consulted"), sub: "The deterministic decision stands on its own — no advisory note was recorded for this assessment.", secondary: true },
+      ? { label: t("audit.stage.advisory_consulted"), sub: "Advisory context only, it does not change the deterministic decision.", secondary: true }
+      : { label: t("audit.stage.advisory_not_consulted"), sub: "The deterministic decision stands on its own, no advisory note was recorded for this assessment.", secondary: true },
     {
       label: t("audit.stage.audit_saved"),
       sub: record
-        ? `${record.audit.status.toLowerCase()} — ${record.audit.sealedEntries} of ${record.audit.entries} entr${record.audit.entries === 1 ? "y" : "ies"} sealed into the hash chain.`
+        ? `${record.audit.status.toLowerCase()}, ${record.audit.sealedEntries} of ${record.audit.entries} entr${record.audit.entries === 1 ? "y" : "ies"} sealed into the hash chain.`
         : "Append-only entry, sealed into the tamper-evident hash chain.",
     },
   ];
@@ -124,7 +124,7 @@ export function AuditLifecycle({
   return (
     <section aria-label="Assessment audit lifecycle" className="pt-card p-4">
       <h3 className="pt-label text-[#0B1F3A]">Audit trail</h3>
-      <p className="mt-1 text-xs text-[#607087]">The recorded lifecycle of this decision — append-only, traceable, real stored data.</p>
+      <p className="mt-1 text-xs text-[#607087]">The recorded lifecycle of this decision, append-only, traceable, real stored data.</p>
       <ol className="relative mt-3" aria-label="Lifecycle of this assessment">
         <span aria-hidden="true" className="pt-draw-v absolute bottom-2 left-[7px] top-2 w-[2px] bg-[#E3E8EF]" />
         {events.map((e, i) => (
@@ -161,7 +161,7 @@ export function AuditLifecycle({
         ))}
       </ol>
       <p className="mono mt-2 text-[10px] text-[#8A97A8]">
-        every step above comes from the same append-only audit entry — {formatEventTimeLocal(row.timestampUtc)}
+        every step above comes from the same append-only audit entry, {formatEventTimeLocal(row.timestampUtc)}
       </p>
     </section>
   );

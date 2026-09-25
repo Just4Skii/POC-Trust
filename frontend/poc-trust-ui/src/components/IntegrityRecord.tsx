@@ -10,7 +10,7 @@ import {
 } from "../lib/rir";
 
 /**
- * The Result Integrity Record — the central artefact of POC Trust.
+ * The Result Integrity Record, the central artefact of POC Trust.
  *
  * Everything shown comes from the backend derivation over the STORED assessment (spec section 4:
  * "The exact values must come from the actual assessment record. DO NOT hard-code a fake
@@ -75,7 +75,7 @@ export function ResultIntegritySummary({
         {load.kind === "pending" && (
           <p className="mt-3 rounded-lg border border-[#DCE3EC] bg-[#F7F9FC] px-4 py-3 text-sm text-[#607087]">
             The Result Integrity Record is created by the pipeline when the event is evaluated and
-            stored. This event has not reached the store yet — the record appears here once it has
+            stored. This event has not reached the store yet, the record appears here once it has
             been synchronised. No record is invented in the meantime.
           </p>
         )}
@@ -148,7 +148,7 @@ function SummaryHeading() {
     <div>
       <h3 className="pt-label text-[#0B1F3A]">Result integrity</h3>
       <p className="mt-0.5 text-xs text-[#607087]">
-        Evidence-linked, policy-aware, derived from the stored assessment — never re-decided.
+        Evidence-linked, policy-aware, derived from the stored assessment, never re-decided.
       </p>
     </div>
   );
@@ -192,7 +192,7 @@ function PolicyPanel({ record }: { record: RirRecord }) {
         <div>
           <p className="pt-label text-[#8A97A8]">Required evidence</p>
           <p className="mt-1 text-sm text-[#132238]">
-            {p.requiredDomains.map((d) => domainLabel(record, d)).join(" · ") || "—"}
+            {p.requiredDomains.map((d) => domainLabel(record, d)).join(" · ") || "·"}
           </p>
           <p className="mt-1 text-xs text-[#607087]">
             These set the coverage denominator: what the assessment expects to find.
@@ -213,7 +213,7 @@ function PolicyPanel({ record }: { record: RirRecord }) {
       {p.freshnessWindows.length > 0 && (
         <p className="mt-3 text-xs text-[#607087]">
           Freshness configuration:{" "}
-          {p.freshnessWindows.map((w) => `${domainLabel(record, w.domain)} — ${w.boundary.toLowerCase()} ${w.days} days`).join(" · ")}
+          {p.freshnessWindows.map((w) => `${domainLabel(record, w.domain)}, ${w.boundary.toLowerCase()} ${w.days} days`).join(" · ")}
         </p>
       )}
       {p.supportedEnvironment.length > 0 && (
@@ -255,7 +255,7 @@ export function DecisionDriversPanel({ load }: { load: RirLoad }) {
     <section aria-label="Decision drivers" className="pt-card p-5">
       <h3 className="pt-label text-[#0B1F3A]">Decision drivers</h3>
       <p className="mt-1 text-xs text-[#607087]">
-        Why this disposition occurred — derived from the deterministic engine&apos;s recorded findings.
+        Why this disposition occurred, derived from the deterministic engine&apos;s recorded findings.
         Roles are qualitative (primary / secondary / informational); no numeric weights exist in this system.
       </p>
 
@@ -265,13 +265,13 @@ export function DecisionDriversPanel({ load }: { load: RirLoad }) {
         <div className="mt-4 space-y-4">
           <DriverGroup
             roleLabel="Primary driver"
-            emptyText="No adverse primary driver — the disposition rests on the evidence below."
+            emptyText="No adverse primary driver, the disposition rests on the evidence below."
             drivers={causality.primaryDrivers}
             bar="primary"
           />
           <DriverGroup
             roleLabel="Secondary considerations"
-            emptyText="None — no lower-severity concerns were recorded alongside the primary driver."
+            emptyText="None, no lower-severity concerns were recorded alongside the primary driver."
             drivers={causality.secondaryConsiderations}
             bar="secondary"
           />
@@ -470,7 +470,7 @@ export function IntegrityTimelinePanel({ load }: { load: RirLoad }) {
         })}
       </ol>
       <p className="mt-3 border-t border-[#DCE3EC] pt-2 text-[11px] text-[#607087]">
-        Decision causality made visible: each entry states where it comes from — recorded, derived from
+        Decision causality made visible: each entry states where it comes from, recorded, derived from
         the policy windows, or part of the labelled demonstration sequence.
       </p>
     </section>
@@ -510,7 +510,7 @@ export function IntegrityRecordDocument({
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
-      /* clipboard unavailable — the download button remains the portability path */
+      /* clipboard unavailable, the download button remains the portability path */
     }
   }
 
@@ -520,7 +520,7 @@ export function IntegrityRecordDocument({
         <RecordHeading />
         <p className="mt-3 rounded-lg border border-[#DCE3EC] bg-[#F7F9FC] px-4 py-3 text-sm text-[#607087]">
           The Result Integrity Record is created by the pipeline when the event is evaluated and
-          stored. This event has not reached the store yet — no record is invented in the meantime.
+          stored. This event has not reached the store yet, no record is invented in the meantime.
         </p>
       </section>
     ) : null;
@@ -588,7 +588,7 @@ export function IntegrityRecordDocument({
           <p className="font-semibold text-[#132238]">{r.dispositionStatement}</p>
         </div>
         <p className="mt-2 text-xs text-[#607087]">
-          Integrity disposition — an operational decision about reliance under the selected
+          Integrity disposition, an operational decision about reliance under the selected
           demonstration policy, derived from the evidence below.
         </p>
       </div>
@@ -616,7 +616,7 @@ export function IntegrityRecordDocument({
         </ul>
       </div>
 
-      {/* Evidence domains — state, source, freshness, contribution (spec section 20) */}
+      {/* Evidence domains, state, source, freshness, contribution (spec section 20) */}
       <div className="mt-4">
         <p className="pt-label text-[#607087]">Evidence domains</p>
         <ul className="mt-2 divide-y divide-[#DCE3EC] rounded-lg border border-[#DCE3EC] bg-white">
@@ -730,7 +730,7 @@ function DomainRow({ domain: d, expanded, onToggle }: { domain: RirDomain; expan
   const chip = stateTone(d.state);
   const contribution = d.contributedToDecision
     ? { text: "Contributed to the decision", cls: "bg-[#FFF7E6] text-[#8A6116]" }
-    : { text: "Contextual — did not drive this decision", cls: "bg-[#F0F3F8] text-[#607087]" };
+    : { text: "Contextual, did not drive this decision", cls: "bg-[#F0F3F8] text-[#607087]" };
   const hasDetails = Boolean(d.verification || d.sourceIdentifier || (d.relatedRuleIds && d.relatedRuleIds.length > 0) || d.note);
 
   return (
@@ -784,7 +784,7 @@ function DomainRow({ domain: d, expanded, onToggle }: { domain: RirDomain; expan
             )}
             <div className="flex gap-2 sm:col-span-2">
               <dt className="shrink-0 text-[#8A97A8]">Verification</dt>
-              <dd className="text-[#132238]">{d.verification || "—"}</dd>
+              <dd className="text-[#132238]">{d.verification || "·"}</dd>
             </div>
             {d.relatedRuleIds && d.relatedRuleIds.length > 0 && (
               <div className="flex gap-2 sm:col-span-2">
@@ -810,7 +810,7 @@ function RecordHeading() {
     <div>
       <h3 className="text-base font-bold text-[#0B1F3A]">Result Integrity Record</h3>
       <p className="text-xs text-[#607087]">
-        Portable, auditable, evidence-linked — derived from the stored assessment, never re-decided.
+        Portable, auditable, evidence-linked, derived from the stored assessment, never re-decided.
       </p>
     </div>
   );

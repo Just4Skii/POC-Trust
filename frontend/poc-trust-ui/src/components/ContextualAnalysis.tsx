@@ -4,7 +4,7 @@ import type { Decision } from "../types";
 import { statusName } from "../types";
 
 /**
- * Contextual Analysis panel — localisation spec section 9 (DEFAULT policy).
+ * Contextual Analysis panel, localisation spec section 9 (DEFAULT policy).
  *
  * The AI-generated text itself remains ENGLISH in every locale: it is advisory content,
  * never machine-translated at runtime, and the English original is the persisted record.
@@ -13,11 +13,11 @@ import { statusName } from "../types";
  * explicitly: "Contextual Analysis is currently available in English."
  *
  * The AI prose is marked lang="en" so screen readers switch pronunciation for the inline
- * language change (spec section 11). VERIFY renders NO panel at all — in every language.
+ * language change (spec section 11). VERIFY renders NO panel at all, in every language.
  */
 export function ContextualAnalysis({ decision }: { decision: Decision }) {
   const { t, i18n } = useTranslation();
-  // VERIFY hard-stop: NO Contextual Analysis panel is rendered at all — not hidden, absent
+  // VERIFY hard-stop: NO Contextual Analysis panel is rendered at all, not hidden, absent
   // (Section 26). REVIEW keeps a persistent line that the deterministic state remains authoritative.
   if (!decision.aiConsulted || !decision.aiAssessment) return null;
   if (statusName(decision.finalStatus) === "Verify") return null;

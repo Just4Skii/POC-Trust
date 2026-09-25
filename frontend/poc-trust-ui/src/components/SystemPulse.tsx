@@ -4,7 +4,7 @@ import { formatEventTime } from "../lib/labels";
 /**
  * Live-system indicators (Sections 7, 18, 24). Ambient animation budget: this chip's slow ring
  * pulse counts as one of at most two ambient motions in a viewport. Every state shown here is
- * DATA-DRIVEN — real connectivity, the real queue length, and the real completion of a sync.
+ * DATA-DRIVEN, real connectivity, the real queue length, and the real completion of a sync.
  */
 
 /** Numeric value transition: short vertical cross-fade, tabular numerals, never a slot machine. */
@@ -109,9 +109,9 @@ export function SystemPulse() {
       >
         <span className="pt-label block text-[#607087]">Demonstration environment</span>
         <ul className="mt-1.5 space-y-1 text-xs text-[#132238]">
-          <li>✓ Evidence pipeline — deterministic evaluation</li>
-          <li>✓ Audit log — append-only decision records</li>
-          <li>✓ Offline sync queue — local, prototype scope</li>
+          <li>✓ Evidence pipeline, deterministic evaluation</li>
+          <li>✓ Audit log, append-only decision records</li>
+          <li>✓ Offline sync queue, local, prototype scope</li>
         </ul>
         <span className="mt-1.5 block text-[11px] text-[#607087]">No live clinical integration claimed.</span>
       </span>

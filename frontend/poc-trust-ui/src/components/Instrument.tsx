@@ -8,11 +8,11 @@ import { formatEventTimeLocal } from "../i18n/strings";
 import type { EvidenceInput } from "../types";
 
 /**
- * Evidence Monitor (Section 9) — the signature instrument: the ONE navy panel for this page
+ * Evidence Monitor (Section 9), the signature instrument: the ONE navy panel for this page
  * (never pure black), muted teal/blue traces, mono labels, tabular numerals, luminous hairline.
  *
  * TRUTHFULNESS: row values are the real recorded values of this assessment. Trace shapes are
- * seeded presentation aids derived from the record identifier — deterministic per record —
+ * seeded presentation aids derived from the record identifier, deterministic per record ,
  * never a live device feed. The header always labels demonstration evidence as synthetic.
  * Rows that contributed to the decision are tagged "↳ contributor"; contextual rows are tagged
  * "↳ contextual" (spec section 23: monitor ↔ evidence cards ↔ decision drivers ↔ record are one
@@ -43,8 +43,8 @@ function buildRows(input: EvidenceInput, ruleIds: string[]): MonitorRow[] {
     { key: "hum", label: "Humidity", valueText: signals.hum.valueText, state: signals.hum.state, note: signals.hum.note, contributed: power?.contributed ?? false, hasTrace: true },
     { key: "power", label: "Power state", valueText: input.powerInterruption ? "Interruption recorded" : "Stable", state: input.powerInterruption ? "warn" : "ok", note: input.powerInterruption ? "A power interruption was recorded around the time of the test." : "No power interruption recorded.", contributed: Boolean(input.powerInterruption), hasTrace: false },
     { key: "cal", label: "Calibration", valueText: signals.cal.valueText, state: signals.cal.state, note: signals.cal.note, contributed: items.cal?.contributed ?? false, hasTrace: false },
-    { key: "qc", label: "Quality control", valueText: input.qcPassed ? "Pass" : "Fail", state: input.qcPassed ? "ok" : "fail", note: input.qcPassed ? "Device quality-control check passed." : "Device quality-control check failed — the result must not be relied on without verification.", contributed: items.qc?.contributed ?? false, hasTrace: false },
-    { key: "conn", label: "Connectivity", valueText: (input.connectivity ?? "online") === "offline" ? "Offline" : "Online", state: "ok", note: (input.connectivity ?? "online") === "offline" ? "Recorded offline — synchronisation metadata only; not a reliability rule." : "Online when recorded.", contributed: false, hasTrace: true },
+    { key: "qc", label: "Quality control", valueText: input.qcPassed ? "Pass" : "Fail", state: input.qcPassed ? "ok" : "fail", note: input.qcPassed ? "Device quality-control check passed." : "Device quality-control check failed, the result must not be relied on without verification.", contributed: items.qc?.contributed ?? false, hasTrace: false },
+    { key: "conn", label: "Connectivity", valueText: (input.connectivity ?? "online") === "offline" ? "Offline" : "Online", state: "ok", note: (input.connectivity ?? "online") === "offline" ? "Recorded offline, synchronisation metadata only; not a reliability rule." : "Online when recorded.", contributed: false, hasTrace: true },
     { key: "op", label: "Operator", valueText: items.op?.value ?? "Not recorded", state: items.op?.state ?? "ok", note: items.op?.detail ?? "", contributed: items.op?.contributed ?? false, hasTrace: false },
     { key: "reagent", label: "Reagent", valueText: items.reagent?.value ?? "Not recorded", state: items.reagent?.state ?? "ok", note: items.reagent?.detail ?? "", contributed: items.reagent?.contributed ?? false, hasTrace: false },
   ];
@@ -163,7 +163,7 @@ export function EvidenceMonitor({ input, ruleIds }: { input: EvidenceInput; rule
                   <span className="mono block text-[10px] text-slate-400">recorded {recordTime}</span>
                   <span className="mt-1 block text-[11px] leading-snug text-slate-300">{r.note}</span>
                   <span className="mt-1 block text-[10px] text-slate-400">
-                    Trace is a seeded presentation shape — the value above is the recorded evidence.
+                    Trace is a seeded presentation shape, the value above is the recorded evidence.
                   </span>
                 </span>
               )}
@@ -173,7 +173,7 @@ export function EvidenceMonitor({ input, ruleIds }: { input: EvidenceInput; rule
       </ul>
 
       <p className="relative mt-3 border-t border-white/10 pt-2.5 text-[11px] leading-relaxed text-slate-400">
-        {demo ? "Demonstration evidence — synthetic, clearly labelled. " : ""}
+        {demo ? "Demonstration evidence, synthetic, clearly labelled. " : ""}
         Values shown are this assessment&apos;s recorded evidence. Trace shapes are deterministic presentation aids, not a live device feed.
       </p>
     </section>

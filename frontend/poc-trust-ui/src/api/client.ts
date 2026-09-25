@@ -17,7 +17,7 @@ async function errorMessage(res: Response): Promise<string> {
     const body = (await res.json()) as { error?: unknown };
     if (typeof body.error === "string" && body.error) return body.error;
   } catch {
-    /* non-JSON error body — fall through to the status code */
+    /* non-JSON error body, fall through to the status code */
   }
   return `API ${res.status}`;
 }
@@ -54,7 +54,7 @@ export const api = {
       }>,
     ),
   /** The derived Result Integrity Record for a stored assessment (404 while an offline-pending
-   *  event has not reached the store yet — that is a waiting state, not an error). */
+   *  event has not reached the store yet, that is a waiting state, not an error). */
   integrityRecord: (id: string) =>
     fetch(`/api/assessments/${encodeURIComponent(id)}/integrity-record`).then(json<RirRecord>),
   audit: (take = 100) => fetch(`/api/assessments/audit?take=${take}`).then(json<AuditRow[]>),
@@ -65,7 +65,7 @@ export const api = {
   demoKind: (kind: string) => fetch(`/api/assessments/demo/${encodeURIComponent(kind)}`).then(json<Decision>),
   summary: () => fetch("/api/dashboard/summary").then(json<DashboardSummary>),
   /** The stored demonstration decision sequence (TRUST → REVIEW → VERIFY with derived
-   *  "why it changed" lines) — deterministic engine output, no advisory involvement. */
+   *  "why it changed" lines), deterministic engine output, no advisory involvement. */
   demonstration: () => fetch("/api/dashboard/demonstration").then(json<DemonstrationSequence>),
   devices: () => fetch("/api/devices").then(json<{ items: unknown[]; note: string }>),
   operators: () => fetch("/api/operators").then(json<{ items: unknown[]; note: string }>),
