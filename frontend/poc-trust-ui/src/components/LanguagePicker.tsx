@@ -4,8 +4,8 @@ import { FALLBACK_LOCALE, localeEntry, SUPPORTED_LOCALES, type LocaleCode } from
 import { useLocaleSupport } from "../i18n/support";
 
 /**
- * The ONE compact language control (spec section 8): a native <select> — instantly
- * keyboard- and screen-reader-accessible — labelled "Language", listing each language in
+ * The ONE compact language control (spec section 8): a native <select>, instantly
+ * keyboard- and screen-reader-accessible, labelled "Language", listing each language in
  * its own language with its support state taken from real catalog metadata (never
  * hard-coded). Deliberately NOT in the header: the header already carries the
  * demonstration indicator, palette hint, help, online status and last-sync time.
@@ -26,13 +26,13 @@ export function LanguagePicker({ compact = false }: { compact?: boolean }) {
   };
 
   return (
-    <label className={`flex items-center gap-2 ${compact ? "text-xs" : "text-sm"}`}>
-      <span className={compact ? "text-slate-300" : "font-medium text-[#132238]"}>{t("ui.language.label")}</span>
+    <label className={`flex min-w-0 items-center gap-2 ${compact ? "text-xs" : "text-sm"}`}>
+      {!compact && <span className="font-medium text-[#132238]">{t("ui.language.label")}</span>}
       <select
         value={active}
         aria-label={t("ui.language.selector_aria")}
         onChange={(e) => void changeLocale(e.target.value as LocaleCode)}
-        className={`min-h-[36px] rounded-md border bg-white px-2 py-1 ${compact ? "border-white/25 text-xs text-[#0B1F3A]" : "border-[#DCE3EC] text-sm text-[#0B1F3A]"}`}
+        className={`min-h-[36px] min-w-0 rounded-md border bg-white px-2 py-1 ${compact ? "w-full border-white/25 text-xs text-[#0B1F3A]" : "border-[#DCE3EC] text-sm text-[#0B1F3A]"}`}
       >
         {SUPPORTED_LOCALES.map((l) => (
           <option key={l.code} value={l.code}>

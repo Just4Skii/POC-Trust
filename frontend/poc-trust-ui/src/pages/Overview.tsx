@@ -10,7 +10,7 @@ import { formatEventTimeLocal } from "../i18n/strings";
 import { parseDemonstration } from "../lib/rir";
 import type { AssessmentSummary, DashboardSummary, DemonstrationSequence, DemoStatus, IntegrityOverview } from "../types";
 
-/** Assessments recorded per day for the last 7 days — computed from real persisted records. */
+/** Assessments recorded per day for the last 7 days, computed from real persisted records. */
 function trendPoints(rows: AssessmentSummary[]): { day: string; value: number }[] {
   const out: { day: string; value: number; key: string }[] = [];
   for (let i = 6; i >= 0; i--) {
@@ -27,7 +27,7 @@ function trendPoints(rows: AssessmentSummary[]): { day: string; value: number }[
   return out.map(({ day, value }) => ({ day, value }));
 }
 
-/** One-line product narrative strip (spec Section 17 / 34) — quiet, not decorative. */
+/** One-line product narrative strip (spec Section 17 / 34), quiet, not decorative. */
 function StoryStrip() {
   const beats = ["Evidence", "Decision", "Explanation", "Action", "Audit"];
   return (
@@ -43,7 +43,7 @@ function StoryStrip() {
 }
 
 /**
- * Integrity Overview (spec section 26) — four aggregate metrics over the seeded records, each
+ * Integrity Overview (spec section 26), four aggregate metrics over the seeded records, each
  * calculated by the backend from the STORED records at request time. Nothing here is preset:
  * when the store is empty the card says so, and under demonstration mode the environment is
  * labelled explicitly. An operational-integrity reading, never a clinical one.
@@ -60,8 +60,8 @@ function IntegrityOverviewCard({ integrity, demoActive }: { integrity: Integrity
           <h3 className="font-semibold text-[#0B1F3A]">Integrity overview</h3>
           <p className="mt-0.5 text-xs text-[#607087]">Evidence coverage, concerns, conflicts and aging across the stored assessments.</p>
         </div>
-        <span className="mono rounded-full border border-[#0F8B8D]/40 bg-[#EAF7F7] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#0B1F3A]">
-          {demoActive ? "Demonstration mode — synthetic data only" : "From stored records"}
+        <span className="mono max-w-full break-words rounded-full border border-[#0F8B8D]/40 bg-[#EAF7F7] px-2.5 py-1 text-center text-[10px] font-semibold uppercase leading-relaxed tracking-[0.08em] text-[#0B1F3A]">
+          {demoActive ? "Demonstration mode, synthetic data only" : "From stored records"}
         </span>
       </div>
       <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -92,17 +92,17 @@ function IntegrityOverviewCard({ integrity, demoActive }: { integrity: Integrity
 
 function MetricTile({ label, value, note, tone }: { label: string; value: string; note: string; tone?: "warn" }) {
   return (
-    <div className={`rounded-lg border p-3 ${tone === "warn" ? "border-[#B7791F]/40 bg-[#FFF7E6]/60" : "border-[#DCE3EC] bg-white"}`}>
-      <p className="pt-label text-[#8A97A8]">{label}</p>
-      <p className="mt-1 text-lg font-bold text-[#132238]">{value}</p>
-      <p className="mt-0.5 text-xs text-[#607087]">{note}</p>
+    <div className={`min-w-0 rounded-lg border p-3 ${tone === "warn" ? "border-[#B7791F]/40 bg-[#FFF7E6]/60" : "border-[#DCE3EC] bg-white"}`}>
+      <p className="pt-label break-words text-[#8A97A8]">{label}</p>
+      <p className="mt-1 break-words text-lg font-bold leading-snug text-[#132238]">{value}</p>
+      <p className="mt-0.5 break-words text-xs text-[#607087]">{note}</p>
     </div>
   );
 }
 
 /**
- * Demonstration moment (spec section 30): the stored demonstration decision sequence — one
- * result TRUST → REVIEW → VERIFY as its evidence quality changes — with the “why did it
+ * Demonstration moment (spec section 30): the stored demonstration decision sequence, one
+ * result TRUST → REVIEW → VERIFY as its evidence quality changes, with the “why did it
  * change” lines derived from the recorded findings. Fully deterministic: the advisory AI has
  * no part in it. This is the core proof of the integrity engine.
  */
@@ -127,7 +127,7 @@ function DemonstrationMoment({
     return () => { alive = false; };
   }, [records]);
 
-  if (failed) return null; // the card is a demonstration aid — never an error surface
+  if (failed) return null; // the card is a demonstration aid, never an error surface
 
   const steps = seq?.steps ?? [];
   const last = steps.length > 0 ? steps[steps.length - 1] : null;
@@ -182,8 +182,8 @@ function DemonstrationMoment({
 
           <p className="mt-2 text-xs text-[#607087]">
             {seq.aiInvolved
-              ? "Advisory context was recorded for some steps — dispositions still come from the deterministic engine only."
-              : "No advisory involvement — every change comes from the deterministic rules alone."}
+              ? "Advisory context was recorded for some steps, dispositions still come from the deterministic engine only."
+              : "No advisory involvement, every change comes from the deterministic rules alone."}
           </p>
           {last && (
             <button
@@ -222,13 +222,13 @@ export function Overview({
 
   /** Demonstration scenario cards (spec Section 21, updated by the integrity upgrade / section 29):
    *  each runs the REAL backend flow (GET /api/assessments/demo/{kind}); the body describes what
-   *  the opened record's Result Integrity Record will show — the record itself is the proof. */
+   *  the opened record's Result Integrity Record will show, the record itself is the proof. */
   const scenarioCards = [
-    { kind: "trust", tone: "border-l-[#167A5A]", icon: "✓", title: "Clean evidence", body: "All evidence valid — the record shows complete coverage, no conflicts and all key evidence current.", primary: true },
-    { kind: "review", tone: "border-l-[#B7791F]", icon: "!", title: "Context requires review", body: "Aging and contextual concerns — the record keeps complete coverage, names the concerns and offers advisory context.", primary: true },
-    { kind: "verify", tone: "border-l-[#C43D3D]", icon: "■", title: "Verification required", body: "A critical domain fails — the record shows the failed critical evidence with the primary driver identified.", primary: true },
-    { kind: "missing", tone: "border-l-[#8A97A8]", icon: "◇", title: "Provenance incomplete", body: "Records absent at capture — coverage is incomplete and the engine derives the disposition from what exists.", primary: false },
-    { kind: "offline", tone: "border-l-[#1E5AA8]", icon: "◈", title: "Synchronization scenario", body: "Offline capture only — connectivity stays synchronisation metadata; nothing local is invented.", primary: false },
+    { kind: "trust", tone: "border-l-[#167A5A]", icon: "✓", title: "Clean evidence", body: "All evidence valid, the record shows complete coverage, no conflicts and all key evidence current.", primary: true },
+    { kind: "review", tone: "border-l-[#B7791F]", icon: "!", title: "Context requires review", body: "Aging and contextual concerns, the record keeps complete coverage, names the concerns and offers advisory context.", primary: true },
+    { kind: "verify", tone: "border-l-[#C43D3D]", icon: "■", title: "Verification required", body: "A critical domain fails, the record shows the failed critical evidence with the primary driver identified.", primary: true },
+    { kind: "missing", tone: "border-l-[#8A97A8]", icon: "◇", title: "Provenance incomplete", body: "Records absent at capture, coverage is incomplete and the engine derives the disposition from what exists.", primary: false },
+    { kind: "offline", tone: "border-l-[#1E5AA8]", icon: "◈", title: "Synchronization scenario", body: "Offline capture only, connectivity stays synchronisation metadata; nothing local is invented.", primary: false },
   ] as const;
 
   function runCard(kind: string) {
@@ -246,11 +246,11 @@ export function Overview({
           <div className="min-w-0">
             <h2 className="text-lg font-bold text-[#0B1F3A]">Can this result be relied on?</h2>
             <p className="text-sm text-[#607087]">
-              Every assessment below is decided by deterministic rules from recorded evidence — always
+              Every assessment below is decided by deterministic rules from recorded evidence, always
               explainable, always auditable. Each one becomes a Result Integrity Record: the evidence
               behind the result, why the disposition occurred, and the action that follows. Real
               persisted data{summary ? ` · ${summary.counts.total} assessments` : ""}.
-              {" "}{demoActive ? "Demonstration scenarios are loaded — synthetic, clearly labelled." : "No demonstration data loaded — assessments appear here as they are recorded."}
+              {" "}{demoActive ? "Demonstration scenarios are loaded, synthetic, clearly labelled." : "No demonstration data loaded, assessments appear here as they are recorded."}
             </p>
             <StoryStrip />
           </div>
@@ -356,7 +356,7 @@ export function Overview({
             )}
           </div>
           <p className="mt-1 text-xs text-[#607087]">
-            Each card runs a real evaluation through the backend pipeline — never a mocked result.
+            Each card runs a real evaluation through the backend pipeline, never a mocked result.
             {demo ? ` ${demo.demoRecords} of ${demo.expectedRecords} curated scenarios loaded.` : " Demonstration controls are available in the development environment only."}
           </p>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -388,7 +388,7 @@ export function Overview({
         <ActivityFeed rows={summary?.recentAudit ?? []} lastSynced={lastSynced} onOpen={onOpen} />
         <div className="pt-card p-5">
           <h3 className="pt-label text-[#0B1F3A]">Activity trend</h3>
-          <p className="mt-1 text-xs text-[#607087]">Assessments recorded per day over the last week — drawn from the same persisted records.</p>
+          <p className="mt-1 text-xs text-[#607087]">Assessments recorded per day over the last week, drawn from the same persisted records.</p>
           <div className="mt-3">
             <Sparkline points={trend} label="Assessments" />
           </div>
@@ -399,8 +399,8 @@ export function Overview({
         <h3 className="font-semibold text-[#0B1F3A]">How every decision is made</h3>
         <ol className="mt-3 grid gap-3 md:grid-cols-3">
           {([
-            ["1", "Evidence is recorded", "Quality control, calibration, operator competency, reagent, environment and provenance — captured with the result."],
-            ["2", "Deterministic rules decide", "The same evidence always produces the same status — Trust, Review or Verify — with the reasons shown alongside."],
+            ["1", "Evidence is recorded", "Quality control, calibration, operator competency, reagent, environment and provenance, captured with the result."],
+            ["2", "Deterministic rules decide", "The same evidence always produces the same status, Trust, Review or Verify, with the reasons shown alongside."],
             ["3", "An advisory note may follow", "Contextual Analysis can add a plain-language note for review cases. It never changes the decision."],
           ] as const).map(([n, title, body]) => (
             <li key={n} className="rounded-lg border border-[#DCE3EC] p-4">

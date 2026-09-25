@@ -32,7 +32,7 @@ const NAV: { id: Nav; label: string; key: string; ready: boolean }[] = [
   { id: "settings", label: "Settings", key: "settings", ready: true },
 ];
 
-/** Staged evaluation presentation — pipeline rail + evidence flow during a real request. */
+/** Staged evaluation presentation, pipeline rail + evidence flow during a real request. */
 interface RunState {
   idx: number;
   outcomes: Record<string, RailOutcome> | null;
@@ -41,7 +41,7 @@ interface RunState {
 }
 
 export default function App() {
-  // Subscribes the tree to languageChanged — switching language re-renders instantly,
+  // Subscribes the tree to languageChanged, switching language re-renders instantly,
   // with no page reload and no loss of form state (spec section 8).
   const { t } = useTranslation();
   const [nav, setNav] = useState<Nav>("overview");
@@ -87,7 +87,7 @@ export default function App() {
       const now = new Date().toISOString();
       localStorage.setItem("poctrust-synced", now);
       setLastSynced(now);
-    } catch { /* backend down — offline UX shows */ }
+    } catch { /* backend down, offline UX shows */ }
     finally { setLoadingSummary(false); }
   }, []);
 
@@ -107,7 +107,7 @@ export default function App() {
     try {
       const r = await api.demoSeed();
       if (r.distributionMismatches.length > 0) {
-        setError("Demonstration seed self-check reported a mismatch — the seed definition, not the engine, needs attention.");
+        setError("Demonstration seed self-check reported a mismatch, the seed definition, not the engine, needs attention.");
       }
       setDecision(null);
       await refresh();
@@ -166,7 +166,7 @@ export default function App() {
   /**
    * The rail never gets ahead of the real request: hold the staged steps until their budget
    * elapses (or the response arrives, whichever is later), paint the authoritative outcomes,
-   * settle briefly, then reveal. Total ≈1.05–1.5 s — a demonstration of the pipeline, not a
+   * settle briefly, then reveal. Total ≈1.05–1.5 s, a demonstration of the pipeline, not a
    * fake long-running computation. On failure the run aborts and never fakes success.
    */
   async function finishRun(outcomes: Record<string, RailOutcome>, apply: () => void, t0: number) {
@@ -197,7 +197,7 @@ export default function App() {
     try {
       if (body.connectivity === "offline") {
         // Honest prototype boundary: the offline path still asks the real engine. If the backend is
-        // unreachable the event is only *queued* — no reliability evaluation happens locally. The
+        // unreachable the event is only *queued*, no reliability evaluation happens locally. The
         // attempt and any later queued retry share one idempotency key (withQueueId).
         const idempotencyKey = withQueueId(body);
         try {
@@ -206,19 +206,19 @@ export default function App() {
           return;
         } catch (e) {
           if (e instanceof ApiError) throw e;   // rejected by the backend: not a connectivity failure
-          await finishRun(queuedOutcomes(), () => { queueLocally(body, "Backend unreachable — event queued locally as pending (prototype offline queue)."); }, t0);
+          await finishRun(queuedOutcomes(), () => { queueLocally(body, "Backend unreachable, event queued locally as pending (prototype offline queue)."); }, t0);
           return;
         }
       }
       const d = await api.evaluate(body);
       await finishRun(evaluatedOutcomes(body, d.ruleIds), () => { setDecision(d); setInput(body as EvidenceInput); setNav("overview"); }, t0);
     } catch (e) {
-      setRun(null);   // abort the staged rail — a failure never fakes a completed pipeline
+      setRun(null);   // abort the staged rail, a failure never fakes a completed pipeline
       if (e instanceof ApiError) {
-        setError(e.message);   // invalid/unservable request — queueing it would only mislead
+        setError(e.message);   // invalid/unservable request, queueing it would only mislead
       } else {
         const message = e instanceof Error ? e.message : String(e);
-        await finishRun(queuedOutcomes(), () => { queueLocally(body, `${message} — queued locally.`); }, Date.now());
+        await finishRun(queuedOutcomes(), () => { queueLocally(body, `${message}, queued locally.`); }, Date.now());
       }
     } finally { inFlight.current = false; setSubmitting(false); }
   }
@@ -261,7 +261,7 @@ export default function App() {
   /**
    * Command-palette scenario action: open the curated scenario's REAL stored record (building a
    * key→id index on first use, seeding first when the demonstration set is not loaded). The
-   * deterministic backend remains authoritative — this only navigates to its record, so each
+   * deterministic backend remains authoritative, this only navigates to its record, so each
    * scenario is replayable without a page reload and never re-fabricates a result.
    */
   async function runScenario(key: string) {
@@ -281,14 +281,14 @@ export default function App() {
       });
       const id = scenarioCache.current.get(key);
       if (id) await openAssessment(id);
-      else setError("That scenario is not loaded yet — load demonstration data first.");
+      else setError("That scenario is not loaded yet, load demonstration data first.");
     } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
   }
 
   /**
    * Overview scenario card (spec Section 21): runs ONE demonstration scenario through the real
-   * backend endpoint (GET /api/assessments/demo/{kind}) — a genuine evaluation that persists a
-   * demo-marked record — then opens the resulting assessment. Never fabricates a result.
+   * backend endpoint (GET /api/assessments/demo/{kind}), a genuine evaluation that persists a
+   * demo-marked record, then opens the resulting assessment. Never fabricates a result.
    */
   async function runScenarioKind(kind: string) {
     if (inFlight.current) return;
@@ -355,7 +355,7 @@ export default function App() {
         <div aria-hidden="true" className="pt-demo-topline fixed left-0 right-0 top-0 z-40 h-[2px]" />
       )}
       <div className="flex">
-        <aside className={`pt-sidebar hidden min-h-screen shrink-0 flex-col text-white transition-all md:flex ${collapsed ? "w-16" : "w-60"}`} aria-label="Primary">
+        <aside className={`pt-sidebar sticky top-0 hidden h-screen shrink-0 flex-col overflow-y-auto text-white transition-all md:flex ${collapsed ? "w-16" : "w-60"}`} aria-label="Primary">
           <div className="flex items-center justify-between p-3">
             <Brand collapsed={collapsed} />
             <button onClick={() => setCollapsed(!collapsed)} aria-label={collapsed ? "Expand navigation" : "Collapse navigation"} className="rounded p-2 text-slate-300 hover:bg-white/10">☰</button>
@@ -380,7 +380,7 @@ export default function App() {
           </nav>
           <div className="mt-auto space-y-2 p-3 text-xs text-slate-300">
             {!collapsed && <p>{t("ui.app.tagline")}</p>}
-            {/* The ONE compact language control (spec section 8) — sidebar footer, never the
+            {/* The ONE compact language control (spec section 8), sidebar footer, never the
                 header; duplicated in Settings. Collapsed view shows the label-less select. */}
             <LanguagePicker compact={collapsed} />
           </div>
@@ -398,7 +398,7 @@ export default function App() {
               {demoActive && (
                 <>
                   {/* Compact persistent environment indicator (spec Section 16): a pill in the
-                      header — never a full-width bar; shortens at narrow widths but never hides. */}
+                      header, never a full-width bar; shortens at narrow widths but never hides. */}
                   <span className="mono rounded-full border border-[#0F8B8D]/40 bg-[#EAF7F7] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#0B1F3A] sm:hidden">
                     Demo · synthetic
                   </span>
