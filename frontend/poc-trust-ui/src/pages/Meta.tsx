@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../api/client";
 import { EmptyState } from "../components/EmptyState";
@@ -13,23 +13,46 @@ import { MetaPage } from "./Overview";
 
 function useJson<T>(loader: () => Promise<T>) {
   const [data, setData] = useState<T | null>(null);
+  const [failed, setFailed] = useState(false);
+  // Fetch once on mount. A failed poll must never wipe already-loaded data:
+  // the loader identity changes every render, so depending on it would refetch
+  // in a loop and any single failure would flash the page back to empty.
+  const loaderRef = useRef(loader);
+  loaderRef.current = loader;
   useEffect(() => {
     let live = true;
-    loader().then((d) => live && setData(d)).catch(() => live && setData(null));
-    return () => { live = false; };
-  }, [loader]);
-  return data;
+    loaderRef
+      .current()
+      .then((d) => {
+        if (live) {
+          setData(d);
+          setFailed(false);
+        }
+      })
+      .catch(() => {
+        if (live) setFailed(true);
+      });
+    return () => {
+      live = false;
+    };
+  }, []);
+  return { data, failed };
 }
 
 /** Operational device view (spec Section 26): derived from real persisted records, each row
  *  drilling into the assessments list. Table-like on desktop, stacked on mobile. */
 export function DevicesPage({ onViewAssessments }: { onViewAssessments: (deviceId: string) => void }) {
-  const data = useJson(() => api.devices());
+  const { data, failed } = useJson(() => api.devices());
   const items = (data?.items ?? []) as { deviceId: string; assessments: number; qcFailures: number; lastStatus: number }[];
   return (
     <MetaPage title="Devices" note={data?.note || "Observed devices from real assessments. Operational state is derived from recorded quality evidence."}>
+      {failed && items.length === 0 && (
+        <p role="alert" className="mb-2 rounded-md border border-[#DCE3EC] bg-white px-3 py-2 text-xs text-[#607087]">
+          Unable to reach POC Trust. Start the backend, then reopen this page.
+        </p>
+      )}
       {items.length === 0 ? (
-        <EmptyState title="No devices observed yet" note="Devices appear here once assessments are recorded — load the demonstration data to populate this page." />
+        <EmptyState title="No devices observed yet" note="Devices appear here once assessments are recorded, load the demonstration data to populate this page." />
       ) : (
         <ul className="grid gap-2 md:grid-cols-2">
           {items.map((d) => {
@@ -42,7 +65,7 @@ export function DevicesPage({ onViewAssessments }: { onViewAssessments: (deviceI
                     <p className="text-xs text-[#607087]">{d.deviceId}</p>
                   </div>
                   <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${attention ? "bg-[#FFF7E6] text-[#8A6116]" : "bg-[#EAF7F1] text-[#167A5A]"}`}>
-                    {attention ? "Attention — QC failure recorded" : "Operational"}
+                    {attention ? "Attention, QC failure recorded" : "Operational"}
                   </span>
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#607087]">
@@ -66,9 +89,14 @@ export function DevicesPage({ onViewAssessments }: { onViewAssessments: (deviceI
 }
 
 export function OperatorsPage({ onViewAssessments }: { onViewAssessments: (operatorId: string) => void }) {
-  const data = useJson(() => api.operators());
+  const { data, failed } = useJson(() => api.operators());
   return (
-    <MetaPage title="Operators" note={data?.note ?? "Observed operators from real assessments. Identity is as recorded at the point of care — the prototype does not authenticate operators."}>
+    <MetaPage title="Operators" note={data?.note ?? "Observed operators from real assessments. Identity is as recorded at the point of care, the prototype does not authenticate operators."}>
+      {failed && (!data || data.items.length === 0) && (
+        <p role="alert" className="mb-2 rounded-md border border-[#DCE3EC] bg-white px-3 py-2 text-xs text-[#607087]">
+          Unable to reach POC Trust. Start the backend, then reopen this page.
+        </p>
+      )}
       {!data || data.items.length === 0 ? (
         <EmptyState title="No operators observed yet" note="Operator references appear here once assessments are recorded." />
       ) : (
@@ -94,9 +122,14 @@ export function OperatorsPage({ onViewAssessments }: { onViewAssessments: (opera
 }
 
 export function QualityPage() {
-  const data = useJson(() => api.qc());
+  const { data, failed } = useJson(() => api.qc());
   return (
-    <MetaPage title="Quality Controls" note="Aggregated from real persisted assessments — not a certification system.">
+    <MetaPage title="Quality Controls" note="Aggregated from real persisted assessments, not a certification system.">
+      {failed && !data && (
+        <p role="alert" className="mb-2 rounded-md border border-[#DCE3EC] bg-white px-3 py-2 text-xs text-[#607087]">
+          Unable to reach POC Trust. Start the backend, then reopen this page.
+        </p>
+      )}
       {!data ? (
         <EmptyState title="No quality-control data yet" note="Control outcomes appear here once assessments are recorded." />
       ) : (
@@ -149,7 +182,7 @@ function ResetConfirm({ busy, onReset }: { busy: boolean; onReset: () => void })
 /**
  * Language section (spec sections 6–8): the compact selector duplicated in Settings for
  * discoverability, with support state, review counts and catalog versions derived from the
- * REAL catalog metadata — never hard-coded. Until qualified native-speaker review completes,
+ * REAL catalog metadata, never hard-coded. Until qualified native-speaker review completes,
  * every non-English locale is honestly presented as a preview of draft translations.
  */
 function LanguageCard() {
@@ -185,7 +218,7 @@ function LanguageCard() {
         })}
       </ul>
       <p className="mt-3 rounded-md bg-[#FFF7E6] px-3 py-2 text-xs font-medium text-[#8A6116]">
-        {t("ui.preview.banner")} — {t("ui.preview.note")}
+        {t("ui.preview.banner")}, {t("ui.preview.note")}
       </p>
     </div>
   );
@@ -243,7 +276,7 @@ export function SettingsPage({
           </>
         )}
       </MetaPage>
-      <MetaPage title="Settings" note="What this prototype does today, where its boundary sits, and what is planned next. AI keys are never entered here — backend user-secrets/env only.">
+      <MetaPage title="Settings" note="What this prototype does today, where its boundary sits, and what is planned next. AI keys are never entered here, backend user-secrets/env only.">
         <div className="space-y-3">
           <LanguageCard />
           <div className="grid gap-3 md:grid-cols-3">
@@ -263,7 +296,7 @@ export function SettingsPage({
             <ul className="mt-2 space-y-1 text-xs text-[#607087]">
               <li>All data is synthetic demonstration data</li>
               <li>No authentication in this prototype</li>
-              <li>Connectivity affects synchronisation only — never reliability</li>
+              <li>Connectivity affects synchronisation only, never reliability</li>
               <li>Not clinically validated; no regulatory approval claimed</li>
               <li>Not deployed in any clinical environment</li>
             </ul>
