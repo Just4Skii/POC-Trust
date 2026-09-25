@@ -1,5 +1,42 @@
 # Changelog
 
+## 1.6.0-localised-interaction-complete — Localisation spec sections 9–16 (25 September 2026)
+
+Completes the six-chunk Localised Clinical Interaction Layer spec. Still **zero backend
+changes** (131/131 tests, 0 warnings; the frozen engine, orchestrator, AI abstraction and
+audit sealing are untouched) and still the same one-line rule: the decision is
+language-neutral, only the explanation around it is localised.
+
+- **Section 9 — Contextual Analysis policy (default):** advisory text stays English in
+  every locale; the panel's framing is localised and non-English locales now show
+  "Contextual Analysis is currently available in English." AI prose carries `lang="en"`.
+  VERIFY continues to render no advisory content at all, in every language.
+- **Section 10 — offline operation:** every locale catalog + review metadata is warmed
+  right after first paint (verified: repeat switches fetch zero new chunks); a failed
+  catalog load is never cached and refuses the switch instead of degrading the screen;
+  no runtime dependency on any translation service (gate-enforced).
+- **Section 11 — UX constraints:** dates/times via Intl in the active locale with a
+  **verified** en-ZA fallback (a formatter is trusted only when the runtime resolves the
+  language — some runtimes lack zu/xh ICU data); timezone stays Africa/Johannesburg;
+  recorded clinical values are never re-formatted. Evidence values, activity text,
+  driver phrases and monitor readings wrap instead of truncating; 0 px horizontal
+  overflow at 390 px in isiZulu. Language changes are announced via a polite live
+  region in the new language; the supervisor "Show in English" override now also
+  re-renders the reason chain and marks overridden lines `lang="en-ZA"`.
+- **Section 12 — backend impact:** preferred path taken (zero change). The additive
+  `uiLocale`/`catalogVersion` audit recording remains specified-but-deferred pending
+  explicit approval.
+- **Sections 14–16 — tests & report:** new `browser-qa4.sh` (33 checks: locale matrix
+  over TRUST/REVIEW/VERIFY, byte-identical API payload across languages, VERIFY-no-
+  advisory per locale, Show-in-English round trip, announcement region, offline-cache
+  switching, 390 px isiZulu overflow); `check-i18n` extended with per-locale
+  reviewed/draft/missing counts, live source-hash consistency, behavioural fallback
+  tests against the real i18next runtime, and a runtime-translation-API ban;
+  new functional source-hash drift test (`test-i18n-drift.mjs`) proving English edits
+  revert translations to draft. Catalogs now 128 keys × 4 locales (en reviewed 128/128;
+  zu/xh/af drafts 0/128 — honestly labelled "preview" everywhere). Acceptance mapping
+  and honest limitations: `docs/localisation-report.md`.
+
 ## 1.5.0-localised-interaction — Localised Clinical Interaction Layer foundations (25 September 2026)
 
 The first localisation increment (spec sections 1–8): the operator-facing explanation chain can

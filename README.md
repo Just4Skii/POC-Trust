@@ -167,10 +167,16 @@ The operator-facing explanation chain — reasons, next actions, evidence labels
 stages — is localised from static reviewed catalogs: **English (canonical source)**, isiZulu,
 isiXhosa and Afrikaans (**machine-drafted previews, pending clinical-linguistic review**). The
 decision screen always shows the canonical status code beside the localised label
-(`REVIEW · Ukubuyekezwa`) with a "Show in English" toggle; switching is instant and offline-safe
-(catalogs ship with the app). Language claims follow an explicit honesty policy — nothing is
-called "supported" until reviewed. Architecture, review workflow and glossary:
-[`docs/localisation.md`](docs/localisation.md).
+(`REVIEW · Ukubuyekezwa`) with a "Show in English" toggle that also re-renders the reason
+chain; switching is instant and needs no network once the app has warmed its catalogs.
+Contextual Analysis stays English in every locale (with a localised
+"is available in English" note); VERIFY shows no advisory content in any language. Dates and
+times render through Intl in the active locale with a verified en-ZA fallback (Africa/
+Johannesburg throughout); recorded clinical values are never re-formatted. Language claims
+follow an explicit honesty policy — nothing is called "supported" until reviewed. The API
+payload is byte-identical in every language. Architecture, review workflow and glossary:
+[`docs/localisation.md`](docs/localisation.md); acceptance mapping and verification evidence:
+[`docs/localisation-report.md`](docs/localisation-report.md).
 
 ## AI key (backend only, never commit)
 

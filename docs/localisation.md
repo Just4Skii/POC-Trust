@@ -191,10 +191,25 @@ tables) rather than relying on repeated figures.
 
 - The audit trail records decision data language-neutrally. Recording WHICH language and
   catalog version was displayed for an assessment requires a small, additive backend change
-  and is deferred until the spec's backend-change section is approved and delivered.
+  (optional `uiLocale`/`catalogVersion` fields — no decision-logic change, no contract
+  break) and remains **deferred pending explicit approval** (spec section 12).
 - Sub-lines of the audit pipeline embed persisted record statements (language-neutral data)
   and stay canonical; the stage labels themselves are localised.
-- Remaining furniture (dashboard cards, empty states, form labels) keeps its existing English
-  copy until the surface-inventory chunk; the mechanism above extends to it without redesign.
-- Catalogs ship with the app (lazy chunks cached by the browser); a service-worker offline
-  cache for catalogs is future work alongside the existing offline queue story.
+- Contextual Analysis content stays English in every locale (section 9, default policy):
+  the panel's framing is localised and, in non-English locales, the panel states that the
+  advisory text is currently available in English. The AI prose carries `lang="en"`.
+  On-demand machine translation of advisory text (the optional later phase) was not built.
+- Dates/times render via Intl with the active locale and a **verified** en-ZA fallback:
+  a formatter is trusted only when the runtime resolves it to the same language (some
+  runtimes lack zu/xh ICU data — verified, never assumed). Timezone stays
+  Africa/Johannesburg. Recorded clinical values are never re-formatted.
+- Catalogs, review metadata and the language selector's support states ship with the app
+  and are warmed right after first paint, so switching language works without a network;
+  a failed catalog load is never cached and simply refuses the switch (English fallback
+  stays authoritative). Full runtime-translation independence is gate-enforced.
+- Remaining furniture (some settings/operational page copy, the header sync chip) keeps
+  its existing English copy until the next preview-set expansion; the mechanism above
+  extends to it without redesign.
+
+Verification evidence and the acceptance-criteria mapping for this feature live in
+[`localisation-report.md`](localisation-report.md).

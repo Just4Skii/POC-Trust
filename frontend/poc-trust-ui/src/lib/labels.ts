@@ -1,3 +1,4 @@
+import { presentationLocale } from "./presentationLocale.ts";
 import type { Status } from "../types";
 
 /**
@@ -142,29 +143,101 @@ export const STATUS_COPY: Record<Status, { meaning: string; strip: string }> = {
 };
 
 // ── Time (Africa/Johannesburg — the deployment context of this prototype) ────
+//
+// Spec section 11: dates and times are formatted through Intl with the ACTIVE locale, and
+// fall back to en-ZA when the runtime lacks that locale's formatting data — verified, never
+// assumed. Verification rule: a locale formatter is trusted only when the runtime resolves
+// it to the same language; anything else (or a thrown RangeError) falls back to en-ZA.
+// The internal day arithmetic always uses the fixed en-ZA numeric format so "days ago"
+// comparisons stay correct regardless of presentation.
 
 const TZ = "Africa/Johannesburg";
-const timeFmt = new Intl.DateTimeFormat("en-ZA", { timeZone: TZ, hour: "2-digit", minute: "2-digit", hour12: false });
 const dayFmt = new Intl.DateTimeFormat("en-ZA", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" });
-const dateFmt = new Intl.DateTimeFormat("en-ZA", { timeZone: TZ, day: "numeric", month: "short", year: "numeric" });
-const weekdayFmt = new Intl.DateTimeFormat("en-ZA", { timeZone: TZ, weekday: "long" });
+
+type TimePart = "time" | "date" | "weekday";
+const PART_OPTIONS: Record<TimePart, Intl.DateTimeFormatOptions> = {
+  time: { hour: "2-digit", minute: "2-digit", hour12: false },
+  date: { day: "numeric", month: "short", year: "numeric" },
+  weekday: { weekday: "long" },
+};
+
+/** Per-locale verified formatter cache — entries are always real formatters, never null. */
+const fmtCache = new Map<string, Intl.DateTimeFormat>();
+function fmtFor(part: TimePart, locale: string): Intl.DateTimeFormat {
+  const cacheKey = `${part}|${locale}`;
+  const cached = fmtCache.get(cacheKey);
+  if (cached) return cached;
+  const build = (lng: string): Intl.DateTimeFormat | null => {
+    try {
+      const fmt = new Intl.DateTimeFormat(lng, { timeZone: TZ, ...PART_OPTIONS[part] });
+      // Verify, do not assume (spec section 11): if the runtime silently resolved the
+      // request to a DIFFERENT language, its formatting data is unavailable → fallback.
+      const resolved = fmt.resolvedOptions().locale.split("-")[0].toLowerCase();
+      if (!locale.toLowerCase().startsWith(resolved)) return null;
+      return fmt;
+    } catch {
+      return null; // invalid tag or formatter construction failure → fallback
+    }
+  };
+  // Step-wise fallback chain — the returned formatter can NEVER be null:
+  // verified active locale → en-ZA → generic English → runtime default.
+  let fmt = build(locale);
+  if (!fmt) fmt = build("en-ZA");
+  if (!fmt) fmt = build("en");
+  if (!fmt) {
+    try {
+      fmt = new Intl.DateTimeFormat(undefined, { timeZone: TZ, ...PART_OPTIONS[part] });
+    } catch {
+      fmt = new Intl.DateTimeFormat(undefined, { timeZone: TZ });
+    }
+  }
+  fmtCache.set(cacheKey, fmt);
+  return fmt;
+}
 
 function dayNumber(d: Date): number {
   const [dd, mm, yyyy] = dayFmt.format(d).split("/").map(Number);
   return Math.floor(Date.UTC(yyyy, mm - 1, dd) / 864e5);
 }
 
-/** "Today, 14:05" · "Yesterday, 09:30" · "Tuesday, 14:05" (within a week) · "12 Mar 2026, 14:05". */
-export function formatEventTime(iso?: string | null, now: Date = new Date()): string {
-  if (!iso) return "Time not recorded";
+export interface EventTimeParts {
+  /** "14:05" in the requested locale. */
+  time: string;
+  /** Long weekday name in the requested locale. */
+  weekday: string;
+  /** "12 Mar 2026" (locale equivalent) in the requested locale. */
+  date: string;
+  /** Whole days between the event and `now` (negative/0 = today). */
+  dayDiff: number;
+}
+
+/** Locale-aware parts of an event timestamp; null when the timestamp is missing or invalid. */
+export function eventTimeParts(iso?: string | null, now: Date = new Date(), lng?: string | null): EventTimeParts | null {
+  if (!iso) return null;
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "Time not recorded";
-  const time = timeFmt.format(d);
-  const diff = dayNumber(now) - dayNumber(d);
-  if (diff <= 0) return `Today, ${time}`;
-  if (diff === 1) return `Yesterday, ${time}`;
-  if (diff < 7) return `${weekdayFmt.format(d)}, ${time}`;
-  return `${dateFmt.format(d)}, ${time}`;
+  if (Number.isNaN(d.getTime())) return null;
+  const locale = lng ?? presentationLocale() ?? "en-ZA";
+  return {
+    time: fmtFor("time", locale).format(d),
+    weekday: fmtFor("weekday", locale).format(d),
+    date: fmtFor("date", locale).format(d),
+    dayDiff: dayNumber(now) - dayNumber(d),
+  };
+}
+
+/**
+ * "Today, 14:05" · "Yesterday, 09:30" · "Tuesday, 14:05" (within a week) · "12 Mar 2026, 14:05".
+ * Date/time parts follow the presentation locale (verified, en-ZA fallback); the relative
+ * words are English here — decision surfaces compose them from the catalog via
+ * formatEventTimeLocal (src/i18n/strings.ts). Timezone stays Africa/Johannesburg.
+ */
+export function formatEventTime(iso?: string | null, now: Date = new Date()): string {
+  const parts = eventTimeParts(iso, now);
+  if (!parts) return "Time not recorded";
+  if (parts.dayDiff <= 0) return `Today, ${parts.time}`;
+  if (parts.dayDiff === 1) return `Yesterday, ${parts.time}`;
+  if (parts.dayDiff < 7) return `${parts.weekday}, ${parts.time}`;
+  return `${parts.date}, ${parts.time}`;
 }
 
 // ── Synthetic demonstration directory (presentation names for demo identifiers) ──
